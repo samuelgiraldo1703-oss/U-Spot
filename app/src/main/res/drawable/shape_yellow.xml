@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exportado de Figma (U-Spot App) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="164dp" android:height="176dp"
+    android:viewportWidth="164" android:viewportHeight="176">
+    <path
+        android:fillColor="#FACC15"
+        android:pathData="M0 50C0 22.3858 22.3858 0 50 0H114C141.614 0 164 22.3858 164 50V126C164 153.614 141.614 176 114 176H50C22.3858 176 0 153.614 0 126V81.5V50Z"/>
+</vector>

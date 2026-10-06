@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exportado de Figma (U-Spot App) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp" android:height="40dp"
+    android:viewportWidth="40" android:viewportHeight="40">
+    <!-- circle cx=20 cy=20 r=20 -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M0,20a20,20 0 1,0 40,0a20,20 0 1,0 -40,0Z"/>
+    <path
+        android:fillColor="#000000"
+        android:pathData="M3.93934 17.9393C3.35355 18.5251 3.35355 19.4749 3.93934 20.0607L13.4853 29.6066C14.0711 30.1924 15.0208 30.1924 15.6066 29.6066C16.1924 29.0208 16.1924 28.0711 15.6066 27.4853L7.12132 19L15.6066 10.5147C16.1924 9.92893 16.1924 8.97918 15.6066 8.3934C15.0208 7.80761 14.0711 7.80761 13.4853 8.3934L3.93934 17.9393ZM36 19L36 17.5L5 17.5L5 19L5 20.5L36 20.5L36 19Z"/>
+</vector>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exportado de Figma (U-Spot App) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="18dp" android:height="18dp"
+    android:viewportWidth="18" android:viewportHeight="18">
+    <path
+        android:fillColor="#4285F4"
+        android:pathData="M16.92 9.1875C16.92 8.6025 16.8675 8.04 16.77 7.5H9V10.695H13.44C13.2525 11.7225 12.6675 12.5925 11.7975 13.1775V15.255H14.4675C16.0275 13.815 16.92 11.7 16.92 9.1875V9.1875"/>
+    <path
+        android:fillColor="#34A853"
+        android:pathData="M9 17.25C11.2275 17.25 13.095 16.515 14.4675 15.255L11.7975 13.1775C11.055 13.6725 10.11 13.98 9 13.98C6.8475 13.98 5.025 12.525 4.365 10.56H1.6125V12.69C2.97 15.3975 5.7675 17.25 9 17.25V17.25"/>
+    <path
+        android:fillColor="#FBBC05"
+        android:pathData="M4.365 10.56C4.1925 10.05 4.095 9.5325 4.095 9C4.095 8.4675 4.1925 7.95 4.365 7.44V5.31H1.6125C1.05 6.4275 0.75 7.6725 0.75 9C0.75 10.3275 1.05 11.5725 1.6125 12.69L4.365 10.56V10.56"/>
+    <path
+        android:fillColor="#EA4335"
+        android:pathData="M9 4.02C10.215 4.02 11.3025 4.44 12.1575 5.2575L14.5275 2.8875C13.095 1.545 11.2275 0.75 9 0.75C5.7675 0.75 2.97 2.6025 1.6125 5.31L4.365 7.44C5.025 5.475 6.8475 4.02 9 4.02V4.02"/>
+</vector>

@@ -1,371 +1,181 @@
 package screens
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.*
-import androidx.compose.ui.draw.clip
+import android.util.Patterns
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.*
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.u_spot.Icons
+import com.example.u_spot.R
+import data.AuthProvider
+import data.RegisterResult
+import decorations.BackButton
+import decorations.ErrorMessage
+import decorations.FigmaCanvas
+import decorations.FormInput
+import decorations.GoogleFormButton
+import decorations.HeaderLogo
+import decorations.PrimaryActionButton
+import decorations.Sparkles
+import decorations.StepProgress
+import decorations.app_colors
+import decorations.app_fonts
+import decorations.belowStatusBar
+import decorations.figmaPosition
+import decorations.figmaText
+import decorations.lockIcon
+import decorations.mailIcon
+import decorations.personIcon
 
+/** Mensajes de las variantes "Registro App (… Fallido)". */
+private object RegisterErrors {
+    const val NO_DATA = "Ningun dato ingresado en los campos de registro"
+    const val USERNAME = "Ningun usuario registrado con este nombre"
+    const val INVALID_EMAIL = "Ingrese un correo electrónico valido"
+    const val NO_PASSWORD = "Ingrese una contraseña"
+    const val PASSWORD_MISMATCH = "La contraseña no coincide, digitela nuevamente"
+}
+
+/** Figma: "Registro App (Completa tu perfil)" y sus 5 variantes de error (631:894 y hermanas). */
 @Composable
-fun RegisterScreen() {
+fun RegisterScreen(
+    onBack: () -> Unit = {},
+    onRegistered: () -> Unit = {},
+    onGoogleLogin: () -> Unit = {}
+) {
+    var username by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var confirmPassword by rememberSaveable { mutableStateOf("") }
+    var error by rememberSaveable { mutableStateOf<String?>(null) }
 
-    var username by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .background(decorations.app_colors.white)
-            .padding(horizontal = 16.dp)
-    ) {
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(decorations.app_colors.yellow),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "←",
-                    fontSize = 25.sp,
-                    color = decorations.app_colors.black
-                )
+    fun submit() {
+        error = when {
+            username.isBlank() && email.isBlank() && password.isEmpty() && confirmPassword.isEmpty() -> RegisterErrors.NO_DATA
+            username.isBlank() -> RegisterErrors.USERNAME
+            !Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches() -> RegisterErrors.INVALID_EMAIL
+            password.isEmpty() -> RegisterErrors.NO_PASSWORD
+            password != confirmPassword -> RegisterErrors.PASSWORD_MISMATCH
+            else -> when (AuthProvider.repository.register(username, email, password)) {
+                RegisterResult.Success -> null.also { onRegistered() }
+                // Sin pantalla en Figma para "usuario ya existe"; se reutiliza el mensaje del nombre.
+                RegisterResult.AlreadyExists -> RegisterErrors.USERNAME
             }
+        }
+    }
 
-            Spacer(modifier = Modifier.weight(1f))
+    FigmaCanvas(designHeight = 917.dp, background = app_colors.white) {
+        // Foto inferior "Ellipse 1" (ya viene recortada en óvalo desde Figma)
+        Image(
+            painter = painterResource(R.drawable.photo_register),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.figmaPosition(left = (-43).dp, bottom = (-49.74).dp, width = 526.846.dp, height = 289.744.dp)
+        )
+        PhotoCaption(Modifier.figmaPosition(left = 18.58.dp, bottom = 4.65.dp, width = 120.87.dp, height = 84.35.dp))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(decorations.app_colors.blue),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "U",
-                        color = decorations.app_colors.white,
-                        fontSize = 30.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+        BackButton(onClick = onBack, modifier = Modifier.figmaPosition(left = 15.dp, top = belowStatusBar(12.dp)))
+        Sparkles(Modifier.figmaPosition(right = 16.dp, top = belowStatusBar(32.dp), width = 40.dp, height = 40.dp))
+        HeaderLogo(Modifier.figmaPosition(left = 58.dp, top = 32.dp, width = 287.dp, height = 100.dp))
 
-                Spacer(modifier = Modifier.width(7.dp))
-
-                Text(
-                    text = "U-Spot",
-                    color = Color(0xFF003B73),
-                    fontSize = 29.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
+        Column(Modifier.figmaPosition(left = 37.5.dp, right = 10.5.dp, top = 145.48.dp)) {
             Text(
-                text = "✦",
-                color = decorations.app_colors.cyan,
-                fontSize = 25.sp
+                text = "¡Completa tu perfil!",
+                style = figmaText(app_fonts.inter, 24.sp, 32.sp, app_colors.formTitle, FontWeight.Bold)
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Cuéntanos sobre ti para personalizar tu\nexperiencia.",
+                style = figmaText(app_fonts.inter, 14.sp, 20.sp, app_colors.formSubtitle)
             )
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Text(
-            text = "¡Completa tu Perfil!",
-            fontSize = 17.sp,
-            textAlign = TextAlign.Justify,
-            fontWeight = FontWeight.Bold,
-            color = decorations.app_colors.black
+        FormInput(
+            value = username, onValueChange = { username = it; error = null },
+            placeholder = "Nombre De Usuario", icon = personIcon,
+            modifier = Modifier.figmaPosition(left = 28.dp, right = 24.dp, top = 234.dp)
+        )
+        FormInput(
+            value = email, onValueChange = { email = it; error = null },
+            placeholder = "Ingresa un Correo electrónico", icon = mailIcon, keyboardType = KeyboardType.Email,
+            modifier = Modifier.figmaPosition(left = 28.5.dp, right = 21.5.dp, top = 293.48.dp)
+        )
+        FormInput(
+            value = password, onValueChange = { password = it; error = null },
+            placeholder = "Crear Contraseña", icon = lockIcon, isPassword = true,
+            modifier = Modifier.figmaPosition(left = 28.5.dp, right = 21.5.dp, top = 355.48.dp)
+        )
+        FormInput(
+            value = confirmPassword, onValueChange = { confirmPassword = it; error = null },
+            placeholder = "Confirmar nueva contraseña", icon = lockIcon, isPassword = true,
+            modifier = Modifier.figmaPosition(left = 26.dp, right = 19.dp, top = 420.dp)
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = "Cuentanos sobre ti para personalizar tu experiencia.",
-            fontSize = 11.sp,
-            textAlign = TextAlign.Justify,
-            color = decorations.app_colors.grey,
-            lineHeight = 15.sp
+        ErrorMessage(
+            text = error,
+            color = app_colors.formError,
+            modifier = Modifier.figmaPosition(left = 8.dp, right = 0.dp, top = 470.dp)
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        ProfileTextField(
-            value = username,
-            onValueChange = { username = it },
-            placeholder = "Nombre De Usuario",
-            icon = Icons.Default.Person
+        StepProgress(Modifier.figmaPosition(left = 24.dp, right = 24.dp, top = 499.dp))
+        PrimaryActionButton(
+            text = "Crear cuenta y descubrir",
+            onClick = ::submit,
+            modifier = Modifier.figmaPosition(left = 24.dp, right = 24.dp, top = 528.dp)
         )
-
-        Spacer(modifier = Modifier.height(7.dp))
-
-        ProfileTextField(
-            value = email,
-            onValueChange = { email = it },
-            placeholder = "Ingresa un Correo electrónico",
-            icon = Icons.Default.Email,
-            keyboardType = KeyboardType.Email
+        GoogleFormButton(
+            onClick = onGoogleLogin,
+            modifier = Modifier.figmaPosition(left = 24.dp, right = 24.dp, top = 616.dp)
         )
-
-        Spacer(modifier = Modifier.height(7.dp))
-
-        ProfileTextField(
-            value = password,
-            onValueChange = { password = it },
-            placeholder = "Crear Contraseña",
-            icon = Icons.Default.Lock,
-            isPassword = true
-        )
-
-        Spacer(modifier = Modifier.height(7.dp))
-
-        ProfileTextField(
-            value = confirmPassword,
-            onValueChange = { confirmPassword = it },
-            placeholder = "Confirmar nueva contraseña",
-            icon = Icons.Default.Lock,
-            isPassword = true
-        )
-
-        Spacer(modifier = Modifier.height(9.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(2.dp)
-                    .background(decorations.app_colors.blue)
-            )
-
-            Text(
-                text = "Paso 2 de 2",
-                modifier = Modifier.padding(horizontal = 8.dp),
-                fontSize = 7.sp,
-                color = decorations.app_colors.grey
-            )
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(1.dp)
-                    .background(decorations.app_colors.white)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(9.dp))
-
-        Button(
-            onClick = { },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(38.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = decorations.app_colors.blue
-            ),
-            contentPadding = PaddingValues(horizontal = 16.dp)
-        ) {
-
-            Text(
-                text = "Crear cuenta y descubrir",
-                fontSize = 11.sp,
-                textAlign = TextAlign.Justify,
-                color = decorations.app_colors.white,
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Text(
-                text = "→",
-                fontSize = 18.sp,
-                color = decorations.app_colors.white
-            )
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        OutlinedButton(
-            onClick = { },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(38.dp),
-            shape = RoundedCornerShape(7.dp),
-            border = BorderStroke(
-                1.dp,
-                decorations.app_colors.white
-            ),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = decorations.app_colors.white
-            )
-        ) {
-
-            Text(
-                text = "G",
-                color = decorations.app_colors.blue,
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Text(
-                text = "Continuar con Google",
-                textAlign = TextAlign.Center,
-                color = decorations.app_colors.black,
-                fontSize = 11.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(145.dp)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 100.dp,
-                        topEnd = 100.dp,
-                        bottomStart = 12.dp,
-                        bottomEnd = 12.dp
-                    )
-                )
-        ) {
-
-            /* Image(
-                painter = painterResource(
-                    id = R.drawable.entorno
-                ),
-                contentDescription = "Entorno",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            ) */
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        decorations.app_colors.black.copy(alpha = 0.25f)
-                    )
-            )
-
-            Text(
-                text = "Tu entorno\ntambien es\nparte de la U",
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(12.dp),
-                color = decorations.app_colors.white,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 16.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
     }
 }
 
+/** "Tu entorno / también es / parte de la U" sobre la foto, girado -4.3° como en Figma. */
 @Composable
-private fun ProfileTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String,
-    icon: ImageVector,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    isPassword: Boolean = false
-) {
-    var passwordVisible by remember { mutableStateOf(false) }
-
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(36.dp),
-        placeholder = {
-            Text(
-                text = placeholder,
-                fontSize = 9.sp,
-                color = decorations.app_colors.grey
-            )
-        },
-        leadingIcon = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(13.dp),
-                tint = decorations.app_colors.grey
-            )
-        },
-        trailingIcon = if (isPassword) {
-            {
-                IconButton(
-                    onClick = {
-                        passwordVisible = !passwordVisible
-                    }
-                ) {
-                    Icon(
-                        imageVector = if (passwordVisible)
-                            Icons.Default.Visibility
-                        else
-                            Icons.Default.VisibilityOff,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = decorations.app_colors.grey
-                    )
-                }
-            }
-        } else null,
-        singleLine = true,
-        shape = RoundedCornerShape(8.dp),
-        keyboardOptions = KeyboardOptions(
-            keyboardType = keyboardType
-        ),
-        visualTransformation = if (
-            isPassword && !passwordVisible
-        ) {
-            PasswordVisualTransformation()
-        } else {
-            VisualTransformation.None
-        },
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = decorations.app_colors.blue,
-            unfocusedBorderColor = decorations.app_colors.white,
-            focusedContainerColor = decorations.app_colors.white,
-            unfocusedContainerColor = decorations.app_colors.white
-        )
+private fun PhotoCaption(modifier: Modifier) {
+    val density = LocalDensity.current
+    val style = figmaText(app_fonts.inter, 18.sp, 22.5.sp, app_colors.white, FontWeight.Bold).copy(
+        shadow = with(density) {
+            Shadow(color = Color(0x12000000), offset = Offset(0f, 4.dp.toPx()), blurRadius = 1.5.dp.toPx())
+        }
     )
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Box(
+            Modifier
+                .requiredSize(116.28.dp, 75.79.dp)
+                .graphicsLayer { rotationZ = -4.3f }
+        ) {
+            Text("Tu entorno", style = style, modifier = Modifier.offset(y = (-0.75).dp))
+            Text("también es", style = style, modifier = Modifier.offset(x = (-0.02).dp, y = 22.dp))
+            Text("parte de la U", style = style, modifier = Modifier.offset(x = (-0.1).dp, y = 45.68.dp))
+        }
+    }
+}
+
+@Preview(widthDp = 412, heightDp = 917)
+@Composable
+private fun RegisterPreview() {
+    RegisterScreen()
 }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exportado de Figma (U-Spot App): "Organic Decorative Element" del splash.
+     El desenfoque (feGaussianBlur stdDeviation=10) se aplica en Compose con Modifier.blur. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="295.984dp" android:height="295.06dp"
+    android:viewportWidth="295.984" android:viewportHeight="295.06"
+    android:alpha="0.8">
+    <path android:pathData="M25.9836 20H275.984V270L255.553 272.919C111.108 293.554 -8.50269 161.777 25.9836 20Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="25.9836" android:startY="20"
+                android:endX="275.984" android:endY="270">
+                <item android:offset="0" android:color="#FF14B8A6" />
+                <item android:offset="1" android:color="#FFFACC15" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>
