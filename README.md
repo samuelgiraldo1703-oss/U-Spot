@@ -61,7 +61,7 @@ app/src/main/java/
 | Componente | Versión Exacta | Notas / Ubicación de Configuración |
 | :--- | :--- | :--- |
 | **IDE Recomendado** | **Android Studio (2024.3+ / 2026.1+)** | Ladybug Feature Drop / Meerkat o superior con soporte para AGP 9.x |
-| **Android Gradle Plugin (AGP)** | **`9.4.1`** | Configurado en `gradle/libs.versions.toml` (`agp = "9.4.1"`) |
+| **Android Gradle Plugin (AGP)** | **`9.3.0`** | Configurado en `gradle/libs.versions.toml` (`agp = "9.3.0"`) |
 | **Gradle** | **`9.6.0`** | Configurado en `gradle/wrapper/gradle-wrapper.properties` |
 | **Kotlin** | **`2.2.10`** | `kotlin = "2.2.10"` con Compose Compiler Plugin oficial |
 | **Compose Compiler Plugin** | **`2.2.10`** | `org.jetbrains.kotlin.plugin.compose` |
