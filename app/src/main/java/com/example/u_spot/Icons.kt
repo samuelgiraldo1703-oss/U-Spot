@@ -1,38 +1,33 @@
 package com.example.u_spot
 
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons as MaterialIcons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.ui.graphics.vector.ImageVector
 
-class Icons(
-    imageVector: Any,
-    contentDescription: Nothing?,
-    modifier: Any,
-    tint: Color
-) {
-    class Outlined(
-        imageVector: ImageVector,
-        contentDescription: Nothing?,
-        modifier: Any,
-        tint: Color
-    ) {
-        companion object {
-            val Lock: ImageVector = TODO()
-            val Email: ImageVector = TODO()
-            val VisibilityOff: ImageVector = TODO()
-            val Visibility: ImageVector = TODO()
-        }
-
+/**
+ * Catálogo de iconos accesibles para U-Spot, mapeados a Jetpack Compose Material Icons.
+ */
+object Icons {
+    object Outlined {
+        val Email: ImageVector = MaterialIcons.Outlined.Email
+        val Lock: ImageVector = MaterialIcons.Outlined.Lock
+        val Visibility: ImageVector = MaterialIcons.Outlined.Visibility
+        val VisibilityOff: ImageVector = MaterialIcons.Outlined.VisibilityOff
     }
 
-    class Default(value: String, onValueChange: (String) -> Unit, placeholder: String, icon: Any) {
-        companion object {
-            val VisibilityOff: ImageVector = TODO()
-            val Visibility: ImageVector
-            val Lock: ImageVector
-            val Email: ImageVector
-            val Person: ImageVector
-        }
-
+    object Default {
+        val Person: ImageVector = MaterialIcons.Default.Person
+        val Email: ImageVector = MaterialIcons.Default.Email
+        val Lock: ImageVector = MaterialIcons.Default.Lock
+        val Visibility: ImageVector = MaterialIcons.Default.Visibility
+        val VisibilityOff: ImageVector = MaterialIcons.Default.VisibilityOff
     }
-
 }
