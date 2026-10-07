@@ -1,5 +1,9 @@
 # 📍 U-Spot (USpot)
 
+<p align="center">
+  <img src="Logo U-Spot.png" alt="Logo U-Spot" width="220" />
+</p>
+
 > *"Tu entorno también es parte de la U"*  
 > **Proyecto de Desarrollo Móvil — Universidad de Bogotá Jorge Tadeo Lozano (UTADEO)**  
 > **Asignatura:** Aplicaciones Móviles (6to Semestre)  
@@ -14,42 +18,61 @@
 ### 🎯 Objetivos de la Aplicación:
 - **Descubrimiento de Spots:** Encontrar espacios óptimos de estudio, bibliotecas, cafeterías, zonas verdes, puntos de descanso, restaurantes y sitios culturales cercanos a la universidad.
 - **Identidad Tadeísta:** Interfaz gráfica moderna inspirada en la vibra universitaria, con paletas de colores llamativas (azul marino, cian, amarillo, blanco) y formas orgánicas distintivas.
-- **Gestión de Usuarios y Perfiles:** Registro guiado paso a paso para personalizar las preferencias de cada estudiante.
-- **Navegación Intuitiva:** Transición fluida entre pantallas mediante `Navigation Compose` con diseño responsivo y modo *Edge-to-Edge* para una experiencia inmersiva en pantallas modernas.
+- **Gestión de Usuarios y Perfiles:** Autenticación completa con Firebase Auth, Google Sign-In y sincronización en tiempo real con Cloud Firestore.
+- **Navegación Intuitiva:** Transición fluida entre pantallas mediante `Navigation Compose` con diseño responsivo, manejo de conectividad y modo *Edge-to-Edge* para una experiencia inmersiva.
 
 ---
 
 ## 📱 2. Módulos y Pantallas Actuales
 
-El proyecto se encuentra organizado modularmente bajo paquetes limpios:
+El proyecto se encuentra organizado modularmente bajo paquetes limpios y arquitectura desacoplada:
 
 ```
 app/src/main/java/
 ├── com.example.u_spot/
-│   ├── MainActivity.kt        # Entrada principal de la app con Edge-to-Edge y tema base
-│   ├── Icons.kt               # Catálogo de iconos auxiliares
+│   ├── MainActivity.kt        # Entrada principal con Edge-to-Edge y observación de conectividad
+│   ├── Icons.kt               # Catálogo de iconos vectoriales personalizados
 │   └── ui/theme/              # Material 3 Theme (Color.kt, Theme.kt, Type.kt)
+├── data/
+│   ├── auth_repository.kt     # Repositorio de Firebase Auth, Firestore y validaciones de contraseña
+│   ├── google_auth_helper.kt  # Integración nativa con Credential Manager para inicio con Google
+│   └── connectivity.kt        # Monitoreo reactivo de red en tiempo real
 ├── decorations/
 │   ├── app_colors.kt          # Paleta de colores oficial de la app (Azul, Cian, Amarillo, etc.)
-│   └── corner_shapes.kt       # Elementos gráficos y curvaturas de fondo
+│   └── corner_shapes.kt       # Elementos gráficos, curvaturas y tarjetas decorativas
 ├── navigation/
-│   └── app_navigation.kt      # Configuración de rutas y NavHost ("login", "register")
+│   └── app_navigation.kt      # Rutas (splash, login, register, email_verification, change_password, home, offline)
 └── screens/
-    ├── Login.kt               # Pantalla de inicio de sesión con toggle de contraseñas y Google Auth UI
-    └── Register.kt            # Pantalla de registro de usuario (Paso 2 de 2) con formulario detallado
+    ├── Splash.kt              # Pantalla de bienvenida con animación de carga y verificación de sesión
+    ├── Login.kt               # Inicio de sesión con correo/contraseña, toggle de visibilidad y Google Sign-In
+    ├── Register.kt            # Registro con paso a paso, validación estricta y sincronización en Firestore
+    ├── EmailVerification.kt   # Verificación en 2 pasos (2FA/Email) con accesos directos a Gmail y Outlook
+    ├── ChangePassword.kt      # Restablecimiento y actualización segura de contraseñas
+    ├── Home.kt                # Pantalla principal con carrusel de categorías, spots recomendados y navbar
+    └── Offline.kt             # Pantalla de contingencia cuando se pierde la conexión a internet
 ```
 
 ### Funcionalidades implementadas:
-1. **Login (`LoginScreen`)**:
-   - Encabezado con imagotipo oficial de U-Spot (`logo_uspott`).
-   - Campos estilizados para correo institucional y contraseña (con botón para mostrar/ocultar contraseña).
-   - Acceso con botones redondeados personalizados y botón directo para autenticación con Google.
-   - Enlace directo a la pantalla de registro de cuenta.
-2. **Registro (`RegisterScreen`)**:
-   - Barra superior con botón de retorno e isotipo de marca ("U" - U-Spot).
-   - Formulario de captura de datos: Nombre de usuario, Correo electrónico, Contraseña y Confirmación de contraseña.
-   - Barra de progreso por pasos (*Paso 2 de 2*).
-   - Tarjeta inferior decorativa con estética curva y el lema: *"Tu entorno también es parte de la U"*.
+1. **Splash (`SplashScreen`)**:
+   - Presentación de marca animada y verificación automática de estado de autenticación.
+2. **Login (`LoginScreen`)**:
+   - Encabezado con imagotipo oficial de U-Spot.
+   - Campos estilizados para correo institucional y contraseña (con botón para mostrar/ocultar).
+   - Acceso con botones redondeados y autenticación directa mediante Google Credential Manager.
+   - Enlace directo a registro y recuperación de contraseña.
+3. **Registro (`RegisterScreen`)**:
+   - Captura y validación de Nombre de usuario, Correo institucional y Contraseña (mínimo 6 caracteres).
+   - Registro en Firebase Auth y guardado de perfil en Cloud Firestore.
+4. **Verificación de Correo (`EmailVerificationScreen`)**:
+   - Réplica exacta de diseño Figma con envío de enlace de verificación.
+   - Botones con enlace directo a las apps/web de Gmail y Outlook.
+5. **Recuperación de Contraseña (`ChangePasswordScreen`)**:
+   - Envío de correo de recuperación y validación de coincidencia de nuevas credenciales.
+6. **Inicio / Explorador (`HomeScreen`)**:
+   - Categorías interactivas (Cafés, Bares, Ocio, Restaurantes, Teatros) y listado de spots recomendados (Juan Valdez, Mono Bandido, La Embajada).
+   - Barra de navegación inferior flotante con acceso a perfil y cierre de sesión.
+7. **Modo Offline (`OfflineScreen`)**:
+   - Detección reactiva de desconexión con opción de reintentar conexión al instante.
 
 ---
 
