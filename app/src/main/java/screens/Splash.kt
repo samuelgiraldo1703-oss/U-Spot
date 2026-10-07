@@ -23,8 +23,8 @@ import decorations.figmaPosition
 import decorations.figmaText
 import kotlinx.coroutines.delay
 
-/** Tiempo que se muestra el splash antes de pasar al login. */
-const val SPLASH_DURATION_MS = 2000L
+/** Tiempo que se muestra el splash antes de pasar al login (2s base + 3s adicionales). */
+const val SPLASH_DURATION_MS = 5000L
 
 /** Figma: "Inicio App" (24:7). */
 @Composable

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "153271625675",
+    "project_id": "u-spot-app",
+    "storage_bucket": "u-spot-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:153271625675:android:26abf8e41d5bdd25b8b84e",
+        "android_client_info": {
+          "package_name": "com.example.u_spot"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "153271625675-pvb4t5o70ckjcurdg1gg2aai9d5o0g6l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.u_spot",
+            "certificate_hash": "7b3f8323d39c02a1840f39735075ec46b8bb34c2"
+          }
+        },
+        {
+          "client_id": "153271625675-dr33hfa4e1asbc6jl9kjibjd1g7r45d5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwQezsFI1T66n2zb9lHW3nBPSfU1uHkfs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "153271625675-dr33hfa4e1asbc6jl9kjibjd1g7r45d5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

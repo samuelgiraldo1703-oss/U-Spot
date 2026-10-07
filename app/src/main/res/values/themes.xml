@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Theme.USpot" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.USpot" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Desactiva la pantalla de carga del sistema de Android 12+ (fondo blanco con ícono circular)
+             y evita mostrar un fondo vacío antes de que Compose dibuje el primer frame de SplashScreen -->
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="s">@android:color/transparent</item>
+        <item name="android:windowSplashScreenAnimationDuration" tools:targetApi="s">0</item>
+    </style>
 </resources>

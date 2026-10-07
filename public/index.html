@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>U-Spot - Aprobación de Cambio de Contraseña</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Firebase SDK Compat v10 -->
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #F0FDF4 0%, #EFF6FF 50%, #FAF5FF 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #111827;
+    }
+    .card {
+      background: #FFFFFF;
+      max-width: 440px;
+      width: 100%;
+      border-radius: 28px;
+      border: 2px solid #084B42;
+      padding: 36px 28px;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.12);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .decorative-blob-yellow {
+      position: absolute;
+      top: -30px;
+      right: -30px;
+      width: 120px;
+      height: 120px;
+      background: #FBBF24;
+      border-radius: 50% 30% 60% 40%;
+      opacity: 0.85;
+      z-index: 0;
+    }
+    .decorative-blob-blue {
+      position: absolute;
+      bottom: -30px;
+      left: -30px;
+      width: 110px;
+      height: 110px;
+      background: #136DEE;
+      border-radius: 40% 60% 30% 50%;
+      opacity: 0.85;
+      z-index: 0;
+    }
+    .content {
+      position: relative;
+      z-index: 1;
+    }
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #F3F4F6;
+      padding: 8px 16px;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 18px;
+      color: #111827;
+      margin-bottom: 20px;
+    }
+    .logo-badge span {
+      color: #136DEE;
+    }
+    h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+    p {
+      font-size: 14px;
+      color: #4B5563;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .email-highlight {
+      font-weight: 600;
+      color: #136DEE;
+      word-break: break-all;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: #136DEE;
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(19, 109, 238, 0.3);
+    }
+    .btn-primary:hover {
+      background: #0E56C2;
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: #F3F4F6;
+      color: #374151;
+      margin-top: 12px;
+    }
+    .input-group {
+      text-align: left;
+      margin-bottom: 16px;
+    }
+    .input-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #D1D5DB;
+      border-radius: 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .input-group input:focus {
+      border-color: #136DEE;
+    }
+    .status-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    .spinner {
+      border: 3px solid #E5E7EB;
+      border-top: 3px solid #136DEE;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      animation: spin 0.8s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .hidden {
+      display: none !important;
+    }
+    .error-msg {
+      color: #DC2626;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="decorative-blob-yellow"></div>
+    <div class="decorative-blob-blue"></div>
+
+    <div class="content">
+      <div class="logo-badge">
+        <span>📍 U-Spot</span> App
+      </div>
+
+      <!-- Loading State -->
+      <div id="stateLoading">
+        <div class="spinner"></div>
+        <h1>Verificando solicitud...</h1>
+        <p>Estamos validando tu enlace de confirmación seguro de Firebase.</p>
+      </div>
+
+      <!-- One-Click Approve Pending Password -->
+      <div id="stateApprovePending" class="hidden">
+        <div class="status-icon">🔐</div>
+        <h1>Aprobar Cambio de Contraseña</h1>
+        <p>Se solicitó actualizar la contraseña para la cuenta <span id="pendingEmailText" class="email-highlight"></span> desde la aplicación.</p>
+        <button id="btnApprove" class="btn btn-primary">Aprobar y Actualizar Contraseña</button>
+        <p id="approveError" class="error-msg hidden"></p>
+      </div>
+
+      <!-- Manual Password Input (Fallback if no pending request) -->
+      <div id="stateManualInput" class="hidden">
+        <div class="status-icon">🔑</div>
+        <h1>Crear Nueva Contraseña</h1>
+        <p>Ingresa tu nueva contraseña para <span id="manualEmailText" class="email-highlight"></span>.</p>
+        <form id="formManualReset">
+          <div class="input-group">
+            <label for="newPass">Nueva contraseña (mínimo 6 caracteres)</label>
+            <input type="password" id="newPass" required minlength="6" placeholder="Nueva contraseña">
+          </div>
+          <div class="input-group">
+            <label for="confirmPass">Confirmar nueva contraseña</label>
+            <input type="password" id="confirmPass" required minlength="6" placeholder="Confirmar contraseña">
+          </div>
+          <p id="manualError" class="error-msg hidden"></p>
+          <button type="submit" id="btnSubmitManual" class="btn btn-primary">Guardar Nueva Contraseña</button>
+        </form>
+      </div>
+
+      <!-- Success State -->
+      <div id="stateSuccess" class="hidden">
+        <div class="status-icon">✅</div>
+        <h1>¡Contraseña Actualizada!</h1>
+        <p>Tu contraseña ha sido actualizada con éxito en Firebase. Ya puedes abrir U-Spot en tu dispositivo e iniciar sesión.</p>
+        <a href="https://mail.google.com" class="btn btn-secondary">Listo</a>
+      </div>
+
+      <!-- Error State -->
+      <div id="stateError" class="hidden">
+        <div class="status-icon">⚠️</div>
+        <h1>Enlace no válido o expirado</h1>
+        <p id="errorDescription">El enlace de verificación ya fue utilizado o ha caducado. Por favor solicita un nuevo correo desde la aplicación U-Spot.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // 1. Extraer parámetros de la URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const mode = urlParams.get('mode') || '';
+      const oobCode = urlParams.get('oobCode') || '';
+      const apiKeyParam = urlParams.get('apiKey') || '';
+
+      // Usar apiKey del query si existe, o el apiKey oficial de la Web App de Firebase
+      const apiKey = apiKeyParam || 'AIzaSyDnumBtiINaF8oW2FjgmkHNhKTUolctVno';
+
+      const firebaseConfig = {
+        apiKey: apiKey,
+        authDomain: 'u-spot-app.firebaseapp.com',
+        projectId: 'u-spot-app',
+        storageBucket: 'u-spot-app.firebasestorage.app',
+        messagingSenderId: '153271625675',
+        appId: '1:153271625675:web:c95a96da43a8f27fb8b84e'
+      };
+
+      // Inicializar Firebase
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const firestore = firebase.firestore();
+
+      const stateLoading = document.getElementById('stateLoading');
+      const stateApprovePending = document.getElementById('stateApprovePending');
+      const stateManualInput = document.getElementById('stateManualInput');
+      const stateSuccess = document.getElementById('stateSuccess');
+      const stateError = document.getElementById('stateError');
+      const errorDescription = document.getElementById('errorDescription');
+
+      function showState(element) {
+        [stateLoading, stateApprovePending, stateManualInput, stateSuccess, stateError].forEach(el => el.classList.add('hidden'));
+        element.classList.remove('hidden');
+      }
+
+      function showError(msg) {
+        if (msg) errorDescription.textContent = msg;
+        showState(stateError);
+      }
+
+      if (!oobCode || (mode && mode !== 'resetPassword')) {
+        showError('No se encontró un código de verificación válido en la dirección web.');
+        return;
+      }
+
+      // 2. Verificar el código OOB con Firebase Auth
+      auth.verifyPasswordResetCode(oobCode)
+        .then(email => {
+          const cleanEmail = email.toLowerCase().trim();
+
+          // 3. Consultar si la app móvil dejó una contraseña pendiente de confirmación
+          firestore.collection('password_resets').doc(cleanEmail).get()
+            .then(doc => {
+              if (doc.exists && doc.data() && doc.data().pendingPassword) {
+                const pendingPassword = doc.data().pendingPassword;
+                document.getElementById('pendingEmailText').textContent = cleanEmail;
+                showState(stateApprovePending);
+
+                const btnApprove = document.getElementById('btnApprove');
+                const approveError = document.getElementById('approveError');
+
+                btnApprove.addEventListener('click', function() {
+                  btnApprove.disabled = true;
+                  btnApprove.textContent = 'Actualizando...';
+                  approveError.classList.add('hidden');
+
+                  auth.confirmPasswordReset(oobCode, pendingPassword)
+                    .then(() => {
+                      // Eliminar la solicitud pendiente por seguridad
+                      firestore.collection('password_resets').doc(cleanEmail).delete().catch(() => {});
+                      showState(stateSuccess);
+                    })
+                    .catch(err => {
+                      btnApprove.disabled = false;
+                      btnApprove.textContent = 'Aprobar y Actualizar Contraseña';
+                      approveError.textContent = err.message || 'Error al actualizar la contraseña.';
+                      approveError.classList.remove('hidden');
+                    });
+                });
+              } else {
+                // No hay contraseña pendiente guardada: permitir ingreso manual directo
+                document.getElementById('manualEmailText').textContent = cleanEmail;
+                showState(stateManualInput);
+
+                const form = document.getElementById('formManualReset');
+                const newPassInput = document.getElementById('newPass');
+                const confirmPassInput = document.getElementById('confirmPass');
+                const manualError = document.getElementById('manualError');
+                const btnSubmit = document.getElementById('btnSubmitManual');
+
+                form.addEventListener('submit', function(e) {
+                  e.preventDefault();
+                  const p1 = newPassInput.value;
+                  const p2 = confirmPassInput.value;
+
+                  if (p1.length < 6) {
+                    manualError.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+                    manualError.classList.remove('hidden');
+                    return;
+                  }
+                  if (p1 !== p2) {
+                    manualError.textContent = 'Las contraseñas no coinciden.';
+                    manualError.classList.remove('hidden');
+                    return;
+                  }
+
+                  btnSubmit.disabled = true;
+                  btnSubmit.textContent = 'Guardando...';
+                  manualError.classList.add('hidden');
+
+                  auth.confirmPasswordReset(oobCode, p1)
+                    .then(() => {
+                      showState(stateSuccess);
+                    })
+                    .catch(err => {
+                      btnSubmit.disabled = false;
+                      btnSubmit.textContent = 'Guardar Nueva Contraseña';
+                      manualError.textContent = err.message || 'Error al guardar la contraseña.';
+                      manualError.classList.remove('hidden');
+                    });
+                });
+              }
+            })
+            .catch(() => {
+              // Si falla Firestore, ofrecer ingreso manual
+              document.getElementById('manualEmailText').textContent = cleanEmail;
+              showState(stateManualInput);
+            });
+        })
+        .catch(err => {
+          showError('El enlace es inválido, ya fue utilizado o ha expirado. Genera una nueva solicitud desde la app.');
+        });
+    })();
+  </script>
+</body>
+</html>

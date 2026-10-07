@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="26dp"
+    android:height="26dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Dome arc -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#0F5349"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round"
+        android:pathData="M5,12A7,7 0 0,1 19,12" />
+    <!-- Platter middle bar -->
+    <path
+        android:fillColor="#0F5349"
+        android:pathData="M4.5,14.5h15a1.5,1.5 0 0,1 0,3h-15a1.5,1.5 0 0,1 0,-3z" />
+    <!-- Platter bottom base -->
+    <path
+        android:fillColor="#0F5349"
+        android:pathData="M5,18.2h14a1,1 0 0,1 0,2h-14a1,1 0 0,1 0,-2z" />
+</vector>

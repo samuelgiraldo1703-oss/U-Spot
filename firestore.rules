@@ -1,0 +1,18 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Los perfiles de usuario pueden ser consultados (para verificar nombre de usuario y ver perfiles)
+    // Pero solo el propio usuario autenticado puede escribir o modificar su propio documento.
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Solicitudes temporales de cambio de contraseña para validación por enlace de correo
+    match /password_resets/{email} {
+      allow read, write: if true;
+    }
+  }
+}

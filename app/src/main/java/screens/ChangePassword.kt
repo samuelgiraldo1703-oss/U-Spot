@@ -1,6 +1,7 @@
 package screens
 
 import androidx.compose.foundation.Image
+import kotlinx.coroutines.launch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,6 +39,7 @@ import decorations.mailIcon
 private object ChangePasswordErrors {
     const val EMAIL_NOT_LINKED = "Correo no vinculado a una cuenta existente"
     const val NO_PASSWORD = "Ingrese una contraseña"
+    const val WEAK_PASSWORD = "La contraseña debe tener al menos 6 caracteres"
     const val PASSWORD_MISMATCH = "La contraseña no coincide, digitela nuevamente"
 }
 
@@ -45,23 +47,58 @@ private object ChangePasswordErrors {
 @Composable
 fun ChangePasswordScreen(
     onBack: () -> Unit = {},
-    onPasswordChanged: () -> Unit = {},
+    onPasswordChanged: (String) -> Unit = {},
     onGoogleLogin: () -> Unit = {}
 ) {
     var email by rememberSaveable { mutableStateOf("") }
     var newPassword by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var isLoading by rememberSaveable { mutableStateOf(false) }
 
     fun submit() {
+        if (isLoading) return
         val repository = AuthProvider.repository
-        error = when {
-            !repository.accountExists(email) -> ChangePasswordErrors.EMAIL_NOT_LINKED
-            newPassword.isEmpty() -> ChangePasswordErrors.NO_PASSWORD
-            newPassword != confirmPassword -> ChangePasswordErrors.PASSWORD_MISMATCH
-            else -> null.also {
-                repository.changePassword(email, newPassword)
-                onPasswordChanged()
+        when {
+            email.isBlank() -> {
+                error = ChangePasswordErrors.EMAIL_NOT_LINKED
+            }
+            newPassword.isEmpty() -> {
+                error = ChangePasswordErrors.NO_PASSWORD
+            }
+            newPassword.length < 6 -> {
+                error = ChangePasswordErrors.WEAK_PASSWORD
+            }
+            newPassword != confirmPassword -> {
+                error = ChangePasswordErrors.PASSWORD_MISMATCH
+            }
+            else -> {
+                scope.launch {
+                    isLoading = true
+                    try {
+                        when (val result = repository.changePassword(email, newPassword)) {
+                            is data.ChangePasswordResult.Success -> {
+                                error = null
+                                val target = result.email.ifBlank { email.trim().lowercase() }
+                                onPasswordChanged(target)
+                            }
+                            is data.ChangePasswordResult.AccountNotFound -> {
+                                error = ChangePasswordErrors.EMAIL_NOT_LINKED
+                            }
+                            is data.ChangePasswordResult.WeakPassword -> {
+                                error = ChangePasswordErrors.WEAK_PASSWORD
+                            }
+                            is data.ChangePasswordResult.Error -> {
+                                error = result.message
+                            }
+                        }
+                    } catch (e: Exception) {
+                        error = e.localizedMessage ?: "Error al procesar la solicitud"
+                    } finally {
+                        isLoading = false
+                    }
+                }
             }
         }
     }
@@ -116,7 +153,7 @@ fun ChangePasswordScreen(
 
         StepProgress(Modifier.figmaPosition(left = 20.dp, right = 21.dp, top = 480.dp))
         PrimaryActionButton(
-            text = "Actualizar Contraseña",
+            text = if (isLoading) "Actualizando..." else "Actualizar Contraseña",
             onClick = ::submit,
             modifier = Modifier.figmaPosition(left = 20.dp, right = 21.dp, top = 509.dp)
         )

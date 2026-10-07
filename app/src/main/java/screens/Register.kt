@@ -2,6 +2,7 @@ package screens
 
 import android.util.Patterns
 import androidx.compose.foundation.Image
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -52,9 +53,10 @@ import decorations.personIcon
 /** Mensajes de las variantes "Registro App (… Fallido)". */
 private object RegisterErrors {
     const val NO_DATA = "Ningun dato ingresado en los campos de registro"
-    const val USERNAME = "Ningun usuario registrado con este nombre"
+    const val USERNAME = "El usuario o correo ya se encuentra registrado"
     const val INVALID_EMAIL = "Ingrese un correo electrónico valido"
     const val NO_PASSWORD = "Ingrese una contraseña"
+    const val WEAK_PASSWORD = "La contraseña debe tener al menos 6 caracteres"
     const val PASSWORD_MISMATCH = "La contraseña no coincide, digitela nuevamente"
 }
 
@@ -70,18 +72,49 @@ fun RegisterScreen(
     var password by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var isLoading by rememberSaveable { mutableStateOf(false) }
 
     fun submit() {
-        error = when {
-            username.isBlank() && email.isBlank() && password.isEmpty() && confirmPassword.isEmpty() -> RegisterErrors.NO_DATA
-            username.isBlank() -> RegisterErrors.USERNAME
-            !Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches() -> RegisterErrors.INVALID_EMAIL
-            password.isEmpty() -> RegisterErrors.NO_PASSWORD
-            password != confirmPassword -> RegisterErrors.PASSWORD_MISMATCH
-            else -> when (AuthProvider.repository.register(username, email, password)) {
-                RegisterResult.Success -> null.also { onRegistered() }
-                // Sin pantalla en Figma para "usuario ya existe"; se reutiliza el mensaje del nombre.
-                RegisterResult.AlreadyExists -> RegisterErrors.USERNAME
+        if (isLoading) return
+        when {
+            username.isBlank() && email.isBlank() && password.isEmpty() && confirmPassword.isEmpty() -> {
+                error = RegisterErrors.NO_DATA
+            }
+            username.isBlank() -> {
+                error = RegisterErrors.USERNAME
+            }
+            !Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches() -> {
+                error = RegisterErrors.INVALID_EMAIL
+            }
+            password.isEmpty() -> {
+                error = RegisterErrors.NO_PASSWORD
+            }
+            password.length < 6 -> {
+                error = RegisterErrors.WEAK_PASSWORD
+            }
+            password != confirmPassword -> {
+                error = RegisterErrors.PASSWORD_MISMATCH
+            }
+            else -> {
+                scope.launch {
+                    isLoading = true
+                    try {
+                        when (AuthProvider.repository.register(username, email, password)) {
+                            RegisterResult.Success -> {
+                                error = null
+                                onRegistered()
+                            }
+                            RegisterResult.AlreadyExists -> {
+                                error = RegisterErrors.USERNAME
+                            }
+                        }
+                    } catch (_: Exception) {
+                        error = RegisterErrors.USERNAME
+                    } finally {
+                        isLoading = false
+                    }
+                }
             }
         }
     }
@@ -141,7 +174,7 @@ fun RegisterScreen(
 
         StepProgress(Modifier.figmaPosition(left = 24.dp, right = 24.dp, top = 499.dp))
         PrimaryActionButton(
-            text = "Crear cuenta y descubrir",
+            text = if (isLoading) "Creando cuenta..." else "Crear cuenta y descubrir",
             onClick = ::submit,
             modifier = Modifier.figmaPosition(left = 24.dp, right = 24.dp, top = 528.dp)
         )

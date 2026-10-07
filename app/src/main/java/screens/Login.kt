@@ -1,6 +1,7 @@
 package screens
 
 import androidx.compose.foundation.Image
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -73,14 +74,30 @@ fun LoginScreen(
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var isLoading by rememberSaveable { mutableStateOf(false) }
 
     fun submit() {
-        error = when {
-            email.isBlank() && password.isEmpty() -> LoginErrors.NO_DATA
-            else -> when (AuthProvider.repository.login(email, password)) {
-                LoginResult.AccountNotFound -> LoginErrors.ACCOUNT_NOT_FOUND
-                LoginResult.WrongPassword -> LoginErrors.WRONG_PASSWORD
-                LoginResult.Success -> null.also { onLoginSuccess(email.trim()) }
+        if (isLoading) return
+        if (email.isBlank() && password.isEmpty()) {
+            error = LoginErrors.NO_DATA
+            return
+        }
+        scope.launch {
+            isLoading = true
+            try {
+                when (AuthProvider.repository.login(email, password)) {
+                    LoginResult.AccountNotFound -> error = LoginErrors.ACCOUNT_NOT_FOUND
+                    LoginResult.WrongPassword -> error = LoginErrors.WRONG_PASSWORD
+                    LoginResult.Success -> {
+                        error = null
+                        onLoginSuccess(email.trim())
+                    }
+                }
+            } catch (_: Exception) {
+                error = LoginErrors.ACCOUNT_NOT_FOUND
+            } finally {
+                isLoading = false
             }
         }
     }
@@ -140,7 +157,7 @@ fun LoginScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Iniciar sesión",
+                    text = if (isLoading) "Iniciando sesión..." else "Iniciar sesión",
                     style = figmaText(app_fonts.poppins, 16.sp, 24.sp, app_colors.white, FontWeight.Medium)
                 )
                 Spacer(Modifier.width(8.01.dp))

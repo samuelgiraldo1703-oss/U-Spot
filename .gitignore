@@ -14,3 +14,5 @@ captures/
 .externalNativeBuild
 .cxx
 *.hprof
+.firebase/
+emulator_screen.png
