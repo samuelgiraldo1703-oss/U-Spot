@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exportado de Figma (U-Spot App, 482:946 "SVG") -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="12dp" android:height="12dp"
+    android:viewportWidth="12" android:viewportHeight="12">
+    <path android:fillColor="#94A3B8"
+        android:pathData="M9 4.005 L9 4.505 L9.5 4.505 L9.5 4.005 L9.5 3.505 L9 3.505 L9 4.005 ZM9.5 4.005 L9.5 4.505 C10.328 4.505 11 5.177 11 6.005 L11.5 6.005 L12 6.005 C12 4.625 10.88 3.505 9.5 3.505 L9.5 4.005 ZM11.5 6.005 L11 6.005 C11 6.833 10.328 7.505 9.5 7.505 L9.5 8.005 L9.5 8.505 C10.88 8.505 12 7.385 12 6.005 L11.5 6.005 ZM9.5 8.005 L9.5 7.505 L9 7.505 L9 8.005 L9 8.505 L9.5 8.505 L9.5 8.005 Z"/>
+    <path android:fillColor="#94A3B8"
+        android:pathData="M9 4.005 L9.5 4.005 L9.5 3.505 L9 3.505 L9 4.005 ZM1 8.505 L0.5 8.505 L1 8.505 ZM1 4.005 M1 4.005 M1 4.005 L1 4.505 L9 4.505 L9 4.005 L9 3.505 L1 3.505 L1 4.005 ZM9 4.005 L8.5 4.005 L8.5 8.505 L9 8.505 L9.5 8.505 L9.5 4.005 L9 4.005 ZM9 8.505 L8.5 8.505 C8.5 9.333 7.828 10.005 7 10.005 L7 10.505 L7 11.005 C8.38 11.005 9.5 9.885 9.5 8.505 L9 8.505 ZM7 10.505 L7 10.005 L3 10.005 L3 10.505 L3 11.005 L7 11.005 L7 10.505 ZM3 10.505 L3 10.005 C2.172 10.005 1.5 9.333 1.5 8.505 L1 8.505 L0.5 8.505 C0.5 9.885 1.62 11.005 3 11.005 L3 10.505 ZM1 8.505 L1.5 8.505 L1.5 4.005 L1 4.005 L0.5 4.005 L0.5 8.505 L1 8.505 ZM1 4.005"/>
+    <path android:fillColor="#94A3B8"
+        android:pathData="M3 0.505 L2.5 0.505 L2.5 2.005 L3 2.005 L3.5 2.005 L3.5 0.505 L3 0.505 Z"/>
+    <path android:fillColor="#94A3B8"
+        android:pathData="M5 0.505 L4.5 0.505 L4.5 2.005 L5 2.005 L5.5 2.005 L5.5 0.505 L5 0.505 Z"/>
+    <path android:fillColor="#94A3B8"
+        android:pathData="M7 0.505 L6.5 0.505 L6.5 2.005 L7 2.005 L7.5 2.005 L7.5 0.505 L7 0.505 Z"/>
+</vector>

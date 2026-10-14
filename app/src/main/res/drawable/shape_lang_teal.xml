@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exportado de Figma (U-Spot App, 259:167 "Background") -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="238.47dp" android:height="200.49dp"
+    android:viewportWidth="238.47" android:viewportHeight="200.49">
+    <path android:fillColor="#14BBA6"
+        android:pathData="M66.076 16.437 C84.79 0.115 112.647 0 131.494 16.167 L168.523 47.93 C172.101 50.999 175.227 54.559 177.808 58.504 L231.918 141.198 C238.47 151.212 230.999 164.45 219.04 164.018 C217.622 163.966 216.204 164.12 214.829 164.474 L97.097 194.784 C74.931 200.49 51.72 190.417 40.75 170.327 L11.243 116.298 C0 95.71 4.582 70.073 22.26 54.654 L66.076 16.437 Z"/>
+</vector>

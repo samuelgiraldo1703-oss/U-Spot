@@ -19,7 +19,9 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 
 /**
  * Posiciona un elemento dentro de un [FigmaCanvas] con las mismas restricciones que tiene en
@@ -55,6 +57,18 @@ fun Modifier.figmaPosition(
     val y = top?.roundToPx() ?: bottom?.let { parentHeight - it.roundToPx() - placeable.height } ?: 0
 
     layout(parentWidth, parentHeight) { placeable.place(x, y) }
+}
+
+/**
+ * Caja de texto de una línea con el alto exacto del interlineado de Figma. Compose nunca hace un
+ * texto de una línea más bajo que el alto natural de la fuente, así que cuando el interlineado
+ * de Figma es menor (p. ej. 14/14) la caja se fija a ese alto y el texto se centra dentro,
+ * sobresaliendo por igual arriba y abajo como en el diseño.
+ */
+fun Modifier.figmaLineBox(lineHeight: TextUnit): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
+    val height = lineHeight.toPx().roundToInt()
+    layout(placeable.width, height) { placeable.place(0, (height - placeable.height) / 2) }
 }
 
 /**

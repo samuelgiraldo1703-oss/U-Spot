@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exportado de Figma (U-Spot App, 212:1164 "Button - Art selected") -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#00A89C"
+        android:pathData="M12 0H12A12 12 0 0 1 24 12V12A12 12 0 0 1 12 24H12A12 12 0 0 1 0 12V12A12 12 0 0 1 12 0Z"/>
+    <path android:fillColor="#FFFFFF" android:fillAlpha="0"
+        android:pathData="M0 12 C0 5.372 5.373 0 12 0 L12 0 C18.628 0 24 5.372 24 12 L24 12 C24 18.627 18.628 24 12 24 L12 24 C5.373 24 0 18.627 0 12 L0 12 Z"/>
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M8.244 11.819 C7.902 11.477 7.348 11.477 7.006 11.819 C6.665 12.16 6.665 12.714 7.006 13.056 L7.625 12.437 L8.244 11.819 ZM11.125 15.937 L10.506 16.556 C10.692 16.741 10.951 16.834 11.211 16.808 C11.472 16.782 11.708 16.641 11.853 16.423 L11.125 15.937 ZM17.103 8.548 C17.371 8.146 17.263 7.602 16.861 7.334 C16.458 7.066 15.915 7.175 15.647 7.577 L16.375 8.062 L17.103 8.548 ZM7.625 12.437 L7.006 13.056 L10.506 16.556 L11.125 15.937 L11.744 15.319 L8.244 11.819 L7.625 12.437 ZM11.125 15.937 L11.853 16.423 L17.103 8.548 L16.375 8.062 L15.647 7.577 L10.397 15.452 L11.125 15.937 Z"/>
+</vector>

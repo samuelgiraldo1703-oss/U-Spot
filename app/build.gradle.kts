@@ -20,7 +20,21 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Keystore de depuración compartido (versionado en el repo): todos los equipos firman con el
+    // mismo SHA-1, que es el registrado en Firebase para "Continuar con Google".
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             optimization {
                 enable = true

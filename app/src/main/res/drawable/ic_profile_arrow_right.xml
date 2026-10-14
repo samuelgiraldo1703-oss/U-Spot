@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exportado de Figma (U-Spot App, 202:148) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="14dp" android:height="14dp"
+    android:viewportWidth="14" android:viewportHeight="14">
+    <path
+        android:strokeColor="#00C1B8"
+        android:strokeWidth="1.45833"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M7.875 2.625L12.25 7M12.25 7L7.875 11.375M12.25 7H1.75"/>
+</vector>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exportado de Figma (U-Spot App, 322:1318 "Input") -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="348dp" android:height="274dp"
+    android:viewportWidth="348" android:viewportHeight="274">
+    <path android:fillColor="#EFEDF1"
+        android:pathData="M10 0H338A10 10 0 0 1 348 10V264A10 10 0 0 1 338 274H10A10 10 0 0 1 0 264V10A10 10 0 0 1 10 0Z"/>
+    <path android:fillColor="#000000" android:fillAlpha="0.4"
+        android:pathData="M345.308 4.394 L345 4 L3.991 270.017 L4.299 270.411 L4.606 270.806 L345.615 4.788 L345.308 4.394 Z"/>
+</vector>

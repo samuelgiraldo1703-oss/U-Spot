@@ -192,12 +192,12 @@ fun ErrorMessage(text: String?, color: Color, modifier: Modifier) {
 // ---------------------------------------------------------------------------------------------
 
 @Composable
-fun BackButton(onClick: () -> Unit, modifier: Modifier) {
+fun BackButton(onClick: () -> Unit, modifier: Modifier, @DrawableRes res: Int = R.drawable.ic_back, size: Dp = 40.dp) {
     Image(
-        painter = painterResource(R.drawable.ic_back),
+        painter = painterResource(res),
         contentDescription = "Volver",
         modifier = modifier
-            .size(40.dp)
+            .size(size)
             .clip(CircleShape)
             .clickable(onClick = onClick)
     )

@@ -64,7 +64,9 @@ private data class TagSpec(
  */
 @Composable
 fun HomeScreen(
-    onLogout: () -> Unit = {}
+    userName: String = "Alejandro",
+    onLogout: () -> Unit = {},
+    onProfile: () -> Unit = {}
 ) {
     val categories = remember {
         listOf(
@@ -130,19 +132,23 @@ fun HomeScreen(
             )
         }
 
-        // Saludo principal ("Hola, Alejandro 👋" / "¿Qué quieres hacer hoy?")
+        // Saludo principal con el nombre de usuario de la cuenta ("Hola, <nombre> 👋")
         Column(
-            modifier = Modifier.figmaPosition(left = 18.dp, top = 122.dp)
+            // Termina antes de la nota manuscrita de la derecha (106 dp + m\u00E1rgenes)
+            modifier = Modifier.figmaPosition(left = 18.dp, right = 128.dp, top = 122.dp)
         ) {
             Text(
-                text = "Hola, Alejandro \uD83D\uDC4B",
+                text = "Hola, $userName \uD83D\uDC4B",
                 style = figmaText(
                     family = app_fonts.inter,
                     size = 24.sp,
                     lineHeight = 30.sp,
                     color = app_colors.homeTitle,
                     weight = FontWeight.Bold
-                )
+                ),
+                // Nombres largos pasan a una segunda línea (hay espacio antes de las categorías)
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
             Spacer(Modifier.height(8.dp))
             Text(
@@ -274,6 +280,7 @@ fun HomeScreen(
 
         // Barra de navegación inferior ("Spotty")
         SpottyBottomBar(
+            onProfile = onProfile,
             modifier = Modifier.figmaPosition(
                 left = 18.dp,
                 right = 6.dp,
@@ -538,7 +545,7 @@ private fun VenueTagPill(tag: TagSpec) {
 }
 
 @Composable
-private fun SpottyBottomBar(modifier: Modifier = Modifier) {
+private fun SpottyBottomBar(onProfile: () -> Unit, modifier: Modifier = Modifier) {
     val barShape = RoundedCornerShape(
         topStart = 46.dp,
         topEnd = 46.dp,
@@ -604,6 +611,8 @@ private fun SpottyBottomBar(modifier: Modifier = Modifier) {
                 .align(Alignment.CenterEnd)
                 .offset(x = (-6).dp)
                 .size(44.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onProfile)
         )
     }
 }

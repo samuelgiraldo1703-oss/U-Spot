@@ -8,8 +8,9 @@ import androidx.compose.ui.text.font.FontWeight
 import com.example.u_spot.R
 
 /**
- * Tipografías usadas en Figma: Poppins (splash, login, mensajes de error) e Inter
- * (registro y cambio de contraseña). Archivos en res/font, licencia SIL OFL (Google Fonts).
+ * Tipografías usadas en Figma: Poppins (splash, login, mensajes de error), Inter
+ * (registro y cambio de contraseña) y Plus Jakarta Sans (módulo de perfil).
+ * Archivos en res/font, licencia SIL OFL (Google Fonts).
  */
 @OptIn(ExperimentalTextApi::class)
 object app_fonts {
@@ -24,6 +25,16 @@ object app_fonts {
         listOf(400, 500, 600, 700).map { weight ->
             Font(
                 R.font.inter_variable,
+                FontWeight(weight),
+                variationSettings = FontVariation.Settings(FontVariation.weight(weight))
+            )
+        }
+    )
+
+    val plusJakarta = FontFamily(
+        listOf(400, 500, 600, 700, 800).map { weight ->
+            Font(
+                R.font.plus_jakarta_sans_variable,
                 FontWeight(weight),
                 variationSettings = FontVariation.Settings(FontVariation.weight(weight))
             )

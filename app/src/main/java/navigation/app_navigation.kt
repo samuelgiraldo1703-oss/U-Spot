@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -13,9 +14,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.google.firebase.auth.FirebaseAuth
 import data.GoogleAuthHelper
-import data.LoginResult
+import data.GoogleSignInResult
 import data.isOnline
 import data.rememberOnlineState
 import kotlinx.coroutines.launch
@@ -27,11 +27,22 @@ object Routes {
     const val CHANGE_PASSWORD = "change_password"
     const val EMAIL_VERIFICATION = "email_verification/{email}"
     const val HOME = "home"
+    const val PROFILE = "profile"
+    const val PROFILE_SETTINGS = "profile/settings"
+    const val PROFILE_PHOTO = "profile/photo"
+    const val PROFILE_PREFERENCES = "profile/preferences"
+    const val PROFILE_FAVORITES = "profile/favorites"
+    const val PROFILE_HELP = "profile/help"
+    const val PROFILE_HELP_CENTER = "profile/help/center"
+    const val PROFILE_SECURITY_STATUS = "profile/help/security"
+    const val PROFILE_REPORT = "profile/help/report"
 }
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    // Perfil del usuario con sesión iniciada (Firebase Auth + documento users/{uid} en Firestore)
+    val user = data.rememberUserProfile()
     val context = LocalContext.current
     var online by rememberOnlineState()
     val scope = rememberCoroutineScope()
@@ -39,24 +50,36 @@ fun AppNavigation() {
 
     fun toast(text: String) = Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
 
+    var googleSigningIn by remember { mutableStateOf(false) }
+
+    // "Continuar con Google" desde Login, Registro o Cambiar contraseña
     val onGoogleLoginAction: () -> Unit = {
-        scope.launch {
-            when (googleAuthHelper.signInWithGoogle()) {
-                LoginResult.Success -> {
-                    val user = FirebaseAuth.getInstance().currentUser
-                    toast("Bienvenido, ${user?.displayName ?: user?.email ?: "Usuario"}")
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
+        if (!googleSigningIn) {
+            googleSigningIn = true
+            scope.launch {
+                try {
+                    when (val result = googleAuthHelper.signInWithGoogle()) {
+                        is GoogleSignInResult.Success -> {
+                            toast("Bienvenido, ${result.name}")
+                            // Limpia toda la pila (Login/Registro/...) para que "atrás" no vuelva al login
+                            navController.navigate(Routes.HOME) {
+                                popUpTo(navController.graph.id) { inclusive = true }
+                            }
+                        }
+                        GoogleSignInResult.Cancelled -> Unit
+                        GoogleSignInResult.NoNetwork -> online = false
+                        is GoogleSignInResult.Error -> toast(result.message)
                     }
-                }
-                LoginResult.WrongPassword -> {
-                    // El usuario canceló la selección de cuenta de Google
-                }
-                LoginResult.AccountNotFound -> {
-                    toast("No se pudo iniciar sesión con Google")
+                } finally {
+                    googleSigningIn = false
                 }
             }
         }
+    }
+
+    // Cierra la sesión de Firebase y de Credential Manager (vuelve a salir el selector de cuentas)
+    fun signOut() {
+        scope.launch { googleAuthHelper.signOut() }
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -87,11 +110,95 @@ fun AppNavigation() {
 
             composable(Routes.HOME) {
                 screens.HomeScreen(
+                    userName = user.name,
                     onLogout = {
-                        FirebaseAuth.getInstance().signOut()
+                        signOut()
                         navController.navigate(Routes.LOGIN) {
                             popUpTo(Routes.HOME) { inclusive = true }
                         }
+                    },
+                    onProfile = { navController.navigate(Routes.PROFILE) }
+                )
+            }
+
+            composable(Routes.PROFILE) {
+                screens.ProfileScreen(
+                    user = user,
+                    onBack = { navController.popBackStack() },
+                    onChangePhoto = { navController.navigate(Routes.PROFILE_PHOTO) },
+                    onFavorites = { navController.navigate(Routes.PROFILE_FAVORITES) },
+                    onAccountSettings = { navController.navigate(Routes.PROFILE_SETTINGS) },
+                    onPreferences = { navController.navigate(Routes.PROFILE_PREFERENCES) },
+                    onHelp = { navController.navigate(Routes.PROFILE_HELP) },
+                    onSaveBio = { text ->
+                        scope.launch { if (!data.saveBio(text)) toast("No se pudo guardar la descripción") }
+                    }
+                )
+            }
+
+            composable(Routes.PROFILE_PHOTO) {
+                var savingPhoto by remember { mutableStateOf(false) }
+                screens.ProfilePhotoScreen(
+                    photo = user.photo,
+                    saving = savingPhoto,
+                    onBack = { navController.popBackStack() },
+                    onPhotoTaken = { uri ->
+                        scope.launch {
+                            savingPhoto = true
+                            if (!data.saveProfilePhoto(context, uri)) toast("No se pudo guardar la foto")
+                            savingPhoto = false
+                        }
+                    },
+                    onDeletePhoto = {
+                        scope.launch { if (!data.deleteProfilePhoto()) toast("No se pudo borrar la foto") }
+                    }
+                )
+            }
+
+            composable(Routes.PROFILE_PREFERENCES) {
+                screens.PreferencesScreen(onBack = { navController.popBackStack() })
+            }
+
+            composable(Routes.PROFILE_FAVORITES) {
+                screens.FavoritePlacesScreen(onBack = { navController.popBackStack() })
+            }
+
+            composable(Routes.PROFILE_HELP) {
+                screens.HelpSupportScreen(
+                    onBack = { navController.popBackStack() },
+                    onHelpCenter = { navController.navigate(Routes.PROFILE_HELP_CENTER) },
+                    onSecurityStatus = { navController.navigate(Routes.PROFILE_SECURITY_STATUS) },
+                    onReportProblem = { navController.navigate(Routes.PROFILE_REPORT) }
+                )
+            }
+
+            composable(Routes.PROFILE_REPORT) {
+                screens.ReportProblemScreen(onExit = { navController.popBackStack() })
+            }
+
+            composable(Routes.PROFILE_HELP_CENTER) {
+                screens.HelpCenterScreen(onBack = { navController.popBackStack() })
+            }
+
+            composable(Routes.PROFILE_SECURITY_STATUS) {
+                screens.SecurityStatusScreen(user = user, onBack = { navController.popBackStack() })
+            }
+
+            composable(Routes.PROFILE_SETTINGS) {
+                // "Inicia Sesión" (tras "Cerrar sesión") cierra la sesión de Firebase y vuelve al login.
+                // "SI" en eliminar cuenta solo lleva al login: todavía no borra la cuenta.
+                val toLogin = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.HOME) { inclusive = true }
+                    }
+                }
+                screens.AccountSettingsScreen(
+                    user = user,
+                    onBack = { navController.popBackStack() },
+                    onAccountDeleted = toLogin,
+                    onLogin = {
+                        signOut()
+                        toLogin()
                     }
                 )
             }

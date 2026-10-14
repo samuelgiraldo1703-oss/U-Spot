@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exportado de Figma (U-Spot App, 316:512 "Cyan Verified Badge") -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="42dp" android:height="42dp"
+    android:viewportWidth="42" android:viewportHeight="42">
+    <path android:fillColor="#0157D2"
+        android:pathData="M21 0H21A21 21 0 0 1 42 21V21A21 21 0 0 1 21 42H21A21 21 0 0 1 0 21V21A21 21 0 0 1 21 0Z"/>
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M18.391 20.797 C18.106 20.512 17.644 20.512 17.359 20.797 C17.075 21.082 17.075 21.543 17.359 21.828 L17.875 21.312 L18.391 20.797 ZM20.375 23.812 L19.859 24.328 C20.014 24.483 20.229 24.56 20.447 24.538 C20.664 24.517 20.861 24.399 20.982 24.217 L20.375 23.812 ZM24.732 18.592 C24.955 18.257 24.865 17.804 24.529 17.581 C24.194 17.357 23.742 17.448 23.518 17.783 L24.125 18.188 L24.732 18.592 ZM17.875 21.312 L17.359 21.828 L19.859 24.328 L20.375 23.812 L20.891 23.297 L18.391 20.797 L17.875 21.312 ZM20.375 23.812 L20.982 24.217 L24.732 18.592 L24.125 18.188 L23.518 17.783 L19.768 23.408 L20.375 23.812 Z"/>
+</vector>

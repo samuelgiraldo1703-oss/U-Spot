@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exportado de Figma (U-Spot App, 397:400 "Arrow 2") -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32.115dp" android:height="14.923dp"
+    android:viewportWidth="32.115" android:viewportHeight="14.923">
+    <path android:fillColor="#000000"
+        android:pathData="M31.725 8.169 C32.115 7.778 32.115 7.145 31.725 6.754 L25.361 0.391 C24.97 0 24.337 0 23.946 0.391 C23.556 0.781 23.556 1.414 23.946 1.805 L29.603 7.462 L23.946 13.118 C23.556 13.509 23.556 14.142 23.946 14.533 C24.337 14.923 24.97 14.923 25.361 14.533 L31.725 8.169 ZM0 7.462 L0 8.462 L31.017 8.462 L31.017 7.462 L31.017 6.462 L0 6.462 L0 7.462 Z"/>
+</vector>

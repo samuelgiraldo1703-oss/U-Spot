@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exportado de Figma (U-Spot App, 337:90 "SVG - Chevron Right Icon") -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp" android:height="20dp"
+    android:viewportWidth="20" android:viewportHeight="20">
+    <path android:fillColor="#94A3B8"
+        android:pathData="M8.237 3.43 C7.83 3.023 7.17 3.023 6.763 3.43 C6.357 3.837 6.357 4.496 6.763 4.903 L7.5 4.167 L8.237 3.43 ZM13.333 10 L14.07 10.736 C14.477 10.33 14.477 9.67 14.07 9.263 L13.333 10 ZM6.763 15.097 C6.357 15.503 6.357 16.163 6.763 16.57 C7.17 16.976 7.83 16.976 8.237 16.57 L7.5 15.833 L6.763 15.097 ZM7.5 4.167 L6.763 4.903 L12.597 10.736 L13.333 10 L14.07 9.263 L8.237 3.43 L7.5 4.167 ZM13.333 10 L12.597 9.263 L6.763 15.097 L7.5 15.833 L8.237 16.57 L14.07 10.736 L13.333 10 Z"/>
+</vector>
