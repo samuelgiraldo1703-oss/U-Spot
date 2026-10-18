@@ -14,5 +14,16 @@ service cloud.firestore {
     match /password_resets/{email} {
       allow read, write: if true;
     }
+
+    // Comentarios de los lugares del Home: cualquiera los lee; solo usuarios con sesión publican
+    // a su nombre (uid propio) y cada autor puede editar o borrar los suyos.
+    match /places/{placeId}/comments/{commentId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 500;
+      allow update, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
   }
 }

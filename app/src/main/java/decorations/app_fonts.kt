@@ -9,7 +9,7 @@ import com.example.u_spot.R
 
 /**
  * Tipografías usadas en Figma: Poppins (splash, login, mensajes de error), Inter
- * (registro y cambio de contraseña) y Plus Jakarta Sans (módulo de perfil).
+ * (registro, cambio de contraseña y saludo del Home) y Plus Jakarta Sans (módulos de perfil y Home).
  * Archivos en res/font, licencia SIL OFL (Google Fonts).
  */
 @OptIn(ExperimentalTextApi::class)
@@ -22,7 +22,7 @@ object app_fonts {
     )
 
     val inter = FontFamily(
-        listOf(400, 500, 600, 700).map { weight ->
+        listOf(400, 500, 600, 700, 800).map { weight ->
             Font(
                 R.font.inter_variable,
                 FontWeight(weight),

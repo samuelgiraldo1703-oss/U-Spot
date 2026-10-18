@@ -27,6 +27,8 @@ object Routes {
     const val CHANGE_PASSWORD = "change_password"
     const val EMAIL_VERIFICATION = "email_verification/{email}"
     const val HOME = "home"
+    const val HOME_CATEGORY = "home/category/{key}"
+    const val HOME_PLACE = "home/place/{key}"
     const val PROFILE = "profile"
     const val PROFILE_SETTINGS = "profile/settings"
     const val PROFILE_PHOTO = "profile/photo"
@@ -111,13 +113,39 @@ fun AppNavigation() {
             composable(Routes.HOME) {
                 screens.HomeScreen(
                     userName = user.name,
-                    onLogout = {
-                        signOut()
+                    onCategory = { navController.navigate("home/category/${it.key}") },
+                    onProfile = { navController.navigate(Routes.PROFILE) },
+                    // "Cerrar sesión" cierra la sesión de Firebase y muestra "Se ha cerrado la sesión con éxito"
+                    onLogout = { signOut() },
+                    onGoToLogin = {
                         navController.navigate(Routes.LOGIN) {
                             popUpTo(Routes.HOME) { inclusive = true }
                         }
-                    },
-                    onProfile = { navController.navigate(Routes.PROFILE) }
+                    }
+                )
+            }
+
+            composable(Routes.HOME_CATEGORY) { entry ->
+                val category = data.HomeCategory.fromKey(entry.arguments?.getString("key")) ?: data.HomeCategory.RESTAURANTES
+                screens.HomeCategoryScreen(
+                    category = category,
+                    onBack = { navController.popBackStack() },
+                    onPlace = { navController.navigate("home/place/${it.key}") },
+                    // Cambiar de categoría desde el menú reemplaza la pantalla (la flecha vuelve al dashboard)
+                    onCategory = {
+                        navController.navigate("home/category/${it.key}") {
+                            popUpTo(Routes.HOME_CATEGORY) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(Routes.HOME_PLACE) { entry ->
+                val place = data.HomePlace.fromKey(entry.arguments?.getString("key")) ?: data.HomePlace.WOK
+                screens.HomePlaceScreen(
+                    place = place,
+                    user = user,
+                    onBack = { navController.popBackStack() }
                 )
             }
 
