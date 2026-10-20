@@ -114,6 +114,7 @@ fun AppNavigation() {
                 screens.HomeScreen(
                     userName = user.name,
                     onCategory = { navController.navigate("home/category/${it.key}") },
+                    onPlace = { navController.navigate("home/place/$it") },
                     onProfile = { navController.navigate(Routes.PROFILE) },
                     // "Cerrar sesión" cierra la sesión de Firebase y muestra "Se ha cerrado la sesión con éxito"
                     onLogout = { signOut() },
@@ -131,6 +132,7 @@ fun AppNavigation() {
                     category = category,
                     onBack = { navController.popBackStack() },
                     onPlace = { navController.navigate("home/place/${it.key}") },
+                    onExtraPlace = { navController.navigate("home/place/${it.id}") },
                     // Cambiar de categoría desde el menú reemplaza la pantalla (la flecha vuelve al dashboard)
                     onCategory = {
                         navController.navigate("home/category/${it.key}") {
@@ -140,13 +142,27 @@ fun AppNavigation() {
                 )
             }
 
+            // {key}: pantalla de Figma (HomePlace.key) o lugar de la base de datos (Place.id)
             composable(Routes.HOME_PLACE) { entry ->
-                val place = data.HomePlace.fromKey(entry.arguments?.getString("key")) ?: data.HomePlace.WOK
-                screens.HomePlaceScreen(
-                    place = place,
-                    user = user,
-                    onBack = { navController.popBackStack() }
-                )
+                val key = entry.arguments?.getString("key")
+                val places = data.rememberPlaces()
+                val figma = data.HomePlace.fromKey(key)
+                val extra = places.firstOrNull { it.id == key && it.figma == null }
+                if (figma == null && extra != null) {
+                    screens.PlaceDetailScreen(
+                        place = extra,
+                        user = user,
+                        onBack = { navController.popBackStack() }
+                    )
+                } else {
+                    val place = figma ?: data.HomePlace.WOK
+                    screens.HomePlaceScreen(
+                        place = place,
+                        info = places.firstOrNull { it.figma == place },
+                        user = user,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
             }
 
             composable(Routes.PROFILE) {

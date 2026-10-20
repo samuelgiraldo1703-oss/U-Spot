@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
@@ -28,6 +30,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -55,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.SolidColor
@@ -73,12 +78,28 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import data.COMMENT_MAX_LENGTH
 import data.HomePlace
+import data.Place
 import data.PlaceComment
 import data.UserProfile
 import data.addPlaceComment
 import data.decodeBase64Image
 import data.rememberPlaceComments
+import decorations.FigmaSceneNode
+import decorations.FigmaWidthScale
+import decorations.HeroCategoryBadge
+import decorations.PlaceFeatureRow
+import decorations.featureNodes
+import decorations.style
+import decorations.PlaceInfoSection
 import decorations.Scene
+import decorations.SceneImage
+import decorations.SceneNode
+import decorations.allNodes
+import decorations.photo
+import decorations.placeCardTexts
+import decorations.rememberScene
+import decorations.singular
+import decorations.statusBarHeight
 import decorations.SceneScreen
 import decorations.firstNode
 import decorations.jakartaText
@@ -104,28 +125,28 @@ private val HeroDark = Color(0xFF171717)
 @Composable
 fun HomePlaceScreen(
     place: HomePlace = HomePlace.WOK,
+    info: Place? = null,
     user: UserProfile = UserProfile.Preview,
     onBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
     LightStatusBarIcons()
 
+    // Con [info] (el lugar está en la base de datos) se mezcla la pantalla de Figma con los datos
+    // reales: rasgos, rango de precios, distancia, ambiente, categoría y el bloque "Información".
     SceneScreen(
         sceneKey = place.sceneKey,
         statusBarColor = HeroDark,
         onClick = { scene ->
             buildMap {
-                shareButton(scene)?.let { node ->
-                    put(node.id) {
-                        val send = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, "Mira ${place.title} en U-Spot: descubre, disfruta y conecta.")
-                        }
-                        context.startActivity(Intent.createChooser(send, "Compartir"))
-                    }
-                }
+                shareButton(scene)?.let { node -> put(node.id) { sharePlace(context, info?.name ?: place.title) } }
             }
         },
+        hide = { scene ->
+            if (info == null) emptySet()
+            else (scene.featureNodes() + listOfNotNull(categoryBadge(scene))).map { it.id }.toSet()
+        },
+        texts = { scene -> info?.let { scene.placeCardTexts(it) } ?: emptyMap() },
         overlay = { scene ->
             // Botón "Volver" dibujado sobre la foto
             Box(
@@ -134,20 +155,165 @@ fun HomePlaceScreen(
                     .clip(CircleShape)
                     .clickable(onClick = onBack)
             )
+            if (info != null) {
+                val features = scene.featureNodes()
+                features.minByOrNull { it.x }?.let { first ->
+                    val right = features.maxOf { it.x + it.w }
+                    PlaceFeatureRow(info, x = first.x, y = first.y, width = right - first.x, wifi = true, own = scene)
+                }
+                categoryBadge(scene)?.let { badge ->
+                    HeroCategoryBadge(info.category.singular, Modifier.placeAt(badge.x.dp, badge.y.dp, 200.dp, badge.h.dp))
+                }
+            }
             val share = shareButton(scene)
             val top = share?.let { it.y + it.h + 20f } ?: 720f
-            CommentsSection(
-                placeKey = place.key,
-                user = user,
-                modifier = Modifier
+            Column(
+                Modifier
                     .padding(top = top.dp, start = 16.dp, end = 16.dp)
                     .fillMaxWidth()
-            )
+            ) {
+                if (info != null) {
+                    PlaceInfoSection(info, showName = true, cardColor = cardColor(scene))
+                    Spacer(Modifier.height(24.dp))
+                }
+                CommentsSection(placeKey = place.key, user = user, modifier = Modifier.fillMaxWidth())
+            }
         }
     )
 }
 
-private fun shareButton(scene: Scene) = scene.firstNode { it.name == "Compartir Button" }
+/**
+ * Detalle de un lugar de la base de datos sin pantalla propia en Figma. Sigue el diseño de
+ * "Home App (Restaurantes)": foto (la de su categoría), tarjeta blanca con nombre, rasgos, distancia,
+ * ambiente, "Información" y "Compartir" (piezas copiadas de la pantalla de Figma de su categoría, con sus colores) y los comentarios.
+ */
+@Composable
+fun PlaceDetailScreen(
+    place: Place,
+    user: UserProfile = UserProfile.Preview,
+    onBack: () -> Unit = {}
+) {
+    val context = LocalContext.current
+    LightStatusBarIcons()
+    val template = rememberScene(place.category.style.template)
+    val nav = rememberScene("place_wok")?.firstNode { it.name == "Top Action Navigation Bar" } as? SceneNode.Picture
+    val badge = rememberScene(place.category.sceneKey)?.find(place.category.badgeId) as? SceneNode.Picture
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .imePadding()
+            .verticalScroll(rememberScrollState())
+    ) {
+        Spacer(Modifier.fillMaxWidth().height(statusBarHeight()).background(HeroDark))
+        FigmaWidthScale(412f) {
+            Box(Modifier.fillMaxWidth()) {
+                // Foto de la categoría con el degradado oscuro de Figma
+                Box(Modifier.placeAt(0.dp, 0.dp, 412.dp, 268.dp).background(HeroDark)) {
+                    SceneImage(place.photo, Modifier.fillMaxSize(), crop = true)
+                    Box(
+                        Modifier.fillMaxSize().background(
+                            Brush.verticalGradient(0f to Color(0x80000000), 0.5f to Color(0x00000000), 1f to Color(0x4D000000))
+                        )
+                    )
+                }
+                // Botones "Volver" y favorito de Figma
+                nav?.let { nav ->
+                    SceneImage(nav.src, Modifier.placeAt(nav.x.dp, nav.y.dp, nav.w.dp, nav.h.dp))
+                }
+                Box(
+                    Modifier
+                        .placeAt(12.dp, 2.dp, 48.dp, 48.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onBack)
+                )
+                HeroCategoryBadge(place.category.singular, Modifier.placeAt(16.dp, 160.dp, 200.dp, 30.dp))
+
+                Column(
+                    Modifier
+                        .padding(top = 198.dp)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp))
+                        .background(Color.White)
+                        .padding(horizontal = 13.dp)
+                ) {
+                    Spacer(Modifier.height(16.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier.size(56.dp, 58.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (badge != null) SceneImage(badge.src, Modifier.size(56.dp))
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                place.name,
+                                style = jakartaText(20.sp, 25.sp, Color(0xFF0F172A), FontWeight.Bold, letterSpacing = (-0.5).sp),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                "${place.category.singular} • ${place.address}",
+                                style = jakartaText(12.sp, 16.sp, Color(0xFF64748B), FontWeight.Medium)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(18.dp))
+                    Box(Modifier.fillMaxWidth().height(89.dp)) {
+                        PlaceFeatureRow(place, x = 0f, y = 0f, width = 386f, wifi = false)
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    if (template != null) {
+                        val texts = template.placeCardTexts(place)
+                        Box(Modifier.fillMaxWidth().height(86.dp)) {
+                            template.firstNode { it.name == "Distance Card" }?.let {
+                                FigmaSceneNode(template, it, dx = -it.x, dy = -it.y, texts = texts)
+                            }
+                            template.firstNode { it.name == "Atmosphere Card" }?.let {
+                                FigmaSceneNode(template, it, dx = 386f - it.w - it.x, dy = -it.y, texts = texts)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(24.dp))
+                    PlaceInfoSection(place, showName = false, cardColor = cardColor(template), modifier = Modifier.padding(horizontal = 3.dp))
+                    Spacer(Modifier.height(20.dp))
+                    shareButton(template)?.let { share ->
+                        Box(Modifier.fillMaxWidth().height(share.h.dp)) {
+                            FigmaSceneNode(
+                                template!!, share,
+                                dx = (386f - share.w) / 2f - share.x, dy = -share.y,
+                                onClick = mapOf(share.id to { sharePlace(context, place.name) })
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(20.dp))
+                    CommentsSection(placeKey = place.id, user = user, modifier = Modifier.padding(horizontal = 3.dp).fillMaxWidth())
+                }
+            }
+        }
+    }
+}
+
+private fun shareButton(scene: Scene?) = scene?.firstNode { it.name == "Compartir Button" }
+
+/** Color de las tarjetas "Distancia" / "Ambiente" de la pantalla (para el bloque "Información"). */
+private fun cardColor(scene: Scene?): Color =
+    (scene?.firstNode { it.name == "Distance Card" } as? SceneNode.Frame)?.fills?.firstOrNull() ?: Color(0xFFEDF7F9)
+
+/** Etiqueta de categoría sobre la foto ("Cafetería Category Badge", "Museo Category Badge"...). */
+private fun categoryBadge(scene: Scene) =
+    scene.firstNode { it is SceneNode.Frame && it.name.endsWith("Category Badge") && it.y < 200f }
+
+private fun sharePlace(context: android.content.Context, name: String) {
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, "Mira $name en U-Spot: descubre, disfruta y conecta.")
+    }
+    context.startActivity(Intent.createChooser(send, "Compartir"))
+}
 
 /** La foto del encabezado es oscura: íconos claros en la barra de estado mientras se ve esta pantalla. */
 @Composable

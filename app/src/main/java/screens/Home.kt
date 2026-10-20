@@ -2,8 +2,10 @@ package screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,7 +13,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,12 +30,26 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import data.HomeCategory
+import data.HomePlace
+import data.Place
+import data.forFigma
+import data.rememberPlaces
 import decorations.FigmaScene
+import decorations.SceneImage
+import decorations.app_fonts
+import decorations.figmaText
+import decorations.singular
 import decorations.FigmaSceneNode
 import decorations.FigmaWidthScale
 import decorations.Scene
@@ -51,28 +74,43 @@ private enum class HomeDialog { None, AskLogout, LoggedOut }
 fun HomeScreen(
     userName: String = "Alejandro",
     onCategory: (HomeCategory) -> Unit = {},
+    /** Abre el detalle de un lugar por su clave de ruta (HomePlace.key o Place.id). */
+    onPlace: (String) -> Unit = {},
     onProfile: () -> Unit = {},
     onLogout: () -> Unit = {},
     onGoToLogin: () -> Unit = {}
 ) {
     var showMore by rememberSaveable { mutableStateOf(false) }
     var dialog by rememberSaveable { mutableStateOf(HomeDialog.None) }
+    val places = rememberPlaces()
+    // Fotos de Figma de los lugares que reemplazan a La Embajada y El Mono Bandido
+    val photos = featuredCards.mapNotNull { f ->
+        val (node, sceneKey, photo) = f.image ?: return@mapNotNull null
+        (rememberScene(sceneKey)?.find(photo) as? SceneNode.Picture)?.let { node to it.src }
+    }.toMap()
 
     Box(Modifier.fillMaxSize()) {
         SceneScreen(
             // Siempre la pantalla 435:654; "Ver todos" solo cambia la fila de categorías (ver MoreCategories)
             sceneKey = "dash_main",
             statusBarColor = app_colors.white,
-            onClick = { dashboardClicks(onCategory, onProfile, { showMore = true }, { dialog = HomeDialog.AskLogout }) },
+            onClick = {
+                dashboardClicks(onCategory, onProfile, { showMore = true }, { dialog = HomeDialog.AskLogout }) +
+                    featuredCards.associate { it.card to { onPlace(it.route) } }
+            },
+            texts = { featuredTexts(places) },
+            images = { photos },
             hide = { scene ->
                 val ids = greetingNodes(scene).map { it.id }.toMutableSet()
                 // La fila de Figma (5 categorías) se dibuja aparte con 4: ver MainCategories
                 ids += MAIN_CATEGORY_ROW
+                ids += featuredHidden()
                 if (showMore) ids += MAIN_SEE_ALL
                 ids
             },
             overlay = { scene ->
                 Greeting(scene, userName)
+                FeaturedInfo(scene, places)
                 if (showMore) MoreCategories(onCategory = onCategory, onBack = { showMore = false })
                 else MainCategories(scene, onCategory)
             }
@@ -133,6 +171,150 @@ private fun Greeting(scene: Scene, userName: String) {
         }
     }
 }
+
+/**
+ * Tarjetas de lugares del dashboard ("Cerca de ti" y "Recomendado para ti") con datos reales.
+ * Juan Valdez Café es la pantalla de Juan Valdez de Cafés; "La Embajada" y "El Mono Bandido" no
+ * están en la base de datos y se reemplazaron (decisión del equipo) por BBC Bodega Las Aguas y el
+ * Museo del Oro. Se conserva el diseño de Figma; lo que eran textos de relleno ("$$", etiquetas,
+ * descripción) pasa a ser el precio, el horario, Nequi y los rasgos reales del lugar.
+ */
+private class FeaturedCard(
+    val card: String,
+    val route: String,
+    /** Título de Figma que se cambia por el nombre del lugar (null: se deja el de Figma). */
+    val title: String?,
+    /** Foto de Figma que se cambia por la del lugar: (nodo, escena e id de la foto de su pantalla). */
+    val image: Triple<String, String, String>?,
+    /** "$$" de Figma y fila de etiquetas, que se reemplazan por los datos reales. */
+    val price: String,
+    val tags: String,
+    val distance: String
+)
+
+private val nearCards = listOf(
+    FeaturedCard("435:945", HomePlace.JUAN_VALDEZ.key, null, null, "435:966", "435:967", "435:950"),
+    FeaturedCard(
+        "435:996", HomePlace.BBC.key, "435:1006",
+        Triple("435:999", HomePlace.BBC.sceneKey, "523:1228"), "435:1017", "435:1018", "435:1001"
+    )
+)
+
+/** "Recomendado para ti": la fila "• $$ • 1.4 km" (432:589) y la descripción (432:615) también cambian. */
+private val recommended = FeaturedCard(
+    "432:573", HomePlace.MUSEO_ORO.key, "432:588",
+    Triple("432:576", HomePlace.MUSEO_ORO.sceneKey, "493:4521"), "432:589", "432:606", "432:605"
+)
+private const val RECOMMENDED_TEXT = "432:615"
+private const val RECOMMENDED_PIN = "432:603"
+
+private val featuredCards = nearCards + recommended
+
+private fun List<Place>.of(f: FeaturedCard): Place? =
+    HomePlace.fromKey(f.route)?.let { forFigma(it) } ?: firstOrNull { it.id == f.route }
+
+private fun featuredHidden(): Set<String> = featuredCards.flatMap { listOf(it.price, it.tags) }.toSet()
+
+private fun featuredTexts(places: List<Place>): Map<String, String> = buildMap {
+    for (f in nearCards) {
+        val place = places.of(f) ?: continue
+        f.title?.let { put(it, place.name) }
+        put(f.distance, "A ${place.distance}")
+    }
+    places.of(recommended)?.let { place ->
+        recommended.title?.let { put(it, place.name) }
+        put(RECOMMENDED_TEXT, "Horario: ${place.hours}\n${place.address}")
+    }
+}
+
+/** Etiquetas de Figma de estas tarjetas: verde (categoría), azul / índigo y ámbar. */
+private class HomeTag(val bg: Color, val border: Color?, val text: Color)
+
+private val nearTags = listOf(
+    HomeTag(Color(0xFFF0FDFA), Color(0x80CCFBF1), Color(0xFF0F766E)),
+    HomeTag(Color(0xFFEFF6FF), Color(0x80DBEAFE), Color(0xFF1D4ED8))
+)
+private val recommendedTags = listOf(
+    HomeTag(Color(0xFFF0FDFA), null, Color(0xFF0F766E)),
+    HomeTag(Color(0xFFEEF2FF), null, Color(0xFF4338CA)),
+    HomeTag(Color(0xFFFFF2CD), null, Color(0xFF78350F))
+)
+
+private val Muted = Color(0xFF64748B)
+
+private fun interText(size: Float, line: Float, color: Color, weight: FontWeight = FontWeight.Medium) =
+    figmaText(app_fonts.inter, size.sp, line.sp, color, weight)
+
+/** Datos reales sobre las tarjetas: precio, Nequi, horario y etiquetas (en el lugar de los de Figma). */
+@Composable
+private fun FeaturedInfo(scene: Scene, places: List<Place>) {
+    for (f in nearCards) {
+        val place = places.of(f) ?: continue
+        val price = scene.find(f.price) ?: continue
+        val tags = scene.find(f.tags)
+        val x = price.x
+        Column(Modifier.placeAt(x.dp, price.y.dp, 183.dp, 36.dp)) {
+            Text(
+                buildAnnotatedString {
+                    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = Color(0xFF334155))) { append(place.price) }
+                    if (place.nequi) append("  ·  Acepta Nequi")
+                },
+                style = interText(11f, 16.5f, Muted),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.Schedule, contentDescription = null, tint = Muted, modifier = Modifier.size(11.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(place.hours, style = interText(10.5f, 16f, Muted), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        if (tags != null) {
+            val labels = listOf(place.category.singular, if (place.quiet) "Ambiente tranquilo" else "Ideal para grupos")
+            Row(
+                Modifier.placeAt(x.dp, (tags.y + tags.h - 21f).dp, 190.dp, 21.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                labels.forEachIndexed { i, label -> HomeTagChip(label, nearTags[i], 21f, FontWeight.Medium) }
+            }
+        }
+    }
+
+    val place = places.of(recommended) ?: return
+    val row = scene.find(recommended.price) ?: return
+    val pin = scene.find(RECOMMENDED_PIN) as? SceneNode.Picture
+    Row(Modifier.placeAt(row.x.dp, row.y.dp, row.w.dp, row.h.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("•  ${place.price}  •  ", style = interText(11f, 16.5f, Muted, FontWeight.Normal), maxLines = 1)
+        if (pin != null) SceneImage(pin.src, Modifier.size(10.dp))
+        Spacer(Modifier.width(2.dp))
+        Text(place.distance, style = interText(11f, 16.5f, Color(0xFF0D9488), FontWeight.SemiBold), maxLines = 1)
+    }
+    scene.find(recommended.tags)?.let { tags ->
+        val labels = listOf(
+            place.category.singular,
+            if (place.study) "Apto para estudiar" else if (place.group) "Grupos" else "Persona sola",
+            if (place.quiet) "Ambiente tranquilo" else "Ambiente animado"
+        )
+        Column(Modifier.placeAt(tags.x.dp, (tags.y + 6.5f).dp, tags.w.dp, 44.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                HomeTagChip(labels[0], recommendedTags[0], 19f, FontWeight.SemiBold)
+                HomeTagChip(labels[1], recommendedTags[1], 19f, FontWeight.SemiBold)
+            }
+            HomeTagChip(labels[2], recommendedTags[2], 19f, FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun HomeTagChip(label: String, tag: HomeTag, height: Float, weight: FontWeight) {
+    val shape = RoundedCornerShape(6.dp)
+    var mod = Modifier.height(height.dp).clip(shape).background(tag.bg)
+    if (tag.border != null) mod = mod.border(1.dp, tag.border, shape)
+    Box(mod.padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+        Text(label, style = interText(10f, 15f, tag.text, weight), maxLines = 1)
+    }
+}
+
 
 /** Fila de categorías (5 en Figma) y enlace "Ver todos →" de la pantalla 435:654. */
 private const val MAIN_CATEGORY_ROW = "435:771"

@@ -1,0 +1,162 @@
+# Foto de cada lugar (data_import/descargar_fotos.sh la baja a assets/figma/img/place_<id>.jpg).
+# id | archivo en Wikimedia Commons (o LOCAL:<foto ya en assets>) | licencia | autor | 1 = foto del local real, 0 = foto de referencia del mismo tipo
+restaurante-la-puerta-falsa | LOCAL:cat_restaurantes.jpg | CC BY 2.0 | William Neuheisel | 1
+cafe-pasaje | LOCAL:cat_cafes.jpg | CC BY-SA 2.0 | Juan Carlos Pachón | 1
+bogota-beer-company-bbc | LOCAL:cat_bares.jpg | CC BY 2.0 | Andres Rueda | 1
+teatro-colon-bogota | LOCAL:cat_teatros.jpg | CC BY-SA 3.0 | Ricardoinbaviera | 1
+funicular-de-monserrate | LOCAL:cat_ocio.jpg | CC BY 2.0 | Paul from Hacketts Cove | 1
+museo-botero | LOCAL:cat_museos.jpg | CC BY-SA 3.0 | Felipe Restrepo Acosta | 1
+museo-de-arte-moderno-de-bogota-mambo | e/ec/Museo_de_Arte_Moderno_de_Bogot%C3%A1_-_MAMBO_1.jpg | CC BY-SA 4.0 | Gregorio.Diaz.Fotografo | 1
+casa-museo-francisco-jose-de-caldas | 7/75/Casa_del_Sabio_Francisco_Jos%C3%A9_de_Caldas%2C_Bogot%C3%A1.JPG | CC BY-SA 3.0 | JuanGris (Lucía Estévez) | 1
+museo-colonial | 4/44/Museo_AColonialB.jpg | CC BY-SA 4.0 | Baiji | 1
+museo-de-bogota-casa-samano | 7/7d/Casa_que_habit%C3%B3_el_Virrey_S%C3%A1mano_1.jpg | CC BY-SA 3.0 | Martinduquea | 1
+museo-militar-de-colombia | 7/78/Museo_Militar_-_Bogot%C3%A1_-_Colombia_2024.jpg | CC BY-SA 4.0 | José Luiz | 1
+museo-santa-clara | 1/15/Museo_Iglesia_Santa_Clara_%28Bogot%C3%A1%29_03.JPG | CC BY-SA 3.0 | Racso (Oscar Fernando Gómez) | 1
+casa-museo-quinta-de-bolivar | 3/3b/Habitaci%C3%B3n_de_Sim%C3%B3n_Bol%C3%ADvar_en_la_Quinta_de_Bol%C3%ADvar._Bogot%C3%A1..jpg | CC BY-SA 3.0 | Kamilokardona | 1
+planetario-de-bogota | a/a1/Planetario_de_Bogot%C3%A1.JPG | CC BY-SA 3.0 | Felipe Restrepo Acosta | 1
+museo-casa-de-moneda | 5/50/Casa_de_Moneda_%28Bogot%C3%A1%29_02.JPG | CC BY-SA 3.0 | Racso (Oscar Fernando Gómez) | 1
+museo-de-arte-miguel-urrutia-mamu | 1/16/Museo_de_Arte_Miguel_Urrutia_-_Sala_arte_colonial_-_c10.jpg | CC BY-SA 4.0 | SajoR | 1
+museo-de-la-independencia-casa-del-florero | b/b9/%C2%ABMuseo_de_la_Independencia_Casa_del_Florero%C2%BB_-_panoramio.jpg | CC BY 3.0 | DnTrotaMundos | 1
+teatro-jorge-eliecer-gaitan | e/e4/Frisos_Teatro_Jorge_Eli%C3%A9cer_Gait%C3%A1n.JPG | CC BY-SA 3.0 | Felipe Restrepo Acosta | 1
+teatro-al-aire-libre-la-media-torta | d/dd/La_Media_Torta.jpg | CC BY-SA 4.0 | Peter Angritt | 1
+teatro-libre-sede-centro | d/dc/Teatro_Libre_de_Bogot%C3%A1.JPG | CC BY-SA 3.0 | Felipe Restrepo Acosta | 1
+quisco-de-la-luz | 5/5e/2019_Bogot%C3%A1_-_Quiosco_de_la_Luz.jpg | CC BY-SA 4.0 | Felipe Restrpo Acosta | 1
+plaza-cultural-la-santamaria | 1/1e/Plaza_de_Toros_de_Santamar%C3%ADa_%28Diciembre_1979%29.jpg | CC BY-SA 4.0 | Peter Angritt; photographer unknown | 1
+teleferico-de-monserrate | 0/0e/Telef%C3%A9rico_a_Monserrate.JPG | CC BY-SA 4.0 | Cescac | 1
+garcia-marquez-center-the-original | 9/94/Bogot%C3%A1_edificio_Centro_Cultural_Gabriel_Garc%C3%ADa_M%C3%A1rquez_La_Candelaria.JPG | CC BY-SA 4.0 | Felipe Restrepo Acosta | 1
+juan-valdez-cafe | c/c1/Juan_Valdez_140_E_57th_St_jeh.jpg | CC0 | Jim.henderson | 1
+juan-valdez-museo-nacional | a/a8/Coffee_brewing_at_Juan_Valdez%2C_Cartagena%2C_Colombia_%2824452131592%29.jpg | CC BY-SA 2.0 | Joe Ross from Lansing, Michigan | 1
+crepes-waffles-centro-internacional | c/c3/Crepes_%26_Waffles_in_Quito.jpg | CC BY-SA 4.0 | David Adam Kess | 1
+papa-john-s-cityu | 8/8d/A_Papa_John%27s_pizza_restaurant_in_Asheville%2C_North_Carolina_03.jpg | CC BY 4.0 | Harrison Keely | 1
+subway-cityu | 3/33/Entrance_to_a_Subway_restaurant_in_Foggy_Bottom.jpg | CC BY-SA 4.0 | Ser Amantio di Nicolao | 1
+wingstop-uniandes | 3/3d/Wingstop_wings.jpg | CC BY-SA 2.5 | 3HeadedMonster | 1
+100-montaditos-cityu | c/cf/Cervecer%C3%ADa_100_Montaditos.JPG | CC BY-SA 4.0 | Calapito | 1
+bbc-bodega-terraza-pasteur | b/bf/Bogot%C3%A1_Beer_Company.jpg | CC BY-SA 3.0 | Haakon S. Krohn | 1
+libreria-instituto-colombiano-de-antropologia-e-historia | d/d6/Casa_misional_del_Instituto_Colombiano_de_Antropolog%C3%ADa_e_Historia_%28ICANH%29.jpg | CC BY-SA 4.0 | Editor1303 | 1
+revellion-cultu-bar | 1/1b/Carolina_Queer_Cafe_and_Bar_entrance.jpg | CC BY-SA 4.0 | BlankEclair | 0
+360-cafe-bar | 0/07/Taiwan_Zakka_Cafe_and_Spain_Bar_in_Ebisu.jpg | CC0 | Syced | 0
+dona-ceci | b/b7/Craft_Beer_Co.%2C_Hatton_Garden%2C_EC1_%285886174708%29.jpg | CC BY-SA 2.0 | Ewan Munro from London, UK | 0
+el-irish-pub-candelaria | 7/73/County_Clare_-_Ballyvaghan_-_Monk%27s_Seafood_Pub_%5E_Restaurant_Interior_-_Pub_-_geograph.org.uk_-_4010110.jpg | CC BY-SA 2.0 | Suzanne Mischyshyn | 0
+terraza-gascon | 9/93/Mercado_dos_Lavradore_Rooftop_Terrace_and_Bar_%2853383981615%29.jpg | CC BY 2.0 | Michael Gaylard from Horsham, UK | 0
+el-senor-tango | 8/88/Tango_Porte%C3%B1o.jpg | CC BY-SA 4.0 | Manticora87 | 0
+cerveceria-irlandesa | 3/3b/Guiry%27s%2C_interior_of_the_pub_-_geograph.org.uk_-_2434107.jpg | CC BY-SA 2.0 | Pamela Norrington | 0
+cerveceria-turmeque-centro-internacional | d/db/Craft_beer_display.jpg | CC BY-SA 4.0 | Secretlondon | 0
+san-antonio-cafe-ancestral | 3/34/Cappuccino_and_cookie.jpg | CC BY-SA 4.0 | TricksterWildcat | 0
+cafe-oma | 3/3f/Classical_Cappuccino_in_Savour_Cafe.jpg | CC BY-SA 4.0 | Peachyeung316 | 0
+ambrosia-drinks-delicatessen | 4/47/Fruit_juice_vendor_in_Jamaa_El_Fna%2C_Marrakech%2C_20250125_1346_7258.jpg | CC BY 4.0 | Jakub Hałun | 0
+cafe-magola-buendia | https://upload.wikimedia.org/wikipedia/commons/b/b8/Cappuccino_milk_froth.jpg | CC BY 3.0 | Christos Andrews | 0
+la-tregua-cafe-sede-aguas | 1/1e/A-cup-of-cappuccino-coffee-dar-es-salaam-cafe.jpg | CC BY-SA 4.0 | Aneth David (SLU) | 0
+panaderia-dona-blanca | f/f8/Bread_Ahead_Vanilla_Doughnuts.jpg | CC BY 2.0 | Catherine Sharman | 0
+colo-coffee-candelaria | 3/3b/Barista_prepares_espresso_at_coffee_shop.jpg | CC BY 2.0 | Shixart1985 | 0
+cafe-del-rio | d/d8/Croissant_and_coffee_at_L%C3%A4nsiterminaali_2.jpg | CC BY-SA 4.0 | JIP | 0
+arte-y-pasion-cafe | 9/98/A_cup_of_cappuccino.jpg | CC BY 4.0 | Vee Satayamas | 0
+cafe-casa-galeria | a/ab/Cappuccino%2C_cookies%2C_flowers_in_glass.jpg | CC0 | Deepak-nsk | 0
+cafe-cecile | a/a3/Davidstern_auf_Cappuccino_%283154015150%29.jpg | CC BY-SA 2.0 | Cornelius Kibelka from Berlin, Germany | 0
+el-establo-de-pegaso-libro-cafe | 8/80/Bella_Judie%2C_book_caf%C3%A9_in_Taipei.jpg | CC BY-SA 4.0 | Johan Jönsson (Julle) | 0
+gracia-coffee-brunch | b/b1/Cappuccino-cup_20230110_104449.jpg | CC BY-SA 4.0 | Ioacc1234red | 0
+hibrido-cafe-bar | 6/61/The_Handle_Bar_Cafe_and_Kitchen_-_geograph.org.uk_-_7687638.jpg | CC BY-SA 2.0 | Philip Halling | 0
+la-tregua-cafe-candelaria | a/a4/Zlat%C3%A9_cappuccino_v_A-Caffe_v_Gomelu.jpg | CC0 | Ladabohac | 0
+origenes-cafe | c/c2/Coffee_Pour_Over_Setup.jpg | CC BY-SA 4.0 | Cerebral726 | 0
+cafe-jaguar | 6/60/Cappuccino_with_foam.jpg | CC BY-SA 2.0 | Johnny Lopez | 0
+cafe-bacata | 2/27/Cappuccino_-_Wai_Kika_Moo_Kau_2024-01-13.jpg | CC0 | Andy Li | 0
+cafe-origami | 1/1f/Matcha_tea_latte_with_rosetta_latte_art.jpg | CC BY-SA 4.0 | Irvan Ary Maulana | 0
+bebidas-donde-jbs-rodriguez | 0/0e/Juice_bar_selling_oranges%2C_red_apples_and_other_fruits%2C_Clarke_Quay_MRT_station%2C_Singapore.jpg | CC BY-SA 4.0 | Basile Morin | 0
+brio-art-cafe | 0/06/Latte_art.jpg | CC BY-SA 2.0 | Mortefot from Flickr | 0
+templo-te-macarena | 4/45/A_small_cup_of_coffee.JPG | CC BY-SA 2.0 | Julius Schorzman | 0
+pelao-hojaldreria-y-cafe | 5/51/Sliced_Wheat_Bread_National_Bakery_Ooty_Aug25_A7CR_07148.jpg | CC BY-SA 4.0 | Timothy A. Gonsalves | 0
+divino-cafe-especial | c/c8/Latte_Art.jpg | CC BY-SA 4.0 | Lirazelf | 0
+la-puloy-cafeteria | 5/58/Latte_art_at_Balzac%27s.jpg | CC BY 2.0 | Linda N. from Chicago, USA | 0
+quiebracanto | https://upload.wikimedia.org/wikipedia/commons/3/35/Pure_Nightclub_Las_Vegas_Dance_Floor.jpg | CC BY 2.0 | www.bluewaikiki.com | 0
+boogaloop-la-candelaria | d/de/88mph_high_res_illuminated_dance_floor_20260411.jpg | CC BY-SA 4.0 | Alex Sims | 0
+el-coq-candelaria | b/b4/Rote_Sonne_Nightclub_Munich_Dance_Floor.jpg | CC BY-SA 2.0 | viernullvier | 0
+cacao-blunt-disco | d/d8/Charlie_Nightclub_Munich_Dance_Floor_2.jpg | CC BY 2.0 | PFNKIS | 0
+matorral-libreria | b/b2/Greenlight_Bookstore_interior_2026.jpg | CC BY 4.0 | Sashimi-b | 0
+libreria-merlin | 0/0f/Interior_of_Paperchain_Bookstore_August_2026.jpg | CC BY-SA 4.0 | Nick-D | 0
+museo-barcarola | 6/60/Morning%2C_Interior_-_Luce.jpeg | Public domain | Maximilien Luce | 0
+ocio-gallery | f/fc/Interior_of_Christchurch_Art_Gallery%2C_New_Zealand_02.jpg | CC BY-SA 4.0 | Michal Klajban | 0
+espacio-el-dorado-galeria-de-arte | 7/7b/Exhibition_visitors_viewing_artworks_%E2%80%93_United_Art_Zurich_2024_08.jpg | CC BY-SA 4.0 | HonysTorresArt | 0
+parque-del-agua | f/f4/2019_Bogot%C3%A1_-_El_Eje_Ambiental_desde_la_carera_8.jpg | CC BY-SA 4.0 | Felipe Restrepo Acosta | 0
+santuario-de-nuestra-senora-de-monserrate | 5/5b/Bogot%C3%A1%2C_Monserrate%2C_2023-06_CN-02.jpg | CC BY-SA 4.0 | Steffen Schmitz | 0
+sushiman | 0/00/Sushi_platter%2C_Nikko%2C_Japan.jpg | CC BY-SA 4.0 | Joli Rumi | 0
+restaurante-el-antioqueno | 6/62/Bandeja_paisa_30062011.jpg | CC BY-SA 3.0 | Dtarazona | 0
+papotas-gourmet-andes | 1/19/Cajun_fries_from_Popeyes_Louisiana_Kitchen%2C_Stratford%2C_Ontario%2C_2025-08-04.jpg | CC BY-SA 4.0 | Chris Woodrich | 0
+restaurante-el-rincon-del-pacifico | 6/64/Patacones_de_Panam%C3%A1.jpg | CC BY-SA 4.0 | ProtoplasmaKid | 0
+ajiaco-y-frijoles-centro-historico | 0/05/Ajiaco_in_Bogot%C3%A1.jpg | CC BY-SA 4.0 | Bernard Gagnon | 0
+buffet-king-bogota-las-nieves | c/ca/A_modern_restaurant_Thanksgiving_Day_buffet_01.jpg | CC BY 4.0 | Harrison Keely | 0
+noa-cocina-peruana | f/fc/Ceviche_del_Per%C3%BA.jpg | CC BY 3.0 | Manuel González Olaeche | 0
+puerto-arepa | 3/38/Arepa_de_trigo.JPG | CC BY-SA 3.0 | Pintoandres90 | 0
+restobar-by-viajero-bogota | https://upload.wikimedia.org/wikipedia/commons/d/d9/Colombian_Food%2C_Arepas.jpg | CC BY 2.0 | Bertahan Luxing | 0
+super-duper-burgers | 9/9a/Big_Mac_hamburger.jpg | CC0 | Evan-Amos | 0
+pescaderia-brisas-del-caribe | b/b0/Arroz_con_coco%2C_pescado_frito_y_patacones.jpg | CC BY-SA 4.0 | ProtoplasmaKid | 0
+el-gato-gris | c/c9/Ajiaco_en_Iberoconf_2023_06.jpg | CC BY-SA 4.0 | Luis Alvaz | 0
+restaurante-t-bone | 9/9d/Charcoal_Steak.jpg | CC BY-SA 4.0 | WikiForAfrica | 0
+venezuela-bistro | 4/44/Arepa_Boyacense.jpg | CC BY-SA 4.0 | Neoredacturus | 0
+buffalo-wings-city-u | https://upload.wikimedia.org/wikipedia/commons/8/81/Homemade_buffalo_wings.jpg | CC BY 2.0 | stef yau | 0
+elcandelario | e/ef/Manitas_de_Cerdo.jpg | CC BY-SA 4.0 | Xemenendura | 0
+madre | 6/6e/Homemade_Lentil_Soup_-_Lavash_2025-02-10.jpg | CC0 | Andy Li | 0
+pizza-candelaria | d/d4/Margherita_Originale.JPG | CC BY-SA 3.0 | Mario56 | 0
+restaurante-el-son-de-los-grillos | d/d2/Kneading_%22trama%22_in_the_fields_of_Cundinamarca%2C_Colombia.jpg | CC BY-SA 4.0 | SeñorFrodo | 0
+saudade-empanadas | 5/5d/Empanada_colombiana.jpg | CC BY-SA 4.0 | Francesc Fort | 0
+sitio-casa-candelaria | 2/29/Kol-j036-.jpg | CC BY-SA 4.0 | Wojciech Kocot | 0
+the-corner-twelve | b/bd/Club-sandwich.jpg | CC BY 3.0 | Memm | 0
+bruschetta | 8/81/Bruschetta_at_The_Bar_at_MacArthur_Place_-_Sarah_Stierch.jpg | CC BY 4.0 | Missvain | 0
+la-monferrina | d/dc/Bruschetta_06_%28RaBoe%29.jpg | CC BY-SA 3.0 | Ra Boe | 0
+bella-italia | d/de/Margherita_pizza_on_plate.jpg | CC BY 4.0 | Shisma | 0
+longos-macarena | a/ae/Spaghetti_Bolognese_-_Figaros%2C_Brighton_2023-10-06.jpg | CC0 | Andy Li | 0
+tapas-macarena | 6/6d/Paella_de_fruit_de_mer.jpg | CC0 | Wilfredor | 0
+el-viejo-bandoneon | 9/91/Asado_%28argentine_meat%29_2019.jpg | CC BY-SA 4.0 | Robertaleotta2020 | 0
+ilhe-habana | 6/6c/AJM_045_Cuban_Creole_cuisine_.JPG | CC BY-SA 4.0 | Arnoud Joris Maaswinkel | 0
+mamma-mia | a/a3/Eq_it-na_pizza-margherita_sep2005_sml.jpg | CC BY-SA 3.0 | Valerio Capello | 0
+restaurante-tematico-la-jugueteria-macarena | 1/16/Interior_of_Encounter_Restaurant_%26_Bar_at_Los_Angeles_International_Airport_%2811300472816%29.jpg | CC BY 2.0 | Sam Howzit | 0
+romulo-y-remo | c/c6/Pizza_Margherita_%28%29.JPG | CC BY-SA 4.0 | Lombroso | 0
+distrito-salvaje-food-hall | 1/10/Harrods_Food_Hall%2C_Brompton_Road%2C_London_%288487994695%29.jpg | CC BY 2.0 | Love Art Nouveau | 0
+el-patio-cafe | 6/62/Skirt_steak_grilled_arrachera_style.jpg | CC BY-SA 3.0 | Wikiuser100 | 0
+inkai-restaurante | a/ae/Ceviche_yucateco%2C_Mazatl%C3%A1n%2C_6_de_diciembre_de_2022_02.jpg | CC0 | The New Foxy | 0
+lima-restaurante-bar | 1/1b/Ceviche_de_pescado_%28La_Punta%2C_Callao%29.jpg | Public domain | Jorge G. Mori | 0
+pasion-peruana-restaurante | 6/66/Ceviche_ecuador.JPG | CC BY 2.0 | Rinaldo Wurglitsch | 0
+archies-centro-ibis | 6/62/NCI_Visuals_Food_Hamburger.jpg | Public domain | Len Rizzi | 0
+restaurante-gevags-old-tbilisi | 0/08/Old_Tbilisi%2C_Georgian_khachapuri%2C_Georgia.jpg | CC BY 4.0 | Vyacheslav Argenberg | 0
+rincon-casa-de-la-paella | 4/4e/Paella_kamilo.jpg | CC BY-SA 4.0 | 2020 kamilo | 0
+burger-town-centro-internacional | b/b7/Burger_King_double_cheeseburger.jpg | Public domain | Luke | 0
+tolu-restaurante | 0/05/Comida_de_la_Playa_de_Santa_Ver%C3%B3nica.jpg | CC BY-SA 4.0 | PapiPijuan | 0
+voodoo-restaurante | https://upload.wikimedia.org/wikipedia/commons/b/b1/Interior_Cabar%C3%A9.jpg | CC BY-SA 3.0 | Skaaven | 0
+mitad-del-mundo-cocina-ecuatoriana | 7/71/Ecuadorian_food.jpg | CC BY-SA 4.0 | Vapelaez2212 | 0
+restaurante-piqueteadero-carmentea-cerro-de-monserrate | https://upload.wikimedia.org/wikipedia/commons/d/d7/Ajiaco.jpg | CC BY-SA 2.0 | Mauricio Giraldo from Bogotá, Colombia | 0
+wok-museo-nacional | d/d2/Stir_Fry_Wok_-_Free_For_Commercial_Use_-_FFCU_%2827159057131%29.jpg | CC BY-SA 2.0 | Free for Commercial Use | 0
+tanta-pizza-cafe | 0/08/Pizza_Margherita_%E3%83%94%E3%82%B6%E3%83%BB%E3%83%9E%E3%83%AB%E3%82%B2%E3%83%AA%E3%83%BC%E3%82%BF.jpg | CC BY 4.0 | ノボホショコロトソ | 0
+restaurante-mercado-monserrate | 0/0c/Ajiaco_de_olluco.jpg | CC BY 2.0 | inyucho from Holland | 0
+comida-tipica-monserrate-ii | 1/1a/Ajiaco_Chile.jpg | CC BY-SA 2.0 | Dan Lundberg | 0
+el-sazon-de-los-primos-geo | https://upload.wikimedia.org/wikipedia/commons/9/96/Bandeja_Paisa_%2832158390698%29.jpg | CC BY-SA 2.0 | Digitalizando el pasado | 0
+centro-nacional-de-las-artes-delia-zapata-olivella | 1/1d/K%C3%BC%C3%A7%C3%BCk_Tiyatro.jpg | CC BY-SA 4.0 | Gargarapalvin | 0
+corporacion-colombiana-de-teatro-sala-seki-sano | f/fa/Main_stage_in_Nowy_Theatre_in_Zabrze%2C_June_2021.jpg | CC BY-SA 4.0 | MichalPL | 0
+teatro-delia-zapata-olivella | c/c0/The_theatre_stage_and_auditorium_of_the_Peacock_Performing_Arts_Center_in_Hayesville%2C_North_Carolina_03.jpg | CC BY 4.0 | Harrison Keely | 0
+teatro-estudio-calarca-tecal | e/ea/Florida_Studio_Theatre%2C_Keating_Theatre_Interior.jpg | CC BY-SA 3.0 | FST15 | 0
+teatro-taller-de-colombia | a/ae/View_from_the_stage_of_Alexandra_Palace_Theatre_after_1922_refurbishment.png | Public domain | Alexandra Palace | 0
+teatro-del-embuste | 7/7d/Lyric_Theatre_Sydney_-_Wicked_2023_-_front_stage_2.jpg | CC BY-SA 4.0 | Chris.sherlock2 | 0
+teatro-la-candelaria | https://upload.wikimedia.org/wikipedia/commons/7/79/Theatre_Royal_-_Stage_Two_-_geograph.org.uk_-_5858229.jpg | CC BY-SA 2.0 | Evelyn Simak | 0
+el-estruendo-punk-n-roll-bar | https://upload.wikimedia.org/wikipedia/commons/9/90/Moshpit2.jpg | CC BY 2.0 | [][tatu] from Porto Alegre, Brasil | 0
+la-furatena | e/e3/Sofia_Talvik_at_Acoustic_Music_San_Diego_%28AMSD%29_Live_Music_-_3_March_2010.jpg | CC BY 2.0 | SD Dirk from San Diego, USA | 0
+el-bochinche | b/ba/Roberts_Bar_NOLA_Bottles_2.jpg | CC BY 2.0 | Infrogmation of New Orleans | 0
+bar-5-40 | 4/46/Interior_of_Czeczotka_Cocktail_Bar%2C_Krak%C3%B3w%2C_2019.jpg | CC BY-SA 4.0 | Kgbo | 0
+bellagio-bar | 8/8d/DZ6_2331_A_lively_night_at_Basilisk_13_Bar_-_neon_lights_music_and_friends_enjoying_drinks_and_laughter_under_festive_lanterns.jpg | CC BY-SA 4.0 | PattayaPatrol | 0
+el-aventurero | 9/95/Kaapse_Brouwers_beer_glasses.jpg | CC BY 2.0 | hmmmayor | 0
+statua-rota-candelaria | c/c1/The_Butler%2C_Reading%2C_2022-12-11_15.30.22.jpg | CC BY-SA 4.0 | Chris j wood | 0
+tienda-de-esperanza-bar | f/f7/Bar_Glasses_%2837843190506%29.jpg | CC BY 2.0 | Paul Sableman | 0
+la-vuelta-bar | 3/31/Bar_Counter_at_TWA_Flight_Center%2C_1962.jpg | Public domain | Samuel H. Gottscho and William H. Schleisner | 0
+oriental-gastropub | d/df/Story_Bridge_Hotel_06.JPG | CC BY-SA 4.0 | Kgbo | 0
+bar-la-27-bolirana | 1/1f/Juego-de-la-rana-sandoval-de-la-reina-agosto-2023.jpg | CC BY-SA 4.0 | MottaW | 0
+la-escalera-salsa-bar | c/c4/Salsa_band_and_salsa_dancing_-_Fatacil_Agriculture_and_Tourism_Fair_-_Lagoa_-_The_Algarve%2C_Portugal_%281469449571%29.jpg | CC BY 2.0 | Glen Bowman from Newcastle, England | 0
+el-goce-pagano | 1/11/Disco_ball_in_home.jpg | CC BY-SA 4.0 | Santeri Viinamäki | 0
+bolera-san-francisco-bolos | b/b2/AMF_bowling_center.jpg | CC BY-SA 3.0 | TenPinGeek | 0
+politas-pub-billar-y-cafe | a/a1/Billiards_table_4.jpg | CC0 | Kurt Kaiser | 0
+molino-del-boqueron | 0/0f/Panor%C3%A1mica_a_los_cerros_orientales_desde_el_Parque_Olaya.jpg | CC BY 4.0 | Ferferic | 0
+restaurante-bakatta | d/db/Desayuno_t%C3%ADpico.JPG | CC BY-SA 3.0 | Fernando Villafañe Duarte | 0
+compania-casa-de-rey | f/f3/Restaurant_room_of_Amantaka_luxury_Resort_%26_Hotel_in_Luang_Prabang_Laos.jpg | CC BY-SA 4.0 | Basile Morin | 0
+babou | e/e5/Brunch_plate%2C_Berlin.jpg | CC BY-SA 4.0 | Gerda Arendt | 0
+casa-mama-luz | f/fb/Sopa_de_mondongo_del_Chocolos_B_30062011.jpg | CC BY-SA 3.0 | Dtarazona | 0
+inquebrantableco | 0/0b/Fine_Rice.jpg | CC BY-SA 4.0 | Marvellousdurowaiye | 0
+la-noble-restaurante | c/c6/Table_setting%2C_Carnivore%2C_2025_%2801%29.jpg | CC BY-SA 4.0 | Bahnfrend | 0
+origen-bistro | 6/6e/Salmon_dish_at_Bistro_C%2C_Hastings_Street%2C_Noosa_Heads%2C_Queensland.jpg | CC BY-SA 4.0 | Kgbo | 0
+restaurante-aria-candelaria | 5/53/Grilled_chicken_and_risotto.jpg | CC BY-SA 4.0 | Infrogmation of New Orleans | 0
+restaurante-espanol-gaudi | b/b3/Tapas%2C_Madrid.jpg | CC0 | Gerda Arendt | 0
+teatro-la-quinta-porra | 1/1c/Safety_curtain_at_the_Paramount_Theatre%2C_Newcastle_-_Flickr_-_Tyne_%5E_Wear_Archives_%5E_Museums.jpg | No restrictions | Tyne & Wear Archives & Museums | 0

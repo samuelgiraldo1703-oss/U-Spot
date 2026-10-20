@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.shadow.Shadow
@@ -128,6 +129,57 @@ sealed class SceneNode(
         val src: String,
         val tint: Color? = null
     ) : SceneNode(id, name, x, y, w, h, opacity)
+}
+
+/**
+ * Copia del nodo movida [dx] / [dy] dp, con ancho [w] (los hijos quedan centrados en el nuevo
+ * ancho) y con las imágenes cambiadas por [src] cuando devuelve algo. Sirve para reacomodar piezas
+ * de Figma (p. ej. recuadros de rasgos más anchos cuando hay menos).
+ */
+fun SceneNode.copy(dx: Float = 0f, dy: Float = 0f, w: Float = this.w, src: (SceneNode.Picture) -> String? = { null }): SceneNode {
+    val inner = (w - this.w) / 2f
+    fun move(n: SceneNode, ox: Float, oy: Float): SceneNode = when (n) {
+        is SceneNode.Frame -> SceneNode.Frame(
+            n.id, n.name, n.x + ox, n.y + oy, n.w, n.h, n.opacity, n.fills, n.radius, n.stroke, n.shadows, n.clip,
+            n.children.map { move(it, ox, oy) }
+        )
+        is SceneNode.Text -> SceneNode.Text(n.id, n.name, n.x + ox, n.y + oy, n.w, n.h, n.opacity, n.spans, n.alignH, n.alignV, n.resize)
+        is SceneNode.Picture -> SceneNode.Picture(n.id, n.name, n.x + ox, n.y + oy, n.w, n.h, n.opacity, src(n) ?: n.src, n.tint)
+    }
+    return when (this) {
+        is SceneNode.Frame -> SceneNode.Frame(
+            id, name, x + dx, y + dy, w, h, opacity, fills, radius, stroke, shadows, clip,
+            children.map { move(it, dx + inner, dy) }
+        )
+        else -> move(this, dx + inner, dy)
+    }
+}
+
+/**
+ * Imagen "recoloreada": `recolor|<src>|<claro>|<oscuro>|<claro nuevo>|<oscuro nuevo>` (colores
+ * RRGGBB). Cada píxel se ubica entre los dos colores de origen según su luminosidad y se pinta en
+ * el mismo punto entre los dos nuevos. Sirve para usar un icono de Figma con la paleta de otra
+ * categoría cuando esa pantalla no lo trae.
+ */
+fun recolorSrc(src: String, light: Int, dark: Int, newLight: Int, newDark: Int): String =
+    "recolor|$src|%06X|%06X|%06X|%06X".format(light and 0xFFFFFF, dark and 0xFFFFFF, newLight and 0xFFFFFF, newDark and 0xFFFFFF)
+
+private fun recolor(bitmap: android.graphics.Bitmap, light: Int, dark: Int, newLight: Int, newDark: Int): android.graphics.Bitmap {
+    fun lum(c: Int) = 0.299f * ((c shr 16) and 255) + 0.587f * ((c shr 8) and 255) + 0.114f * (c and 255)
+    val l0 = lum(light); val l1 = lum(dark)
+    val out = bitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+    val px = IntArray(out.width * out.height)
+    out.getPixels(px, 0, out.width, 0, 0, out.width, out.height)
+    for (i in px.indices) {
+        val c = px[i]
+        val a = c ushr 24
+        if (a == 0) continue
+        val t = if (l0 == l1) 0f else ((l0 - lum(c)) / (l0 - l1)).coerceIn(0f, 1f)
+        fun ch(shift: Int) = ((((newLight shr shift) and 255) * (1 - t)) + (((newDark shr shift) and 255) * t)).toInt()
+        px[i] = (a shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
+    }
+    out.setPixels(px, 0, out.width, 0, 0, out.width, out.height)
+    return out
 }
 
 class Scene(val key: String, val width: Float, val height: Float, val background: List<Color>, val nodes: List<SceneNode>) {
@@ -229,6 +281,12 @@ object SceneStore {
 
     fun loadImage(context: Context, src: String): ImageBitmap? {
         images.get(src)?.let { return it }
+        if (src.startsWith("recolor|")) {
+            val p = src.split("|")
+            val base = loadImage(context, p[1])?.asAndroidBitmap() ?: return null
+            val c = p.drop(2).map { it.toInt(16) }
+            return recolor(base, c[0], c[1], c[2], c[3]).asImageBitmap().also { images.put(src, it) }
+        }
         val bitmap = runCatching {
             context.assets.open("figma/img/$src").use { BitmapFactory.decodeStream(it) }
         }.getOrNull() ?: return null
@@ -279,7 +337,9 @@ fun FigmaWidthScale(designWidth: Float = 412f, content: @Composable () -> Unit) 
 
 /**
  * Dibuja [scene] en una caja de su tamaño (dp de Figma). [onClick] hace tocables nodos por id;
- * [hide] oculta nodos que la pantalla reemplaza con contenido propio (p. ej. el nombre del usuario).
+ * [hide] oculta nodos que la pantalla reemplaza con contenido propio (p. ej. el nombre del usuario);
+ * [texts] cambia el contenido de textos (con su mismo estilo) y [images] cambia imágenes por otras
+ * de assets/figma/img (recortadas para llenar el nodo), p. ej. con los datos reales de un lugar.
  */
 @Composable
 fun FigmaScene(
@@ -287,6 +347,8 @@ fun FigmaScene(
     modifier: Modifier = Modifier,
     onClick: Map<String, () -> Unit> = emptyMap(),
     hide: Set<String> = emptySet(),
+    texts: Map<String, String> = emptyMap(),
+    images: Map<String, String> = emptyMap(),
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val fills = scene.background
@@ -295,7 +357,7 @@ fun FigmaScene(
             .size(scene.width.dp, scene.height.dp)
             .drawBehind { fills.forEach { drawRect(it) } }
     ) {
-        val ctx = SceneContext(scene, onClick, hide)
+        val ctx = SceneContext(scene, onClick, hide, texts, images)
         for (n in scene.nodes) SceneNodeView(n, 0f, 0f, ctx)
         content()
     }
@@ -306,11 +368,25 @@ fun FigmaScene(
  * Figma. Sirve para llevar una parte de una pantalla a otra (p. ej. la fila "Ver todos").
  */
 @Composable
-fun FigmaSceneNode(scene: Scene, node: SceneNode, dx: Float = 0f, dy: Float = 0f, onClick: Map<String, () -> Unit> = emptyMap()) {
-    SceneNodeView(node, -dx, -dy, SceneContext(scene, onClick, emptySet()))
+fun FigmaSceneNode(
+    scene: Scene,
+    node: SceneNode,
+    dx: Float = 0f,
+    dy: Float = 0f,
+    onClick: Map<String, () -> Unit> = emptyMap(),
+    hide: Set<String> = emptySet(),
+    texts: Map<String, String> = emptyMap()
+) {
+    SceneNodeView(node, -dx, -dy, SceneContext(scene, onClick, hide, texts, emptyMap()))
 }
 
-private class SceneContext(val scene: Scene, val onClick: Map<String, () -> Unit>, val hide: Set<String>)
+private class SceneContext(
+    val scene: Scene,
+    val onClick: Map<String, () -> Unit>,
+    val hide: Set<String>,
+    val texts: Map<String, String>,
+    val images: Map<String, String>
+)
 
 private fun shapeOf(radius: FloatArray?): Shape =
     if (radius == null || radius.all { it == 0f }) RectangleShape
@@ -324,8 +400,12 @@ private fun SceneNodeView(node: SceneNode, parentX: Float, parentY: Float, ctx: 
     if (node.opacity < 1f) mod = mod.alpha(node.opacity)
     when (node) {
         is SceneNode.Frame -> FrameView(node, mod, click, ctx)
-        is SceneNode.Text -> TextView(node, mod.then(clickMod(click)))
-        is SceneNode.Picture -> PictureView(node, mod.then(clickMod(click)))
+        is SceneNode.Text -> TextView(node, mod.then(clickMod(click)), ctx.texts[node.id])
+        is SceneNode.Picture -> {
+            val replacement = ctx.images[node.id]
+            if (replacement != null) SceneImage(replacement, mod.then(clickMod(click)), crop = true)
+            else PictureView(node, mod.then(clickMod(click)))
+        }
     }
 }
 
@@ -450,12 +530,12 @@ private fun BiasAlignmentOf(h: Alignment.Horizontal, v: Alignment.Vertical): Ali
 }
 
 @Composable
-private fun TextView(node: SceneNode.Text, mod: Modifier) {
+private fun TextView(node: SceneNode.Text, mod: Modifier, replacement: String? = null) {
     val align = node.alignment()
     val noWrap = node.resize == "WIDTH_AND_HEIGHT"
     Box(mod, contentAlignment = align) {
         Text(
-            text = node.annotated(),
+            text = if (replacement != null) AnnotatedString(replacement, spanStyleOf(node.spans.first())) else node.annotated(),
             style = node.baseStyle(),
             softWrap = !noWrap,
             modifier = if (noWrap) Modifier.wrapContentSize(align, unbounded = true)
@@ -469,9 +549,12 @@ private fun PictureView(node: SceneNode.Picture, mod: Modifier) {
     SceneImage(node.src, mod, node.tint)
 }
 
-/** Imagen exportada de Figma (assets/figma/img/[src]) estirada al tamaño de [modifier]. */
+/**
+ * Imagen exportada de Figma (assets/figma/img/[src]) estirada al tamaño de [modifier]; con [crop]
+ * se recorta para llenarlo sin deformarse (fotos que no se exportaron a la medida del nodo).
+ */
 @Composable
-fun SceneImage(src: String, modifier: Modifier, tint: Color? = null) {
+fun SceneImage(src: String, modifier: Modifier, tint: Color? = null, crop: Boolean = false) {
     val context = LocalContext.current.applicationContext
     val bitmap by produceState(SceneStore.cachedImage(src), src) {
         if (value == null) value = withContext(Dispatchers.IO) { SceneStore.loadImage(context, src) }
@@ -480,7 +563,7 @@ fun SceneImage(src: String, modifier: Modifier, tint: Color? = null) {
     Image(
         bitmap = b,
         contentDescription = null,
-        contentScale = ContentScale.FillBounds,
+        contentScale = if (crop) ContentScale.Crop else ContentScale.FillBounds,
         colorFilter = tint?.let { ColorFilter.tint(it) },
         modifier = modifier
     )

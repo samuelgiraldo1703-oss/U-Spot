@@ -15,6 +15,13 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Lugares del Home (se cargan con data_import/excel_to_json.ps1): cualquiera los lee; nadie
+    // los modifica desde la app.
+    match /places/{placeId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Comentarios de los lugares del Home: cualquiera los lee; solo usuarios con sesión publican
     // a su nombre (uid propio) y cada autor puede editar o borrar los suyos.
     match /places/{placeId}/comments/{commentId} {

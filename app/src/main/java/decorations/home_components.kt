@@ -33,6 +33,8 @@ fun SceneScreen(
     scrollState: ScrollState = rememberScrollState(),
     onClick: (Scene) -> Map<String, () -> Unit> = { emptyMap() },
     hide: (Scene) -> Set<String> = { emptySet() },
+    texts: (Scene) -> Map<String, String> = { emptyMap() },
+    images: (Scene) -> Map<String, String> = { emptyMap() },
     overlay: @Composable BoxScope.(Scene) -> Unit = {}
 ) {
     val scene = rememberScene(sceneKey)
@@ -61,7 +63,7 @@ fun SceneScreen(
                             .fillMaxWidth()
                             .heightIn(min = scene.height.dp)
                     ) {
-                        FigmaScene(scene, onClick = onClick(scene), hide = hide(scene))
+                        FigmaScene(scene, onClick = onClick(scene), hide = hide(scene), texts = texts(scene), images = images(scene))
                         overlay(scene)
                     }
                 }
@@ -82,6 +84,19 @@ fun Scene.firstNode(predicate: (SceneNode) -> Boolean): SceneNode? {
         return null
     }
     return visit(nodes)
+}
+
+/** Nodos dentro de este (sin incluirlo) que cumplen [predicate], en orden de dibujo. */
+fun SceneNode.descendants(predicate: (SceneNode) -> Boolean): List<SceneNode> {
+    val out = ArrayList<SceneNode>()
+    fun visit(list: List<SceneNode>) {
+        for (n in list) {
+            if (predicate(n)) out.add(n)
+            if (n is SceneNode.Frame) visit(n.children)
+        }
+    }
+    if (this is SceneNode.Frame) visit(children)
+    return out
 }
 
 /** Todos los nodos de la escena que cumplen [predicate], en orden de dibujo. */
