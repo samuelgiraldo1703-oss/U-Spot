@@ -2,6 +2,7 @@ package screens
 
 import android.Manifest
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.ImageDecoder
 import android.net.Uri
@@ -11,21 +12,31 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,6 +49,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.style.TextOverflow
+import com.google.firebase.auth.FirebaseAuth
+import org.json.JSONArray
+import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -87,15 +106,128 @@ private enum class ReportDialog { None, LeaveReport, LeaveImage, LeaveVideo, Ima
 
 private val reportOptions = listOf("Fallo de inicio de sesión", "Enlace roto ", "Actividad mal vinculada", "Otro")
 
+/** Modelo de datos para las solicitudes de reporte de problemas */
+data class ProblemRequest(
+    val id: String,
+    val title: String,
+    val classification: String,
+    val description: String,
+    val email: String,
+    val username: String,
+    val date: String,
+    val status: String,
+    val evidenceName: String? = null
+)
+
+private const val PREFS_REPORTS = "uspot_reports_prefs"
+private const val KEY_REPORTS_JSON = "saved_reports"
+
+private fun loadStoredRequests(context: Context, currentUserEmail: String, currentUserName: String): List<ProblemRequest> {
+    val prefs = context.getSharedPreferences(PREFS_REPORTS, Context.MODE_PRIVATE)
+    val raw = prefs.getString(KEY_REPORTS_JSON, null)
+    if (!raw.isNullOrBlank()) {
+        try {
+            val array = JSONArray(raw)
+            val list = mutableListOf<ProblemRequest>()
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                list.add(
+                    ProblemRequest(
+                        id = obj.optString("id"),
+                        title = obj.optString("title"),
+                        classification = obj.optString("classification"),
+                        description = obj.optString("description"),
+                        email = obj.optString("email"),
+                        username = obj.optString("username"),
+                        date = obj.optString("date"),
+                        status = obj.optString("status"),
+                        evidenceName = if (obj.has("evidenceName") && !obj.isNull("evidenceName")) obj.getString("evidenceName") else null
+                    )
+                )
+            }
+            if (list.isNotEmpty()) return list
+        } catch (_: Exception) {}
+    }
+    val displayUser = if (currentUserName.isNotBlank()) currentUserName else "smorerar"
+    val displayEmail = if (currentUserEmail.isNotBlank()) currentUserEmail else "santiago.morera@utadeo.edu.co"
+    val defaults = listOf(
+        ProblemRequest(
+            id = "USP-1042",
+            title = "Fallo de autenticación con Google institucional",
+            classification = "Fallo de inicio de sesión",
+            description = "Al intentar ingresar con Credential Manager y correo @utadeo.edu.co, la aplicación se cierra inesperadamente.",
+            email = displayEmail,
+            username = displayUser,
+            date = "20 Oct 2026, 14:30",
+            status = "En revisión",
+            evidenceName = "Captura_error_auth.png"
+        ),
+        ProblemRequest(
+            id = "USP-1018",
+            title = "Enlace a Términos de Uso no responde",
+            classification = "Enlace roto ",
+            description = "El botón en el pie de página de la sección de perfil de ayuda no redirige al navegador ni carga el documento.",
+            email = displayEmail,
+            username = displayUser,
+            date = "18 Oct 2026, 10:15",
+            status = "Resuelto",
+            evidenceName = null
+        ),
+        ProblemRequest(
+            id = "USP-0985",
+            title = "Horario incorrecto en cafetería central",
+            classification = "Actividad mal vinculada",
+            description = "El lugar aparece cerrado los sábados a mediodía cuando en realidad presta servicio continuo a estudiantes.",
+            email = displayEmail,
+            username = displayUser,
+            date = "15 Oct 2026, 16:45",
+            status = "En trámite",
+            evidenceName = "Foto_horario_real.jpg"
+        )
+    )
+    saveStoredRequests(context, defaults)
+    return defaults
+}
+
+private fun saveStoredRequests(context: Context, list: List<ProblemRequest>) {
+    val prefs = context.getSharedPreferences(PREFS_REPORTS, Context.MODE_PRIVATE)
+    val array = JSONArray()
+    for (item in list) {
+        val obj = JSONObject().apply {
+            put("id", item.id)
+            put("title", item.title)
+            put("classification", item.classification)
+            put("description", item.description)
+            put("email", item.email)
+            put("username", item.username)
+            put("date", item.date)
+            put("status", item.status)
+            put("evidenceName", item.evidenceName ?: JSONObject.NULL)
+        }
+        array.put(obj)
+    }
+    prefs.edit().putString(KEY_REPORTS_JSON, array.toString()).apply()
+}
+
 /** Figma: los 19 frames "Reporte de Problemas", "Validacion de Imagen", "Cancelacion de Proceso" y "Reporte Enviado". */
 @Composable
 fun ReportProblemScreen(onExit: () -> Unit = {}) {
     val context = LocalContext.current
+    val firebaseUser = remember { FirebaseAuth.getInstance().currentUser }
     var step by rememberSaveable { mutableStateOf(ReportStep.Hub) }
     var dialog by rememberSaveable { mutableStateOf(ReportDialog.None) }
     var option by rememberSaveable { mutableStateOf(-1) }
-    var email by rememberSaveable { mutableStateOf("") }
-    var username by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf(firebaseUser?.email ?: "") }
+    var username by rememberSaveable { mutableStateOf(firebaseUser?.displayName ?: "") }
+    var title by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
+    var selectedRequestId by rememberSaveable { mutableStateOf<String?>(null) }
+    var isRequestsDropdownExpanded by rememberSaveable { mutableStateOf(false) }
+
+    var requestsList by remember {
+        mutableStateOf(loadStoredRequests(context, email, username))
+    }
+
     var mediaUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingCameraUriString by rememberSaveable { mutableStateOf<String?>(null) }
     val mediaUri = mediaUriString?.let { Uri.parse(it) }
@@ -154,8 +286,15 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
         }
     }
 
+    val currentDesignHeight = when {
+        step == ReportStep.Classify && isRequestsDropdownExpanded -> 1550.dp
+        step == ReportStep.Classify && selectedRequestId != null -> 1250.dp
+        step == ReportStep.Classify -> 1100.dp
+        else -> 916.dp
+    }
+
     Box(Modifier.fillMaxSize()) {
-        ProfileCanvas(designHeight = 916.dp) {
+        ProfileCanvas(designHeight = currentDesignHeight) {
             Box(
                 Modifier
                     .figmaPosition(left = (-40).dp, bottom = (-31).dp, width = 130.dp, height = 147.dp)
@@ -184,21 +323,61 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
             )
 
             when (step) {
-                ReportStep.Hub -> HubStep(onOpen = { step = it })
+                ReportStep.Hub -> HubStep(
+                    identifiedUser = if (username.isNotBlank()) username else null,
+                    onOpen = { step = it }
+                )
                 ReportStep.Identify -> IdentifyStep(
                     email = email,
                     onEmailChange = { email = it },
                     username = username,
                     onUsernameChange = { username = it },
-                    onNext = { step = ReportStep.Classify }
+                    onNext = {
+                        // Sincronizar solicitudes con el usuario identificado
+                        requestsList = loadStoredRequests(context, email, username)
+                        step = ReportStep.Classify
+                    }
                 )
                 ReportStep.Classify -> ClassifyStep(
                     selected = option,
                     onSelect = { option = it },
+                    requests = requestsList,
+                    selectedRequestId = selectedRequestId,
+                    isRequestsDropdownExpanded = isRequestsDropdownExpanded,
+                    onToggleRequestsDropdown = { isRequestsDropdownExpanded = !isRequestsDropdownExpanded },
+                    onSelectRequest = { req ->
+                        if (selectedRequestId == req.id) {
+                            selectedRequestId = null
+                            title = ""
+                            description = ""
+                            option = -1
+                        } else {
+                            selectedRequestId = req.id
+                            title = req.title
+                            description = req.description
+                            val matchIndex = reportOptions.indexOfFirst { it.trim().equals(req.classification.trim(), ignoreCase = true) }
+                            if (matchIndex >= 0) {
+                                option = matchIndex
+                            }
+                        }
+                    },
+                    onClearSelection = {
+                        selectedRequestId = null
+                        title = ""
+                        description = ""
+                        option = -1
+                    },
                     onBack = { step = ReportStep.Identify },
                     onNext = { if (option >= 0) step = ReportStep.Details }
                 )
-                ReportStep.Details -> DetailsStep(onBack = { step = ReportStep.Classify }, onNext = { step = ReportStep.Evidence })
+                ReportStep.Details -> DetailsStep(
+                    title = title,
+                    onTitleChange = { title = it },
+                    description = description,
+                    onDescriptionChange = { description = it },
+                    onBack = { step = ReportStep.Classify },
+                    onNext = { step = ReportStep.Evidence }
+                )
                 ReportStep.Evidence -> EvidenceStep(
                     question = null,
                     mediaUri = null,
@@ -247,6 +426,9 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
                 onAction = {
                     email = ""
                     username = ""
+                    title = ""
+                    description = ""
+                    selectedRequestId = null
                     onExit()
                 }
             )
@@ -265,11 +447,30 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
                 }
             )
             ReportDialog.Sent -> SentDialog(onFinish = {
+                val now = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date())
+                val selectedCategory = reportOptions.getOrElse(option) { "Otro" }
+                val newId = "USP-${(1000..9999).random()}"
+                val newReq = ProblemRequest(
+                    id = newId,
+                    title = title.ifBlank { "Reporte de $selectedCategory" },
+                    classification = selectedCategory,
+                    description = description.ifBlank { "Sin descripción adicional" },
+                    email = email.ifBlank { "usuario@utadeo.edu.co" },
+                    username = username.ifBlank { "Usuario Tadeísta" },
+                    date = now,
+                    status = "En revisión",
+                    evidenceName = if (mediaUriString != null) "Evidencia_adjunta.jpg" else null
+                )
+                val updated = listOf(newReq) + requestsList
+                requestsList = updated
+                saveStoredRequests(context, updated)
+
                 dialog = ReportDialog.None
                 option = -1
-                email = ""
-                username = ""
+                title = ""
+                description = ""
                 mediaUriString = null
+                selectedRequestId = newId
                 step = ReportStep.Hub
             })
             ReportDialog.None -> Unit
@@ -305,11 +506,11 @@ private fun BoxScope.SectionRow(top: Dp, title: String, chevron: Boolean = true,
 
 /** Tarjeta desplegada del paso actual (borde turquesa). */
 @Composable
-private fun BoxScope.StepCard(height: Dp, content: @Composable BoxScope.() -> Unit) {
+private fun BoxScope.StepCard(height: Dp, top: Dp = 336.dp, content: @Composable BoxScope.() -> Unit) {
     val shape = RoundedCornerShape(20.dp)
     Box(
         modifier = Modifier
-            .figmaPosition(left = 11.dp, right = 7.dp, top = 336.dp, height = height)
+            .figmaPosition(left = 11.dp, right = 7.dp, top = top, height = height)
             .clip(shape)
             .background(app_colors.white)
             .border(1.dp, app_colors.profileCorner, shape),
@@ -330,13 +531,18 @@ private fun BoxScope.TermsFooter() {
 }
 
 @Composable
-private fun BoxScope.HubStep(onOpen: (ReportStep) -> Unit) {
+private fun BoxScope.HubStep(identifiedUser: String? = null, onOpen: (ReportStep) -> Unit) {
     Image(
         painter = painterResource(R.drawable.report_footer_icon),
         contentDescription = null,
         modifier = Modifier.figmaPosition(left = 187.dp, top = 791.dp, width = 36.dp, height = 36.dp)
     )
-    SectionRow(235.dp, "Identifícate para poder ayudarte") { onOpen(ReportStep.Identify) }
+    val identifyTitle = if (!identifiedUser.isNullOrBlank()) {
+        "Identifícate (✓ $identifiedUser)"
+    } else {
+        "Identifícate para poder ayudarte"
+    }
+    SectionRow(235.dp, identifyTitle) { onOpen(ReportStep.Identify) }
     SectionRow(336.dp, "Clasificación del problema") { onOpen(ReportStep.Classify) }
     SectionRow(437.dp, "Detalles del incidente") { onOpen(ReportStep.Details) }
     SectionRow(538.dp, "Evidencias o pruebas visuales") { onOpen(ReportStep.Evidence) }
@@ -545,10 +751,354 @@ private fun BoxScope.IdentifyStep(
     TermsFooter()
 }
 
+/**
+ * Tarjeta individual para mostrar una solicitud creada dentro de la lista desplegable.
+ * Muestra todos los detalles seleccionados: ID, fecha, estado, clasificación, título, descripción, evidencia y usuario.
+ */
 @Composable
-private fun BoxScope.ClassifyStep(selected: Int, onSelect: (Int) -> Unit, onBack: () -> Unit, onNext: () -> Unit) {
-    SectionRow(235.dp, "Clasificación del problema")
-    StepCard(height = 541.dp) {
+private fun RequestItemCard(
+    req: ProblemRequest,
+    isSelected: Boolean,
+    isCompact: Boolean,
+    onClick: () -> Unit
+) {
+    val cardShape = RoundedCornerShape(14.dp)
+    val cardBg = if (isSelected) app_colors.profileCorner.copy(alpha = 0.18f) else Color(0xFFF6F8FA)
+    val borderColor = if (isSelected) app_colors.formBlue else Color(0x22000000)
+
+    val (statusBg, statusTextColor) = when (req.status) {
+        "Resuelto" -> Color(0xFFD1FAE5) to Color(0xFF047857)
+        "En trámite" -> Color(0xFFDBEAFE) to Color(0xFF1D4ED8)
+        else -> Color(0xFFFEF3C7) to Color(0xFFB45309)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(cardShape)
+            .background(cardBg)
+            .border(if (isSelected) 1.8.dp else 1.dp, borderColor, cardShape)
+            .clickable(onClick = onClick)
+            .padding(12.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "#${req.id}",
+                    style = jakartaText(14.sp, 18.sp, app_colors.cfgTitle, FontWeight.ExtraBold)
+                )
+
+                Spacer(Modifier.width(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(statusBg)
+                        .padding(horizontal = 7.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = req.status,
+                        style = jakartaText(11.sp, 14.sp, statusTextColor, FontWeight.Bold)
+                    )
+                }
+
+                Spacer(Modifier.weight(1f))
+
+                Text(
+                    text = req.date,
+                    style = figmaText(app_fonts.poppins, 11.sp, 14.sp, app_colors.loginPlaceholder)
+                )
+            }
+
+            Spacer(Modifier.height(7.dp))
+
+            // Tag de clasificación seleccionada
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(app_colors.profileCorner.copy(alpha = 0.45f))
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = "🏷️ Clasificación: ${req.classification}",
+                    style = jakartaText(12.sp, 15.sp, app_colors.cfgTitle, FontWeight.Bold)
+                )
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            Text(
+                text = req.title,
+                style = jakartaText(13.5.sp, 18.sp, app_colors.cfgTitle, FontWeight.Bold),
+                maxLines = if (isCompact) 1 else 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            if (!isCompact) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = req.description,
+                    style = jakartaText(12.sp, 16.5.sp, Color(0xFF4A5568), FontWeight.Normal),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(Modifier.height(7.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "👤 ${req.username} (${req.email})",
+                    style = figmaText(app_fonts.poppins, 10.5.sp, 14.sp, app_colors.loginPlaceholder),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+
+                if (req.evidenceName != null) {
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "📎 ${req.evidenceName}",
+                        style = jakartaText(10.5.sp, 14.sp, app_colors.formBlue, FontWeight.Bold)
+                    )
+                }
+            }
+
+            if (isSelected) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "✓ Solicitud seleccionada con sus detalles aplicados",
+                    style = jakartaText(11.5.sp, 15.sp, app_colors.formBlue, FontWeight.Bold)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Lista desplegable ubicada arriba de "Clasificación del problema" para ver las distintas solicitudes
+ * que se han creado con sus detalles seleccionados.
+ */
+@Composable
+private fun BoxScope.RequestsDropdown(
+    top: Dp,
+    requests: List<ProblemRequest>,
+    selectedRequestId: String?,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit,
+    onSelectRequest: (ProblemRequest) -> Unit,
+    onClearSelection: () -> Unit
+) {
+    val shape = RoundedCornerShape(20.dp)
+    val chevronRotation by animateFloatAsState(targetValue = if (isExpanded) 180f else 0f, label = "chevron")
+    val selectedReq = remember(selectedRequestId, requests) {
+        requests.find { it.id == selectedRequestId }
+    }
+
+    Box(
+        modifier = Modifier
+            .figmaPosition(left = 11.dp, right = 7.dp, top = top)
+            .clip(shape)
+            .background(app_colors.white)
+            .border(1.5.dp, app_colors.profileCorner, shape)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            // Fila de encabezado / gatillo del dropdown
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onToggleExpand
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(app_colors.profileCorner.copy(alpha = 0.25f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.report_title_icon),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Solicitudes creadas",
+                            style = jakartaText(16.5.sp, 22.sp, app_colors.cfgTitle, FontWeight.Bold, letterSpacing = (-0.3).sp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(app_colors.profileYellow)
+                                .padding(horizontal = 7.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "${requests.size}",
+                                style = jakartaText(11.sp, 14.sp, app_colors.formBlue, FontWeight.ExtraBold)
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = when {
+                            isExpanded -> "Toca para ocultar las solicitudes registradas"
+                            selectedReq != null -> "Seleccionada: #${selectedReq.id} • ${selectedReq.classification}"
+                            else -> "Despliega para ver detalles de solicitudes anteriores"
+                        },
+                        style = jakartaText(
+                            12.sp,
+                            16.sp,
+                            if (selectedReq != null) app_colors.formBlue else app_colors.loginPlaceholder,
+                            if (selectedReq != null) FontWeight.SemiBold else FontWeight.Normal
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(Modifier.width(8.dp))
+
+                Image(
+                    painter = painterResource(R.drawable.ic_report_chevron_down),
+                    contentDescription = if (isExpanded) "Ocultar" else "Desplegar",
+                    modifier = Modifier
+                        .size(18.dp, 10.dp)
+                        .graphicsLayer { rotationZ = chevronRotation }
+                )
+            }
+
+            // Vista previa de la solicitud seleccionada cuando la lista está colapsada
+            if (!isExpanded && selectedReq != null) {
+                Spacer(Modifier.height(10.dp))
+                HorizontalDivider(color = app_colors.profileCorner.copy(alpha = 0.4f), thickness = 1.dp)
+                Spacer(Modifier.height(10.dp))
+                RequestItemCard(
+                    req = selectedReq,
+                    isSelected = true,
+                    isCompact = true,
+                    onClick = onClearSelection
+                )
+            }
+
+            // Lista desplegada de todas las solicitudes creadas con sus detalles
+            if (isExpanded) {
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider(color = app_colors.profileCorner.copy(alpha = 0.4f), thickness = 1.dp)
+                Spacer(Modifier.height(12.dp))
+
+                Text(
+                    text = "Selecciona una solicitud para revisar sus detalles seleccionados:",
+                    style = jakartaText(12.sp, 16.sp, app_colors.cfgHeading, FontWeight.SemiBold),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (requests.isEmpty()) {
+                        Text(
+                            text = "No has creado solicitudes aún.",
+                            style = jakartaText(13.sp, 18.sp, app_colors.loginPlaceholder),
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
+                    } else {
+                        requests.forEach { req ->
+                            RequestItemCard(
+                                req = req,
+                                isSelected = selectedRequestId == req.id,
+                                isCompact = false,
+                                onClick = { onSelectRequest(req) }
+                            )
+                        }
+                    }
+                }
+
+                if (selectedRequestId != null) {
+                    Spacer(Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(app_colors.loginInput)
+                            .clickable(onClick = onClearSelection)
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "✕ Limpiar selección y reportar nuevo problema",
+                            style = jakartaText(12.sp, 16.sp, app_colors.formBlue, FontWeight.Bold)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.ClassifyStep(
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    requests: List<ProblemRequest>,
+    selectedRequestId: String?,
+    isRequestsDropdownExpanded: Boolean,
+    onToggleRequestsDropdown: () -> Unit,
+    onSelectRequest: (ProblemRequest) -> Unit,
+    onClearSelection: () -> Unit,
+    onBack: () -> Unit,
+    onNext: () -> Unit
+) {
+    val dropdownTop = 225.dp
+    val dropdownEstimatedHeight = when {
+        isRequestsDropdownExpanded -> 460.dp
+        selectedRequestId != null -> 195.dp
+        else -> 66.dp
+    }
+    val sectionTop = dropdownTop + dropdownEstimatedHeight + 14.dp
+    val cardTop = sectionTop + 101.dp
+    val buttonsTop = cardTop + 541.dp + 16.dp
+
+    // 1. Lista desplegable ubicada arriba de "Clasificación del problema"
+    RequestsDropdown(
+        top = dropdownTop,
+        requests = requests,
+        selectedRequestId = selectedRequestId,
+        isExpanded = isRequestsDropdownExpanded,
+        onToggleExpand = onToggleRequestsDropdown,
+        onSelectRequest = onSelectRequest,
+        onClearSelection = onClearSelection
+    )
+
+    // 2. Fila de la sección "Clasificación del problema"
+    SectionRow(top = sectionTop, title = "Clasificación del problema")
+
+    // 3. Tarjeta desplegada con las opciones de Clasificación
+    StepCard(height = 541.dp, top = cardTop) {
         val tops = listOf(16.dp, 116.dp, 216.dp, 326.dp)
         val lefts = listOf(10.dp, 10.dp, 12.dp, 10.dp)
         reportOptions.forEachIndexed { index, label ->
@@ -560,7 +1110,21 @@ private fun BoxScope.ClassifyStep(selected: Int, onSelect: (Int) -> Unit, onBack
                     .background(app_colors.profileCorner)
                     .clickable { onSelect(index) }
             ) {
-                Text(label, style = sectionTitle, modifier = Modifier.offset(20.dp, 27.dp))
+                Column(
+                    modifier = Modifier
+                        .offset(20.dp, if (selectedRequestId != null && index == selected) 16.dp else 27.dp)
+                        .padding(end = 65.dp)
+                ) {
+                    Text(label, style = sectionTitle)
+                    if (selectedRequestId != null && index == selected) {
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = "Detalle seleccionado de la solicitud #$selectedRequestId",
+                            style = jakartaText(11.sp, 14.sp, app_colors.formBlue, FontWeight.Bold)
+                        )
+                    }
+                }
+
                 val radio = Modifier
                     .offset(if (index == 3) 298.dp else 300.dp, if (index == 2) 23.dp else 20.dp)
                     .size(42.dp)
@@ -576,18 +1140,28 @@ private fun BoxScope.ClassifyStep(selected: Int, onSelect: (Int) -> Unit, onBack
             }
         }
     }
-    BackChevron(left = 36.09.dp, top = 819.09.dp, onClick = onBack)
-    ReportButton("Siguiente paso", left = 69.dp, top = 800.dp, arrow = true, onClick = onNext)
+
+    BackChevron(left = 36.09.dp, top = buttonsTop + 19.09.dp, onClick = onBack)
+    ReportButton("Siguiente paso", left = 69.dp, top = buttonsTop, arrow = true, onClick = onNext)
 }
 
 @Composable
-private fun BoxScope.DetailsStep(onBack: () -> Unit, onNext: () -> Unit) {
+private fun BoxScope.DetailsStep(
+    title: String,
+    onTitleChange: (String) -> Unit,
+    description: String,
+    onDescriptionChange: (String) -> Unit,
+    onBack: () -> Unit,
+    onNext: () -> Unit
+) {
     SectionRow(235.dp, "Detalles del incidente")
     StepCard(height = 540.dp) {
         Text("Título", style = sectionTitle, modifier = Modifier.offset(25.dp, 11.dp))
         ReportInput(
             modifier = Modifier.offset(23.dp, 61.dp).size(348.dp, 45.dp),
             placeholder = "Resumen del problema",
+            value = title,
+            onValueChange = onTitleChange,
             required = true,
             icon = {
                 Image(
@@ -606,6 +1180,8 @@ private fun BoxScope.DetailsStep(onBack: () -> Unit, onNext: () -> Unit) {
         ReportInput(
             modifier = Modifier.offset(24.dp, 182.dp).size(348.dp, 239.dp),
             placeholder = "Indiquenos la descipción detallada ",
+            value = description,
+            onValueChange = onDescriptionChange,
             required = true,
             radius = 10.dp,
             singleLine = false,
