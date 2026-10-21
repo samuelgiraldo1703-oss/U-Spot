@@ -1,5 +1,15 @@
 package screens
 
+import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.pm.PackageManager
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,7 +38,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -39,6 +51,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import com.example.u_spot.R
 import decorations.BoxedText
 import decorations.ProfileCanvas
@@ -54,6 +68,7 @@ import decorations.app_fonts
 import decorations.figmaPosition
 import decorations.figmaText
 import decorations.jakartaText
+import java.io.File
 
 /** Pasos del reporte. Cada uno corresponde a uno o varios frames de Figma. */
 private enum class ReportStep {
@@ -75,9 +90,57 @@ private val reportOptions = listOf("Fallo de inicio de sesión", "Enlace roto ",
 /** Figma: los 19 frames "Reporte de Problemas", "Validacion de Imagen", "Cancelacion de Proceso" y "Reporte Enviado". */
 @Composable
 fun ReportProblemScreen(onExit: () -> Unit = {}) {
+    val context = LocalContext.current
     var step by rememberSaveable { mutableStateOf(ReportStep.Hub) }
     var dialog by rememberSaveable { mutableStateOf(ReportDialog.None) }
     var option by rememberSaveable { mutableStateOf(-1) }
+    var mediaUriString by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingCameraUriString by rememberSaveable { mutableStateOf<String?>(null) }
+    val mediaUri = mediaUriString?.let { Uri.parse(it) }
+
+    // Cámara del teléfono con el botón del "Ganchito": abre la cámara y almacena la foto tomada
+    val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        val uriStr = pendingCameraUriString
+        if (ok && uriStr != null) {
+            mediaUriString = uriStr
+            step = ReportStep.PreviewImage
+        }
+    }
+    val openCamera = {
+        val dir = File(context.cacheDir, "camera").apply { mkdirs() }
+        val file = File(dir, "reporte_${System.currentTimeMillis()}.jpg")
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        pendingCameraUriString = uri.toString()
+        try {
+            takePicture.launch(uri)
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(context, "No se encontró una app de cámara", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Galería de fotos con el botón del "Play": abre el selector de fotos del sistema
+    val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            mediaUriString = uri.toString()
+            step = ReportStep.PreviewImage
+        }
+    }
+    val openGallery = {
+        pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+    val requestPhotos = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        if (result.values.any { it }) openGallery()
+        else Toast.makeText(context, "Para elegir una foto, permite que U-Spot acceda a tus fotos", Toast.LENGTH_LONG).show()
+    }
+    val chooseFromGallery = {
+        if (ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(context)) {
+            openGallery()
+        } else {
+            val permissions = galleryPermissions()
+            if (permissions.any { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) openGallery()
+            else requestPhotos.launch(permissions)
+        }
+    }
 
     // El ícono de casa cambia de destino según el paso, igual que en el prototipo.
     val onHome = {
@@ -129,24 +192,38 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
                 )
                 ReportStep.Details -> DetailsStep(onBack = { step = ReportStep.Classify }, onNext = { step = ReportStep.Evidence })
                 ReportStep.Evidence -> EvidenceStep(
-                    question = null, media = null,
+                    question = null,
+                    mediaUri = null,
+                    mediaRes = null,
                     onBack = { step = ReportStep.Details },
-                    onAddImage = { step = ReportStep.PreviewImage },
-                    onAddVideo = { step = ReportStep.PreviewVideo }
+                    onAddCamera = openCamera,
+                    onAddGallery = chooseFromGallery,
+                    onFinish = { dialog = ReportDialog.Sent }
                 )
                 ReportStep.PreviewImage -> EvidenceStep(
-                    question = "¿Deseas usar esta imágen?", media = R.drawable.report_image_sample,
+                    question = "¿Deseas usar esta imágen?",
+                    mediaUri = mediaUri,
+                    mediaRes = if (mediaUri == null) R.drawable.report_image_sample else null,
                     onBack = { step = ReportStep.Details },
+                    onAddCamera = openCamera,
+                    onAddGallery = chooseFromGallery,
                     onConfirm = { dialog = ReportDialog.ImageAttached },
-                    onDiscard = { step = ReportStep.Evidence }
+                    onDiscard = { mediaUriString = null; step = ReportStep.Evidence },
+                    onFinish = { dialog = ReportDialog.Sent }
                 )
                 ReportStep.PreviewVideo -> EvidenceStep(
-                    question = "¿Deseas usar este video?", media = R.drawable.report_video_sample,
+                    question = "¿Deseas usar este video?",
+                    mediaUri = mediaUri,
+                    mediaRes = if (mediaUri == null) R.drawable.report_video_sample else null,
                     onBack = { step = ReportStep.Details },
+                    onAddCamera = openCamera,
+                    onAddGallery = chooseFromGallery,
                     onConfirm = { dialog = ReportDialog.VideoAttached },
-                    onDiscard = { step = ReportStep.Evidence }
+                    onDiscard = { mediaUriString = null; step = ReportStep.Evidence },
+                    onFinish = { dialog = ReportDialog.Sent }
                 )
                 ReportStep.FinalImage, ReportStep.FinalVideo -> FinalStep(
+                    mediaUri = mediaUri,
                     video = step == ReportStep.FinalVideo,
                     onBack = { step = ReportStep.Evidence },
                     onFinish = { dialog = ReportDialog.Sent }
@@ -166,7 +243,7 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
                 warning = if (dialog == ReportDialog.LeaveImage) "No confirmaste la imágen elegiida" else "No confirmaste el video elegiido",
                 action = "Salir", actionX = 164.dp, actionWidth = 39.dp,
                 onBack = { dialog = ReportDialog.None },
-                onAction = { dialog = ReportDialog.None; step = ReportStep.Hub }
+                onAction = { dialog = ReportDialog.None; mediaUriString = null; step = ReportStep.Hub }
             )
             ReportDialog.ImageAttached, ReportDialog.VideoAttached -> AttachedDialog(
                 video = dialog == ReportDialog.VideoAttached,
@@ -178,6 +255,7 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
             ReportDialog.Sent -> SentDialog(onFinish = {
                 dialog = ReportDialog.None
                 option = -1
+                mediaUriString = null
                 step = ReportStep.Hub
             })
             ReportDialog.None -> Unit
@@ -459,12 +537,14 @@ private fun BoxScope.DetailsStep(onBack: () -> Unit, onNext: () -> Unit) {
 @Composable
 private fun BoxScope.EvidenceStep(
     question: String?,
-    @DrawableRes media: Int?,
+    mediaUri: Uri?,
+    @DrawableRes mediaRes: Int?,
     onBack: () -> Unit,
-    onAddImage: () -> Unit = {},
-    onAddVideo: () -> Unit = {},
+    onAddCamera: () -> Unit = {},
+    onAddGallery: () -> Unit = {},
     onConfirm: () -> Unit = {},
-    onDiscard: () -> Unit = {}
+    onDiscard: () -> Unit = {},
+    onFinish: () -> Unit = {}
 ) {
     SectionRow(235.dp, "Evidencias o pruebas visuales")
     StepCard(height = 535.dp) {
@@ -473,7 +553,7 @@ private fun BoxScope.EvidenceStep(
             style = sectionTitle,
             modifier = Modifier.offset(25.dp, 28.dp)
         )
-        if (media == null) {
+        if (mediaUri == null && mediaRes == null) {
             Image(
                 painter = painterResource(R.drawable.report_media_placeholder),
                 contentDescription = null,
@@ -484,7 +564,11 @@ private fun BoxScope.EvidenceStep(
                     .border(1.dp, app_colors.black, RoundedCornerShape(10.dp))
             )
         } else {
-            MediaBox(media, Modifier.offset(23.dp, 81.dp))
+            MediaBox(
+                mediaUri = mediaUri,
+                fallbackRes = mediaRes ?: R.drawable.report_image_sample,
+                modifier = Modifier.offset(23.dp, 81.dp)
+            )
             Image(
                 painter = painterResource(R.drawable.report_confirm),
                 contentDescription = "Usar",
@@ -496,44 +580,85 @@ private fun BoxScope.EvidenceStep(
                 modifier = Modifier.offset(322.dp, 366.dp).size(49.dp, 56.dp).clickable(onClick = onDiscard)
             )
         }
-        AttachButtons(onAddImage, onAddVideo)
+        AttachButtons(onOpenCamera = onAddCamera, onOpenGallery = onAddGallery)
     }
     BackChevron(left = 40.09.dp, top = 816.09.dp, onClick = onBack)
-    ReportButton("Terminar reporte", left = 75.dp, top = 795.dp, arrow = false, onClick = {})
+    ReportButton("Terminar reporte", left = 75.dp, top = 795.dp, arrow = false, onClick = onFinish)
 }
 
+/** Botones para adjuntar evidencia: "Ganchito" (cámara) y "Play" (galería de fotos). */
 @Composable
-private fun BoxScope.AttachButtons(onAddImage: () -> Unit, onAddVideo: () -> Unit) {
+private fun BoxScope.AttachButtons(onOpenCamera: () -> Unit, onOpenGallery: () -> Unit) {
     Image(
         painter = painterResource(R.drawable.report_add_image),
-        contentDescription = "Adjuntar imagen",
-        modifier = Modifier.offset(25.dp, 367.dp).size(50.dp).clickable(onClick = onAddImage)
+        contentDescription = "Abrir cámara",
+        modifier = Modifier
+            .offset(25.dp, 367.dp)
+            .size(50.dp)
+            .clickable(onClick = onOpenCamera)
     )
     Image(
         painter = painterResource(R.drawable.report_add_video),
-        contentDescription = "Adjuntar video",
-        modifier = Modifier.offset(79.dp, 365.dp).size(52.dp).clickable(onClick = onAddVideo)
+        contentDescription = "Abrir galería",
+        modifier = Modifier
+            .offset(79.dp, 365.dp)
+            .size(52.dp)
+            .clickable(onClick = onOpenGallery)
     )
 }
 
-/** Imagen o video elegido: 348 x 274, radio 10 y borde negro de 1. */
+/** Imagen o video elegido: 348 x 274, radio 10 y borde negro de 1. Muestra la foto real si hay URI. */
 @Composable
-private fun MediaBox(@DrawableRes media: Int, modifier: Modifier) {
+private fun MediaBox(
+    mediaUri: Uri? = null,
+    @DrawableRes fallbackRes: Int = R.drawable.report_image_sample,
+    modifier: Modifier
+) {
+    val context = LocalContext.current
+    val bitmap = remember(mediaUri) {
+        mediaUri?.let { uri ->
+            runCatching {
+                val source = ImageDecoder.createSource(context.contentResolver, uri)
+                ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                    val scale = 800f / maxOf(info.size.width, info.size.height)
+                    if (scale < 1f) decoder.setTargetSize((info.size.width * scale).toInt(), (info.size.height * scale).toInt())
+                    decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                }.asImageBitmap()
+            }.getOrNull()
+        }
+    }
     val shape = RoundedCornerShape(10.dp)
-    Image(
-        painter = painterResource(media),
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
-        modifier = modifier
-            .size(348.dp, 274.dp)
-            .clip(shape)
-            .border(1.dp, app_colors.black, shape)
-    )
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap,
+            contentDescription = "Evidencia",
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+                .size(348.dp, 274.dp)
+                .clip(shape)
+                .border(1.dp, app_colors.black, shape)
+        )
+    } else {
+        Image(
+            painter = painterResource(fallbackRes),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+                .size(348.dp, 274.dp)
+                .clip(shape)
+                .border(1.dp, app_colors.black, shape)
+        )
+    }
 }
 
 /** Paso final con la evidencia confirmada (325:1864 imagen, 325:1978 video). */
 @Composable
-private fun BoxScope.FinalStep(video: Boolean, onBack: () -> Unit, onFinish: () -> Unit) {
+private fun BoxScope.FinalStep(
+    mediaUri: Uri?,
+    video: Boolean,
+    onBack: () -> Unit,
+    onFinish: () -> Unit
+) {
     SectionRow(235.dp, "Evidencias o pruebas visuales")
     StepCard(height = 535.dp) {
         // Debajo asoma el recuadro gris de la vista previa, como en Figma
@@ -547,8 +672,9 @@ private fun BoxScope.FinalStep(video: Boolean, onBack: () -> Unit, onFinish: () 
                 .border(1.dp, app_colors.black, RoundedCornerShape(10.dp))
         )
         MediaBox(
-            if (video) R.drawable.report_video_sample else R.drawable.report_image_sample,
-            Modifier.offset(if (video) 23.dp else 24.dp, 32.dp)
+            mediaUri = mediaUri,
+            fallbackRes = if (video) R.drawable.report_video_sample else R.drawable.report_image_sample,
+            modifier = Modifier.offset(if (video) 23.dp else 24.dp, 32.dp)
         )
         Image(
             painter = painterResource(R.drawable.report_add_image),
@@ -570,6 +696,16 @@ private fun BoxScope.FinalStep(video: Boolean, onBack: () -> Unit, onFinish: () 
     }
     BackChevron(left = 40.09.dp, top = 816.09.dp, onClick = onBack)
     ReportButton("Terminar reporte", left = 75.dp, top = 795.dp, arrow = false, onClick = onFinish)
+}
+
+/** Permiso de fotos según la versión de Android (13+ usa READ_MEDIA_IMAGES; 14+ admite acceso parcial). */
+private fun galleryPermissions(): Array<String> = when {
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> arrayOf(
+        Manifest.permission.READ_MEDIA_IMAGES,
+        Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
+    )
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
+    else -> arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
 }
 
 /** Figma: "Validacion de Imagen" (323:1534 imagen, 323:1592 video). */
