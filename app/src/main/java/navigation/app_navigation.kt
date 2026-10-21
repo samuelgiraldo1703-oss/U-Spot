@@ -204,7 +204,10 @@ fun AppNavigation() {
             }
 
             composable(Routes.PROFILE_FAVORITES) {
-                screens.FavoritePlacesScreen(onBack = { navController.popBackStack() })
+                screens.FavoritePlacesScreen(
+                    onBack = { navController.popBackStack() },
+                    onPlace = { navController.navigate("home/place/$it") }
+                )
             }
 
             composable(Routes.PROFILE_HELP) {

@@ -208,7 +208,7 @@ fun ProfileScreen(
         }
 
         // Tarjeta resumen de 4 columnas. Los anchos de Figma (80.81 / 91.56) y la separación
-        // entre columnas (7.33) se reparten como pesos para conservar la proporción en otros anchos.
+        val favorites = data.rememberFavorites()
         Row(
             modifier = Modifier
                 .figmaPosition(left = 20.dp, right = 20.dp, top = 214.75.dp)
@@ -216,7 +216,7 @@ fun ProfileScreen(
                 .padding(horizontal = 8.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            StatColumn(R.drawable.ic_profile_stat_pin, "12", "Lugares\nguardados")
+            StatColumn(R.drawable.ic_profile_stat_pin, "${favorites.size}", "Lugares\nguardados")
             Spacer(Modifier.weight(7.33f))
             StatColumn(R.drawable.ic_profile_stat_star, "4.8", "Calificación\npromedio")
             Spacer(Modifier.weight(7.33f))

@@ -48,15 +48,23 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.u_spot.R
+import data.FavoriteStore
+import data.HomePlace
+import data.Place
+import data.rememberFavorites
+import data.rememberPlaces
 import decorations.BackButton
 import decorations.BoxedText
 import decorations.ProfileCanvas
 import decorations.ProfileCorner
 import decorations.ProfileFooter
 import decorations.ProfileLogo
+import decorations.SceneImage
 import decorations.app_colors
 import decorations.figmaPosition
 import decorations.jakartaText
+import decorations.photo
+import decorations.singular
 
 private data class InterestSpec(@param:DrawableRes val photo: Int, val label: String)
 
@@ -163,7 +171,9 @@ private fun InterestTile(spec: InterestSpec, selected: Boolean, onToggle: () -> 
 }
 
 private data class FavoriteSpec(
-    @param:DrawableRes val photo: Int,
+    val id: String,
+    @param:DrawableRes val photoRes: Int? = null,
+    val photoSrc: String? = null,
     val name: String,
     val type: String,
     val rating: String,
@@ -172,27 +182,114 @@ private data class FavoriteSpec(
     val tag: String,
     val tagBg: Color,
     val tagText: Color,
-    val saved: Boolean,
+    val saved: Boolean = true,
     val nameSize: TextUnit = 12.sp,
     val tagSize: TextUnit = 8.sp
 )
 
+private fun resolveFavoriteSpec(
+    placeId: String,
+    allPlaces: List<Place>,
+    colorPair: Pair<Color, Color>
+): FavoriteSpec {
+    val figmaPlace = HomePlace.fromKey(placeId)
+    val dbPlace = allPlaces.firstOrNull { it.id == placeId || (figmaPlace != null && it.figma == figmaPlace) }
+
+    val name = dbPlace?.name ?: figmaPlace?.title ?: when (placeId) {
+        "juanvaldez" -> "Juan Valdez"
+        "starbucks" -> "Starbucks"
+        "tostao" -> "Tostao"
+        "wok" -> "Wok"
+        "crepes" -> "Crepes & Waffles"
+        "goyurt" -> "Goyurt"
+        "bbc" -> "BBC Cervecería"
+        "museo-del-oro", "museooro" -> "Museo del Oro"
+        else -> placeId.replace('-', ' ').replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    }
+
+    val photoRes: Int? = when (placeId) {
+        "juanvaldez" -> R.drawable.fav_juan_valdez
+        "starbucks" -> R.drawable.fav_starbucks
+        "tostao" -> R.drawable.fav_tostao
+        "wok" -> R.drawable.fav_wok
+        "crepes" -> R.drawable.fav_crepes
+        "goyurt" -> R.drawable.fav_goyurt
+        else -> null
+    }
+
+    val photoSrc: String? = if (photoRes != null) null else dbPlace?.photo
+
+    val type = dbPlace?.category?.singular ?: when (placeId) {
+        "juanvaldez", "starbucks", "tostao" -> "Cafetería"
+        "wok", "crepes" -> "Restaurante"
+        "goyurt" -> "Postres"
+        "bbc", "beerbar" -> "Bar"
+        "museo-del-oro", "museonacional", "museooro" -> "Museo"
+        else -> "Lugar"
+    }
+
+    val ratingVal = 4.2 + (kotlin.math.abs(placeId.hashCode()) % 7) / 10.0
+    val rating = String.format(java.util.Locale.US, "%.1f", ratingVal)
+    val distance = dbPlace?.let { "${it.walkMin}\nmin" } ?: "0.6\nkm"
+    val price = dbPlace?.price?.takeIf { it.isNotBlank() } ?: "$$"
+    val tag = when {
+        dbPlace?.group == true -> "Ideal para grupos"
+        dbPlace?.quiet == true -> "Ambiente tranquilo"
+        dbPlace?.study == true -> "Zona de estudio"
+        dbPlace?.solo == true -> "Plan individual"
+        placeId == "wok" -> "Ideal para parejas"
+        placeId == "crepes" -> "Ambiente agradable"
+        placeId in listOf("tostao", "goyurt") -> "Económico"
+        else -> "Recomendado"
+    }
+
+    return FavoriteSpec(
+        id = placeId,
+        photoRes = photoRes,
+        photoSrc = photoSrc,
+        name = name,
+        type = type,
+        rating = rating,
+        distance = distance,
+        price = price,
+        tag = tag,
+        tagBg = colorPair.first,
+        tagText = colorPair.second,
+        saved = true,
+        nameSize = if (name.length > 14) 10.sp else 12.sp,
+        tagSize = if (tag.length > 15) 7.sp else 8.sp
+    )
+}
+
 /** Figma: "Lugares Favoritos" (209:251). */
 @Composable
-fun FavoritePlacesScreen(onBack: () -> Unit = {}) {
-    val green = app_colors.favTagGreenBg to app_colors.favTagGreenText
-    val blue = app_colors.favTagBlueBg to app_colors.favTagBlueText
-    val purple = app_colors.favTagPurpleBg to app_colors.favTagPurpleText
-    val places = listOf(
-        FavoriteSpec(R.drawable.fav_juan_valdez, "Juan Valdez", "Cafetería", "4.5", "0.6\nkm", "$$", "Ideal para grupos", green.first, green.second, saved = true),
-        FavoriteSpec(R.drawable.fav_starbucks, "Starbucks", "Cafetería", "4.4", "0.8\nkm", "$$", "Ambiente tranquilo", blue.first, blue.second, saved = false, tagSize = 7.sp),
-        FavoriteSpec(R.drawable.fav_tostao, "Tostao", "Cafetería", "4.3", "1.1 km", "$", "Económico", purple.first, purple.second, saved = true),
-        FavoriteSpec(R.drawable.fav_wok, "Wok", "Restaurante", "4.2", "1.3\nkm", "$$", "Ideal para parejas", green.first, green.second, saved = false),
-        FavoriteSpec(R.drawable.fav_crepes, "Crepes & Wafles", "Restaurante", "4.6", "1.5\nkm", "$$", "Ambiente agradable", blue.first, blue.second, saved = true, nameSize = 10.sp),
-        FavoriteSpec(R.drawable.fav_goyurt, "Goyurt", "Postres", "4.3", "1.8\nkm", "$", "Económico", purple.first, purple.second, saved = false)
+fun FavoritePlacesScreen(
+    onBack: () -> Unit = {},
+    onPlace: (String) -> Unit = {}
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val favorites = rememberFavorites()
+    val allPlaces = rememberPlaces()
+
+    val colorPairs = listOf(
+        app_colors.favTagGreenBg to app_colors.favTagGreenText,
+        app_colors.favTagBlueBg to app_colors.favTagBlueText,
+        app_colors.favTagPurpleBg to app_colors.favTagPurpleText
     )
 
-    ProfileCanvas(designHeight = 913.dp) {
+    // Los 6 recuadros de prueba fueron eliminados. Solo se muestran los guardados por el usuario.
+    val favoriteSpecs = remember(favorites, allPlaces) {
+        favorites.toList().mapIndexed { index, id ->
+            resolveFavoriteSpec(id, allPlaces, colorPairs[index % colorPairs.size])
+        }
+    }
+
+    val rowsCount = (favoriteSpecs.size + 2) / 3
+    val cardsBottom = if (rowsCount == 0) 180.dp else (207.38.dp + 197.48.dp * rowsCount - 10.dp)
+    val sparkleTop = if (rowsCount == 0) 380.dp else cardsBottom + 36.dp
+    val designHeight = maxOf(913.dp, sparkleTop + 340.dp)
+
+    ProfileCanvas(designHeight = designHeight) {
         // "Background Corner Ornaments" inferior: franja amarilla que sale por la derecha
         Box(
             Modifier
@@ -222,42 +319,57 @@ fun FavoritePlacesScreen(onBack: () -> Unit = {}) {
             modifier = Modifier.figmaPosition(left = 22.dp, top = 137.38.dp)
         )
 
-        places.chunked(3).forEachIndexed { index, row ->
+        // Si no hay favoritos, queda el espacio vacío. Si hay, se muestran en cuadrícula de 3 columnas
+        favoriteSpecs.chunked(3).forEachIndexed { index, row ->
             Row(
                 modifier = Modifier.figmaPosition(left = 22.dp, right = 15.dp, top = 207.38.dp + 197.48.dp * index),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                row.forEach { FavoriteCard(it, Modifier.weight(1f)) }
+                row.forEach { item ->
+                    FavoriteCard(
+                        spec = item,
+                        onClick = { onPlace(item.id) },
+                        onToggleSave = { FavoriteStore.toggle(context, item.id) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                repeat(3 - row.size) {
+                    Spacer(Modifier.weight(1f))
+                }
             }
         }
 
-        // Bloque final "¡Sigue explorando!"
-        FavoriteSparkle(
-            Modifier
-                .align(Alignment.TopCenter)
-                .offset(x = (-10).dp, y = 645.38.dp)
-        )
-        BoxedText(
-            text = "¡Sigue explorando!",
-            style = jakartaText(20.sp, 28.sp, app_colors.favTitle, FontWeight.ExtraBold, letterSpacing = (-0.5).sp),
+        // Bloque final "¡Sigue explorando!" ubicado centrado y uniforme en la parte blanca de la interfaz
+        Column(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(x = (-10).dp, y = 721.dp)
-                .height(28.dp)
-        )
-        BoxedText(
-            text = "Guarda más lugares y crea tu lista\npersonal de favoritos.",
-            style = jakartaText(14.sp, 22.75.sp, app_colors.favSubtitle),
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(x = (-10).dp, y = 756.75.dp)
-                .height(46.dp)
-        )
+                .figmaPosition(left = 0.dp, right = 0.dp, top = sparkleTop)
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            FavoriteSparkle()
+            Spacer(Modifier.height(14.dp))
+            Text(
+                text = "¡Sigue explorando!",
+                style = jakartaText(20.sp, 28.sp, app_colors.favTitle, FontWeight.ExtraBold, letterSpacing = (-0.5).sp, textAlign = TextAlign.Center),
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Guarda más lugares y crea tu lista\npersonal de favoritos.",
+                style = jakartaText(14.sp, 22.75.sp, app_colors.favSubtitle, FontWeight.Medium, textAlign = TextAlign.Center),
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
 @Composable
-private fun FavoriteCard(spec: FavoriteSpec, modifier: Modifier) {
+private fun FavoriteCard(
+    spec: FavoriteSpec,
+    onClick: () -> Unit = {},
+    onToggleSave: () -> Unit = {},
+    modifier: Modifier
+) {
     val shape = RoundedCornerShape(16.dp)
     val small = jakartaText(10.sp, 15.sp, app_colors.profilePrice)
     Column(
@@ -267,6 +379,7 @@ private fun FavoriteCard(spec: FavoriteSpec, modifier: Modifier) {
             .clip(shape)
             .background(app_colors.white)
             .border(2.dp, app_colors.favCardBorder, shape)
+            .clickable(onClick = onClick)
             .padding(8.dp)
     ) {
         // "Place Thumbnail"
@@ -277,20 +390,42 @@ private fun FavoriteCard(spec: FavoriteSpec, modifier: Modifier) {
                 .clip(RoundedCornerShape(12.dp))
                 .background(app_colors.galleryBorder)
         ) {
-            Image(
-                painter = painterResource(spec.photo),
-                contentDescription = spec.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-            Image(
-                painter = painterResource(if (spec.saved) R.drawable.ic_fav_bookmark_on else R.drawable.ic_fav_bookmark_off),
-                contentDescription = if (spec.saved) "Guardado" else "Guardar",
+            if (spec.photoRes != null) {
+                Image(
+                    painter = painterResource(spec.photoRes),
+                    contentDescription = spec.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else if (!spec.photoSrc.isNullOrBlank()) {
+                SceneImage(
+                    src = spec.photoSrc,
+                    modifier = Modifier.fillMaxSize(),
+                    crop = true
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(app_colors.galleryBorder)
+                )
+            }
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .offset(x = (-6).dp, y = 6.dp)
-                    .size(20.dp, 24.dp)
-            )
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onToggleSave
+                    )
+                    .padding(6.dp)
+            ) {
+                Image(
+                    painter = painterResource(if (spec.saved) R.drawable.ic_fav_bookmark_on else R.drawable.ic_fav_bookmark_off),
+                    contentDescription = if (spec.saved) "Guardado" else "Guardar",
+                    modifier = Modifier.size(20.dp, 24.dp)
+                )
+            }
         }
         // "Content": padding [8, 4, 0, 4] y separación de 2
         Column(
@@ -370,7 +505,7 @@ private fun FavoritePlacesPreview() {
  * bordes de marco (no con vectores), así que se dibuja con las mismas medidas en un lienzo de 72 x 61.
  */
 @Composable
-private fun FavoriteSparkle(modifier: Modifier) {
+private fun FavoriteSparkle(modifier: Modifier = Modifier) {
     val teal = app_colors.profileCorner
     val navy = app_colors.favTitle
     Canvas(modifier.size(72.dp, 61.dp)) {

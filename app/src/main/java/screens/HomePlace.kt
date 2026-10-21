@@ -43,6 +43,7 @@ import androidx.compose.material.icons.outlined.SentimentSatisfied
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -76,12 +77,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import com.google.firebase.auth.FirebaseAuth
 import data.COMMENT_MAX_LENGTH
 import data.HomePlace
 import data.Place
 import data.PlaceComment
 import data.UserProfile
 import data.addPlaceComment
+import data.deletePlaceComment
+import data.deletePlaceCommentPhoto
 import data.decodeBase64Image
 import data.rememberPlaceComments
 import decorations.FigmaSceneNode
@@ -155,6 +162,32 @@ fun HomePlaceScreen(
                     .clip(CircleShape)
                     .clickable(onClick = onBack)
             )
+            val favTarget = info?.id ?: place.key
+            val favorites = data.rememberFavorites()
+            val isFav = favTarget in favorites
+            val heartX = 412f - place.backX
+            val heartY = place.backY
+            Box(
+                Modifier
+                    .placeAt((heartX - 24).dp, (heartY - 24).dp, 48.dp, 48.dp)
+                    .clip(CircleShape)
+                    .clickable { data.FavoriteStore.toggle(context, favTarget) },
+                contentAlignment = Alignment.Center
+            ) {
+                if (isFav) {
+                    Box(
+                        Modifier.size(42.dp).clip(CircleShape).background(Color(0xFFF8F7F6)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Rounded.Favorite,
+                            contentDescription = "Quitar de favoritos",
+                            tint = Color(0xFFE11D48),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
             if (info != null) {
                 val features = scene.featureNodes()
                 features.minByOrNull { it.x }?.let { first ->
@@ -206,7 +239,6 @@ fun PlaceDetailScreen(
             .imePadding()
             .verticalScroll(rememberScrollState())
     ) {
-        Spacer(Modifier.fillMaxWidth().height(statusBarHeight()).background(HeroDark))
         FigmaWidthScale(412f) {
             Box(Modifier.fillMaxWidth()) {
                 // Foto de la categoría con el degradado oscuro de Figma
@@ -228,6 +260,29 @@ fun PlaceDetailScreen(
                         .clip(CircleShape)
                         .clickable(onClick = onBack)
                 )
+                val favorites = data.rememberFavorites()
+                val isPlaceFav = place.id in favorites
+                Box(
+                    Modifier
+                        .placeAt(352.dp, 2.dp, 48.dp, 48.dp)
+                        .clip(CircleShape)
+                        .clickable { data.FavoriteStore.toggle(context, place.id) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isPlaceFav) {
+                        Box(
+                            Modifier.size(42.dp).clip(CircleShape).background(Color(0xFFF8F7F6)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Rounded.Favorite,
+                                contentDescription = "Quitar de favoritos",
+                                tint = Color(0xFFE11D48),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                }
                 HeroCategoryBadge(place.category.singular, Modifier.placeAt(16.dp, 160.dp, 200.dp, 30.dp))
 
                 Column(
@@ -343,6 +398,100 @@ private fun CommentsSection(placeKey: String, user: UserProfile, modifier: Modif
         if (uri != null) photo = uri
     }
 
+    var commentToDelete by remember { mutableStateOf<PlaceComment?>(null) }
+    var photoToDeleteCommentId by remember { mutableStateOf<String?>(null) }
+    val currentUid = remember { FirebaseAuth.getInstance().currentUser?.uid }
+
+    if (commentToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { commentToDelete = null },
+            title = {
+                Text(
+                    text = "¿Eliminar comentario?",
+                    style = jakartaText(18.sp, 24.sp, CommentText, FontWeight.Bold)
+                )
+            },
+            text = {
+                Text(
+                    text = "Esta acción eliminará tu aporte de forma permanente.",
+                    style = jakartaText(14.sp, 20.sp, CommentText.copy(alpha = 0.8f))
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val c = commentToDelete!!
+                        commentToDelete = null
+                        scope.launch {
+                            val ok = deletePlaceComment(placeKey, c.id)
+                            Toast.makeText(
+                                context,
+                                if (ok) "Comentario eliminado" else "No se pudo eliminar el comentario",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                ) {
+                    Text(
+                        text = "Eliminar",
+                        color = Color(0xFFE11D48),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { commentToDelete = null }) {
+                    Text(text = "Cancelar", color = CommentText.copy(alpha = 0.7f))
+                }
+            }
+        )
+    }
+
+    if (photoToDeleteCommentId != null) {
+        AlertDialog(
+            onDismissRequest = { photoToDeleteCommentId = null },
+            title = {
+                Text(
+                    text = "¿Eliminar imagen?",
+                    style = jakartaText(18.sp, 24.sp, CommentText, FontWeight.Bold)
+                )
+            },
+            text = {
+                Text(
+                    text = "Se eliminará la foto de tu comentario, pero el texto se conservará.",
+                    style = jakartaText(14.sp, 20.sp, CommentText.copy(alpha = 0.8f))
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val id = photoToDeleteCommentId!!
+                        photoToDeleteCommentId = null
+                        scope.launch {
+                            val ok = deletePlaceCommentPhoto(placeKey, id)
+                            Toast.makeText(
+                                context,
+                                if (ok) "Imagen eliminada" else "No se pudo eliminar la imagen",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                ) {
+                    Text(
+                        text = "Eliminar imagen",
+                        color = Color(0xFFE11D48),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { photoToDeleteCommentId = null }) {
+                    Text(text = "Cancelar", color = CommentText.copy(alpha = 0.7f))
+                }
+            }
+        )
+    }
+
     fun send() {
         if (sending || (text.isBlank() && photo == null)) return
         sending = true
@@ -372,7 +521,19 @@ private fun CommentsSection(placeKey: String, user: UserProfile, modifier: Modif
             )
         }
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            for (c in comments) CommentRow(c)
+            for (c in comments) {
+                val isAuthor = (currentUid != null && c.uid == currentUid) ||
+                        (user.name.isNotBlank() && c.authorName.startsWith(user.name.split(" ").firstOrNull() ?: user.name)) ||
+                        c.uid.isEmpty()
+                CommentRow(
+                    comment = c,
+                    isAuthor = isAuthor,
+                    onDeleteComment = { commentToDelete = c },
+                    onDeletePhoto = if (c.text.isNotBlank() && c.photoBase64 != null) {
+                        { photoToDeleteCommentId = c.id }
+                    } else null
+                )
+            }
         }
         Spacer(Modifier.height(16.dp))
 
@@ -467,10 +628,18 @@ private fun CommentsSection(placeKey: String, user: UserProfile, modifier: Modif
 }
 
 @Composable
-private fun CommentRow(comment: PlaceComment) {
+private fun CommentRow(
+    comment: PlaceComment,
+    isAuthor: Boolean,
+    onDeleteComment: () -> Unit,
+    onDeletePhoto: (() -> Unit)? = null
+) {
     val avatar = remember(comment.id) { decodeBase64Image(comment.authorPhotoBase64) }
     val photo = remember(comment.id) { decodeBase64Image(comment.photoBase64) }
-    Row {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top
+    ) {
         Column(Modifier.width(54.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Avatar(avatar)
             Spacer(Modifier.height(4.dp))
@@ -494,14 +663,61 @@ private fun CommentRow(comment: PlaceComment) {
             }
             if (photo != null) {
                 if (comment.text.isNotEmpty()) Spacer(Modifier.height(8.dp))
-                Image(
-                    bitmap = photo,
-                    contentDescription = "Foto del comentario",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .widthIn(max = 220.dp)
-                        .aspectRatio(photo.width.toFloat() / photo.height.toFloat().coerceAtLeast(1f))
-                        .clip(RoundedCornerShape(12.dp))
+                Box {
+                    Image(
+                        bitmap = photo,
+                        contentDescription = "Foto del comentario",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .widthIn(max = 220.dp)
+                            .aspectRatio(photo.width.toFloat() / photo.height.toFloat().coerceAtLeast(1f))
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                    // Botón para eliminar únicamente la foto cuando hay texto adjunto
+                    if (isAuthor && onDeletePhoto != null) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(6.dp)
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xCC000000))
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = onDeletePhoto
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.DeleteOutline,
+                                contentDescription = "Eliminar imagen",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        if (isAuthor) {
+            Spacer(Modifier.width(4.dp))
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onDeleteComment
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.DeleteOutline,
+                    contentDescription = "Eliminar comentario",
+                    tint = Color(0xFF94A3B8),
+                    modifier = Modifier.size(19.dp)
                 )
             }
         }

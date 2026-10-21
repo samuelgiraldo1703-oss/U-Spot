@@ -122,8 +122,20 @@ private fun readCommentPhoto(context: Context, uri: Uri): String? = try {
     }
     bitmap.toBase64Jpeg(72)
 } catch (e: Exception) {
-    Log.e("PlaceComments", "No se pudo leer la foto de la galería", e)
-    null
+    Log.w("PlaceComments", "ImageDecoder no pudo leer la foto, intentando con decodeStream", e)
+    try {
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            val bm = BitmapFactory.decodeStream(stream)
+            bm?.let {
+                val scale = COMMENT_PHOTO_SIZE.toFloat() / max(it.width, it.height)
+                val scaled = if (scale < 1f) Bitmap.createScaledBitmap(it, (it.width * scale).toInt(), (it.height * scale).toInt(), true) else it
+                scaled.toBase64Jpeg(72)
+            }
+        }
+    } catch (e2: Exception) {
+        Log.e("PlaceComments", "No se pudo leer la foto de la galería", e2)
+        null
+    }
 }
 
 /**
@@ -161,6 +173,32 @@ suspend fun addPlaceComment(
         true
     } catch (e: Exception) {
         Log.e("PlaceComments", "Error guardando el comentario", e)
+        false
+    }
+}
+
+/**
+ * Elimina un comentario de Firestore en places/{placeKey}/comments/{commentId}.
+ */
+suspend fun deletePlaceComment(placeKey: String, commentId: String): Boolean {
+    return try {
+        commentsOf(placeKey).document(commentId).delete().await()
+        true
+    } catch (e: Exception) {
+        Log.e("PlaceComments", "Error eliminando el comentario $commentId", e)
+        false
+    }
+}
+
+/**
+ * Elimina únicamente la foto adjunta de un comentario, conservando el texto.
+ */
+suspend fun deletePlaceCommentPhoto(placeKey: String, commentId: String): Boolean {
+    return try {
+        commentsOf(placeKey).document(commentId).update("photo", FieldValue.delete()).await()
+        true
+    } catch (e: Exception) {
+        Log.e("PlaceComments", "Error eliminando la foto del comentario $commentId", e)
         false
     }
 }

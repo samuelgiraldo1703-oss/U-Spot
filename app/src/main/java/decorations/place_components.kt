@@ -26,9 +26,12 @@ import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Storefront
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -409,6 +412,26 @@ fun PlaceCard(place: Place, onClick: () -> Unit, modifier: Modifier = Modifier) 
                 )
             )
             HeroCategoryBadge(place.category.singular, Modifier.align(Alignment.TopStart).padding(12.dp))
+            val context = LocalContext.current
+            val favorites = data.rememberFavorites()
+            val isFav = place.id in favorites
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp)
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x99000000))
+                    .clickable { data.FavoriteStore.toggle(context, place.id) },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isFav) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                    contentDescription = if (isFav) "Quitar de favoritos" else "Guardar en favoritos",
+                    tint = if (isFav) Color(0xFFE11D48) else Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
             Column(Modifier.align(Alignment.BottomStart).padding(start = 16.dp, end = 16.dp, bottom = 14.dp)) {
                 Text(
                     place.name,

@@ -82,13 +82,12 @@ fun ProfileCanvas(
     background: Color = app_colors.white,
     content: @Composable BoxScope.() -> Unit
 ) {
-    val top = statusBarHeight()
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(background)
     ) {
-        val canvasHeight = if (maxHeight - top > designHeight) maxHeight - top else designHeight
+        val canvasHeight = if (maxHeight > designHeight) maxHeight else designHeight
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -97,27 +96,20 @@ fun ProfileCanvas(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(canvasHeight + top)
-                    .clipToBounds()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .padding(top = top)
-                        .fillMaxSize(),
-                    content = content
-                )
-            }
+                    .height(canvasHeight)
+                    .clipToBounds(),
+                content = content
+            )
         }
     }
 }
 
-/** "Background Corner Ornaments": esquina de color superior derecha, extendida tras la barra de estado. */
+/** "Background Corner Ornaments": esquina de color superior derecha, extendida hasta el borde superior. */
 @Composable
 fun ProfileCorner(color: Color) {
-    val top = statusBarHeight()
     Box(
         Modifier
-            .figmaPosition(right = (-28).dp, top = (-20).dp - top, width = 140.dp, height = 140.dp + top)
+            .figmaPosition(right = (-28).dp, top = (-20).dp, width = 140.dp, height = 140.dp)
             .background(color, RoundedCornerShape(bottomStart = 90.dp))
     )
 }
@@ -139,7 +131,7 @@ fun BoxedText(text: AnnotatedString, style: TextStyle, modifier: Modifier) {
 
 /**
  * Capa de una ventana emergente: oscurece la pantalla y bloquea los toques sobre lo que hay
- * detrás. El contenido usa las coordenadas del frame de Figma, bajadas por la barra de estado.
+ * detrás. El contenido usa las coordenadas del frame de Figma.
  */
 @Composable
 fun ProfileOverlay(scrim: Color, content: @Composable BoxScope.() -> Unit) {
@@ -151,7 +143,6 @@ fun ProfileOverlay(scrim: Color, content: @Composable BoxScope.() -> Unit) {
     ) {
         Box(
             modifier = Modifier
-                .padding(top = statusBarHeight())
                 .fillMaxSize(),
             content = content
         )

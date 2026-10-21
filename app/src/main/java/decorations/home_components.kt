@@ -17,18 +17,29 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
  * Pantalla del módulo Home dibujada desde una escena de Figma ([sceneKey], ver [FigmaScene]).
- * El diseño empieza debajo de la barra de estado (pintada con [statusBarColor]), se escala al
- * ancho del teléfono y se desplaza verticalmente si no cabe. [overlay] dibuja encima, en
- * coordenadas de Figma; lo que ponga más abajo del frame alarga la pantalla (p. ej. comentarios).
+ * El diseño se dibuja desde el borde superior de la pantalla, combinándose uniformemente
+ * con la barra de estado de Android. Se escala al ancho del teléfono y se desplaza
+ * verticalmente si no cabe.
  */
 @Composable
 fun SceneScreen(
     sceneKey: String,
-    statusBarColor: Color,
+    statusBarColor: Color = Color.Transparent,
     background: Color = app_colors.white,
     scrollState: ScrollState = rememberScrollState(),
     onClick: (Scene) -> Map<String, () -> Unit> = { emptyMap() },
@@ -50,12 +61,6 @@ fun SceneScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
         ) {
-            Spacer(
-                Modifier
-                    .fillMaxWidth()
-                    .height(statusBarHeight())
-                    .background(statusBarColor)
-            )
             if (scene != null) {
                 FigmaWidthScale(scene.width) {
                     Box(
@@ -110,4 +115,71 @@ fun Scene.allNodes(predicate: (SceneNode) -> Boolean): List<SceneNode> {
     }
     visit(nodes)
     return out
+}
+
+/**
+ * Botón de favorito para las tarjetas de Figma.
+ * Cuando está guardado (isFav = true), dibuja el corazón con relleno rojo (#E11D48)
+ * y un contorno blanco nítido alrededor (exactamente como en la captura de diseño).
+ * Cuando no está guardado (isFav = false), dibuja la silueta blanca con sombra suave.
+ * Se ubica en las coordenadas exactas de Figma sin ningún desfase.
+ */
+@Composable
+fun FigmaCardHeartButton(
+    isFav: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    size: Dp = 19.dp
+) {
+    Box(
+        modifier = modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isFav) {
+            // Sombra sutil exterior
+            Icon(
+                imageVector = Icons.Rounded.Favorite,
+                contentDescription = null,
+                tint = Color(0x55000000),
+                modifier = Modifier
+                    .size(size + 3.dp)
+                    .offset(y = 1.dp)
+            )
+            // Contorno blanco nítido exterior
+            Icon(
+                imageVector = Icons.Rounded.Favorite,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(size + 2.4.dp)
+            )
+            // Relleno rojo centrado exactamente
+            Icon(
+                imageVector = Icons.Rounded.Favorite,
+                contentDescription = "Quitar de favoritos",
+                tint = Color(0xFFE11D48),
+                modifier = Modifier.size(size)
+            )
+        } else {
+            // Contorno blanco sin rellenar con sombra de contraste sobre la foto
+            Icon(
+                imageVector = Icons.Rounded.FavoriteBorder,
+                contentDescription = null,
+                tint = Color(0x66000000),
+                modifier = Modifier
+                    .size(size + 1.dp)
+                    .offset(y = 1.dp)
+            )
+            Icon(
+                imageVector = Icons.Rounded.FavoriteBorder,
+                contentDescription = "Guardar en favoritos",
+                tint = Color.White,
+                modifier = Modifier.size(size)
+            )
+        }
+    }
 }

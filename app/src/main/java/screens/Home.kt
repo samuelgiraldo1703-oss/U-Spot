@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -89,14 +91,18 @@ fun HomeScreen(
         (rememberScene(sceneKey)?.find(photo) as? SceneNode.Picture)?.let { node to it.src }
     }.toMap()
 
+    val favorites = data.rememberFavorites()
+    val context = LocalContext.current
+
     Box(Modifier.fillMaxSize()) {
         SceneScreen(
             // Siempre la pantalla 435:654; "Ver todos" solo cambia la fila de categorías (ver MoreCategories)
             sceneKey = "dash_main",
             statusBarColor = app_colors.white,
             onClick = {
-                dashboardClicks(onCategory, onProfile, { showMore = true }, { dialog = HomeDialog.AskLogout }) +
-                    featuredCards.associate { it.card to { onPlace(it.route) } }
+                dashboardClicks(onCategory, onProfile, { showMore = true }, { dialog = HomeDialog.AskLogout }) { id ->
+                    data.FavoriteStore.toggle(context, id)
+                } + featuredCards.associate { it.card to { onPlace(it.route) } }
             },
             texts = { featuredTexts(places) },
             images = { photos },
@@ -106,6 +112,8 @@ fun HomeScreen(
                 ids += MAIN_CATEGORY_ROW
                 ids += featuredHidden()
                 if (showMore) ids += MAIN_SEE_ALL
+                // Ocultamos los nodos estáticos de corazón de Figma para reemplazarlos con el botón interactivo alineado
+                ids += listOf("435:951", "435:1002", "432:582", "468:199", "468:227", "468:159")
                 ids
             },
             overlay = { scene ->
@@ -113,6 +121,26 @@ fun HomeScreen(
                 FeaturedInfo(scene, places)
                 if (showMore) MoreCategories(onCategory = onCategory, onBack = { showMore = false })
                 else MainCategories(scene, onCategory)
+
+                // Corazones de favoritos integrados y perfectamente alineados (sin desfase)
+                decorations.FigmaCardHeartButton(
+                    isFav = HomePlace.JUAN_VALDEZ.key in favorites,
+                    onClick = { data.FavoriteStore.toggle(context, HomePlace.JUAN_VALDEZ.key) },
+                    size = 19.dp,
+                    modifier = Modifier.placeAt(156.dp, 401.dp, 32.dp, 33.dp)
+                )
+                decorations.FigmaCardHeartButton(
+                    isFav = HomePlace.BBC.key in favorites,
+                    onClick = { data.FavoriteStore.toggle(context, HomePlace.BBC.key) },
+                    size = 19.dp,
+                    modifier = Modifier.placeAt(358.dp, 404.dp, 32.dp, 33.dp)
+                )
+                decorations.FigmaCardHeartButton(
+                    isFav = HomePlace.MUSEO_ORO.key in favorites,
+                    onClick = { data.FavoriteStore.toggle(context, HomePlace.MUSEO_ORO.key) },
+                    size = 16.dp,
+                    modifier = Modifier.placeAt(141.dp, 689.dp, 22.dp, 23.dp)
+                )
             }
         )
 
@@ -324,11 +352,18 @@ private fun dashboardClicks(
     onCategory: (HomeCategory) -> Unit,
     onProfile: () -> Unit,
     showMore: () -> Unit,
-    askLogout: () -> Unit
+    askLogout: () -> Unit,
+    onFav: (String) -> Unit
 ): Map<String, () -> Unit> = mapOf(
     MAIN_SEE_ALL to showMore,
     "454:2131" to askLogout,
-    "435:1452" to onProfile
+    "435:1452" to onProfile,
+    "435:951" to { onFav(HomePlace.JUAN_VALDEZ.key) },
+    "435:1002" to { onFav(HomePlace.BBC.key) },
+    "432:582" to { onFav(HomePlace.MUSEO_ORO.key) },
+    "468:199" to { onFav(HomePlace.JUAN_VALDEZ.key) },
+    "468:227" to { onFav(HomePlace.BBC.key) },
+    "468:159" to { onFav(HomePlace.MUSEO_ORO.key) }
 )
 
 /** Centro horizontal del icono [i] de [count]: del primero (46.5) al último (362.8) de la fila de Figma. */
@@ -418,11 +453,8 @@ private fun LogoutDialog(sceneKey: String, onClick: Map<String, () -> Unit>) {
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
     ) {
         if (scene == null) return@Box
-        Column(Modifier.fillMaxSize()) {
-            Spacer(Modifier.fillMaxWidth().height(statusBarHeight()))
-            FigmaWidthScale(scene.width) {
-                FigmaScene(scene, onClick = onClick)
-            }
+        FigmaWidthScale(scene.width) {
+            FigmaScene(scene, onClick = onClick)
         }
     }
 }

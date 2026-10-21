@@ -106,11 +106,8 @@ fun FigmaCanvas(
 }
 
 /**
- * Alto de la barra de estado. Los botones que en Figma están pegados al borde superior
- * se bajan lo justo para no quedar debajo de la hora / batería.
+ * Posición superior de elementos pegados arriba. Mantiene el diseño original uniforme de Figma.
  */
 @Composable
-fun belowStatusBar(figmaTop: Dp): Dp {
-    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    return if (statusBar > figmaTop) statusBar else figmaTop
-}
+fun belowStatusBar(figmaTop: Dp): Dp = figmaTop
+
