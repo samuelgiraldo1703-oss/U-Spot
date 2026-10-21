@@ -94,6 +94,8 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
     var step by rememberSaveable { mutableStateOf(ReportStep.Hub) }
     var dialog by rememberSaveable { mutableStateOf(ReportDialog.None) }
     var option by rememberSaveable { mutableStateOf(-1) }
+    var email by rememberSaveable { mutableStateOf("") }
+    var username by rememberSaveable { mutableStateOf("") }
     var mediaUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingCameraUriString by rememberSaveable { mutableStateOf<String?>(null) }
     val mediaUri = mediaUriString?.let { Uri.parse(it) }
@@ -183,7 +185,13 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
 
             when (step) {
                 ReportStep.Hub -> HubStep(onOpen = { step = it })
-                ReportStep.Identify -> IdentifyStep(onNext = { step = ReportStep.Classify })
+                ReportStep.Identify -> IdentifyStep(
+                    email = email,
+                    onEmailChange = { email = it },
+                    username = username,
+                    onUsernameChange = { username = it },
+                    onNext = { step = ReportStep.Classify }
+                )
                 ReportStep.Classify -> ClassifyStep(
                     selected = option,
                     onSelect = { option = it },
@@ -236,7 +244,11 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
                 question = "¿Estás seguro que deseas salir?\n", warning = "Perderás todos tus cambios",
                 action = "Salir", actionX = 164.dp, actionWidth = 39.dp,
                 onBack = { dialog = ReportDialog.None },
-                onAction = onExit
+                onAction = {
+                    email = ""
+                    username = ""
+                    onExit()
+                }
             )
             ReportDialog.LeaveImage, ReportDialog.LeaveVideo -> ProfileLeaveDialog(
                 question = "¿Estás seguro que deseas salir?\n",
@@ -255,6 +267,8 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
             ReportDialog.Sent -> SentDialog(onFinish = {
                 dialog = ReportDialog.None
                 option = -1
+                email = ""
+                username = ""
                 mediaUriString = null
                 step = ReportStep.Hub
             })
@@ -365,22 +379,29 @@ private fun BoxScope.BackChevron(left: Dp, top: Dp, onClick: () -> Unit) {
 private fun ReportInput(
     modifier: Modifier,
     placeholder: String,
+    value: String? = null,
+    onValueChange: ((String) -> Unit)? = null,
     icon: @Composable BoxScope.() -> Unit,
     required: Boolean,
+    isError: Boolean = false,
     radius: Dp = 9999.dp,
     singleLine: Boolean = true
 ) {
-    var value by rememberSaveable { mutableStateOf("") }
+    var internalValue by rememberSaveable { mutableStateOf("") }
+    val textValue = value ?: internalValue
+    val handleValueChange = onValueChange ?: { internalValue = it }
     val text = figmaText(app_fonts.poppins, 14.sp, 21.sp, app_colors.loginPlaceholder)
+    val shape = RoundedCornerShape(radius)
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(radius))
+            .clip(shape)
             .background(app_colors.loginInput)
+            .then(if (isError) Modifier.border(1.5.dp, app_colors.formError, shape) else Modifier)
     ) {
         icon()
         BasicTextField(
-            value = value,
-            onValueChange = { value = it },
+            value = textValue,
+            onValueChange = handleValueChange,
             singleLine = singleLine,
             textStyle = text.copy(color = app_colors.loginTitle),
             cursorBrush = SolidColor(app_colors.formBlue),
@@ -389,7 +410,7 @@ private fun ReportInput(
                 .padding(start = 48.dp, end = 40.dp, top = 12.dp),
             decorationBox = { inner ->
                 Box {
-                    if (value.isEmpty()) Text(placeholder, style = text)
+                    if (textValue.isEmpty()) Text(placeholder, style = text)
                     inner()
                 }
             }
@@ -405,7 +426,49 @@ private fun ReportInput(
 }
 
 @Composable
-private fun BoxScope.IdentifyStep(onNext: () -> Unit) {
+private fun BoxScope.IdentifyStep(
+    email: String,
+    onEmailChange: (String) -> Unit,
+    username: String,
+    onUsernameChange: (String) -> Unit,
+    onNext: () -> Unit
+) {
+    val context = LocalContext.current
+    var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    var emailError by rememberSaveable { mutableStateOf(false) }
+    var userError by rememberSaveable { mutableStateOf(false) }
+
+    fun validateAndProceed() {
+        val emailTrimmed = email.trim()
+        val userTrimmed = username.trim()
+        when {
+            emailTrimmed.isEmpty() && userTrimmed.isEmpty() -> {
+                errorMessage = "Es necesario introducir el correo electrónico y el usuario"
+                emailError = true
+                userError = true
+                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+            }
+            emailTrimmed.isEmpty() -> {
+                errorMessage = "Es necesario introducir el campo del correo electrónico"
+                emailError = true
+                userError = false
+                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+            }
+            userTrimmed.isEmpty() -> {
+                errorMessage = "Es necesario introducir el campo del usuario"
+                emailError = false
+                userError = true
+                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+            }
+            else -> {
+                errorMessage = null
+                emailError = false
+                userError = false
+                onNext()
+            }
+        }
+    }
+
     Image(
         painter = painterResource(R.drawable.report_footer_icon),
         contentDescription = null,
@@ -426,7 +489,16 @@ private fun BoxScope.IdentifyStep(onNext: () -> Unit) {
         ReportInput(
             modifier = Modifier.offset(23.dp, 146.dp).size(348.dp, 45.dp),
             placeholder = "Correo electrónico",
+            value = email,
+            onValueChange = {
+                onEmailChange(it)
+                if (emailError && it.isNotBlank()) {
+                    emailError = false
+                    if (!userError) errorMessage = null
+                }
+            },
             required = true,
+            isError = emailError,
             icon = {
                 Image(
                     painter = painterResource(R.drawable.ic_report_mail),
@@ -438,7 +510,16 @@ private fun BoxScope.IdentifyStep(onNext: () -> Unit) {
         ReportInput(
             modifier = Modifier.offset(23.dp, 213.dp).size(348.dp, 45.dp),
             placeholder = "Usuario",
-            required = false,
+            value = username,
+            onValueChange = {
+                onUsernameChange(it)
+                if (userError && it.isNotBlank()) {
+                    userError = false
+                    if (!emailError) errorMessage = null
+                }
+            },
+            required = true,
+            isError = userError,
             icon = {
                 Image(
                     painter = painterResource(R.drawable.ic_report_user),
@@ -447,8 +528,17 @@ private fun BoxScope.IdentifyStep(onNext: () -> Unit) {
                 )
             }
         )
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage!!,
+                style = jakartaText(12.5.sp, 18.sp, app_colors.formError, FontWeight.SemiBold),
+                modifier = Modifier
+                    .offset(25.dp, 272.dp)
+                    .padding(end = 25.dp)
+            )
+        }
     }
-    ReportButton("Siguiente paso", left = 75.dp, top = 618.dp, arrow = true, onClick = onNext)
+    ReportButton("Siguiente paso", left = 75.dp, top = 618.dp, arrow = true, onClick = ::validateAndProceed)
     // En Figma las secciones siguientes quedan debajo, tapadas por "Terminos de uso"
     SectionRow(704.dp, "Clasificación del problema", chevron = false)
     SectionRow(805.dp, "Clasificación del problema ", chevron = false)
