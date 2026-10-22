@@ -29,6 +29,7 @@ object Routes {
     const val HOME = "home"
     const val HOME_CATEGORY = "home/category/{key}"
     const val HOME_PLACE = "home/place/{key}"
+    const val SPOTTY = "spotty"
     const val PROFILE = "profile"
     const val PROFILE_SETTINGS = "profile/settings"
     const val PROFILE_PHOTO = "profile/photo"
@@ -116,6 +117,7 @@ fun AppNavigation() {
                     onCategory = { navController.navigate("home/category/${it.key}") },
                     onPlace = { navController.navigate("home/place/$it") },
                     onProfile = { navController.navigate(Routes.PROFILE) },
+                    onSpotty = { navController.navigate(Routes.SPOTTY) },
                     // "Cerrar sesión" cierra la sesión de Firebase y muestra "Se ha cerrado la sesión con éxito"
                     onLogout = { signOut() },
                     onGoToLogin = {
@@ -163,6 +165,16 @@ fun AppNavigation() {
                         onBack = { navController.popBackStack() }
                     )
                 }
+            }
+
+            // Spotty: 🏠 vuelve al Home, 👤 abre el perfil y cada tarjeta abre el detalle del lugar
+            composable(Routes.SPOTTY) {
+                screens.SpottyScreen(
+                    userName = user.name,
+                    onHome = { navController.popBackStack(Routes.HOME, inclusive = false) },
+                    onProfile = { navController.navigate(Routes.PROFILE) },
+                    onOpenPlace = { navController.navigate("home/place/$it") }
+                )
             }
 
             composable(Routes.PROFILE) {

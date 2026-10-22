@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,6 +57,7 @@ import decorations.figmaText
 import decorations.singular
 import decorations.FigmaSceneNode
 import decorations.FigmaWidthScale
+import decorations.HomeBottomBar
 import decorations.Scene
 import decorations.SceneNode
 import decorations.SceneScreen
@@ -79,6 +83,7 @@ fun HomeScreen(
     /** Abre el detalle de un lugar por su clave de ruta (HomePlace.key o Place.id). */
     onPlace: (String) -> Unit = {},
     onProfile: () -> Unit = {},
+    onSpotty: () -> Unit = {},
     onLogout: () -> Unit = {},
     onGoToLogin: () -> Unit = {}
 ) {
@@ -93,12 +98,17 @@ fun HomeScreen(
 
     val favorites = data.rememberFavorites()
     val context = LocalContext.current
+    val scroll = rememberScrollState()
+    val scope = rememberCoroutineScope()
 
     Box(Modifier.fillMaxSize()) {
         SceneScreen(
             // Siempre la pantalla 435:654; "Ver todos" solo cambia la fila de categorías (ver MoreCategories)
             sceneKey = "dash_main",
             statusBarColor = app_colors.white,
+            scrollState = scroll,
+            // Que "Recomendado para ti" no quede debajo de la barra inferior al final del scroll
+            bottomSpace = 24.dp,
             onClick = {
                 dashboardClicks(onCategory, onProfile, { showMore = true }, { dialog = HomeDialog.AskLogout }) { id ->
                     data.FavoriteStore.toggle(context, id)
@@ -111,6 +121,7 @@ fun HomeScreen(
                 // La fila de Figma (5 categorías) se dibuja aparte con 4: ver MainCategories
                 ids += MAIN_CATEGORY_ROW
                 ids += featuredHidden()
+                ids += FIGMA_NAV_BAR
                 if (showMore) ids += MAIN_SEE_ALL
                 // Ocultamos los nodos estáticos de corazón de Figma para reemplazarlos con el botón interactivo alineado
                 ids += listOf("435:951", "435:1002", "432:582", "468:199", "468:227", "468:159")
@@ -142,6 +153,17 @@ fun HomeScreen(
                     modifier = Modifier.placeAt(141.dp, 689.dp, 22.dp, 23.dp)
                 )
             }
+        )
+
+        // Barra inferior fija (reemplaza la de Figma): Inicio vuelve al comienzo del dashboard
+        HomeBottomBar(
+            onHome = {
+                showMore = false
+                scope.launch { scroll.animateScrollTo(0) }
+            },
+            onSpotty = onSpotty,
+            onProfile = onProfile,
+            modifier = Modifier.align(Alignment.BottomCenter)
         )
 
         when (dialog) {
@@ -348,6 +370,9 @@ private fun HomeTagChip(label: String, tag: HomeTag, height: Float, weight: Font
 private const val MAIN_CATEGORY_ROW = "435:771"
 private const val MAIN_SEE_ALL = "538:934"
 
+/** Barra inferior de Figma ("Navegación principal"): se dibuja aparte con [HomeBottomBar]. */
+private const val FIGMA_NAV_BAR = "435:1391"
+
 private fun dashboardClicks(
     onCategory: (HomeCategory) -> Unit,
     onProfile: () -> Unit,
@@ -357,7 +382,6 @@ private fun dashboardClicks(
 ): Map<String, () -> Unit> = mapOf(
     MAIN_SEE_ALL to showMore,
     "454:2131" to askLogout,
-    "435:1452" to onProfile,
     "435:951" to { onFav(HomePlace.JUAN_VALDEZ.key) },
     "435:1002" to { onFav(HomePlace.BBC.key) },
     "432:582" to { onFav(HomePlace.MUSEO_ORO.key) },

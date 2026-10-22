@@ -29,6 +29,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material3.Text
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 /**
  * Pantalla del módulo Home dibujada desde una escena de Figma ([sceneKey], ver [FigmaScene]).
@@ -46,6 +66,8 @@ fun SceneScreen(
     hide: (Scene) -> Set<String> = { emptySet() },
     texts: (Scene) -> Map<String, String> = { emptyMap() },
     images: (Scene) -> Map<String, String> = { emptyMap() },
+    /** Espacio libre al final del contenido (además de la barra de navegación del sistema), p. ej. para no quedar bajo [HomeBottomBar]. */
+    bottomSpace: Dp? = null,
     overlay: @Composable BoxScope.(Scene) -> Unit = {}
 ) {
     val scene = rememberScene(sceneKey)
@@ -74,6 +96,10 @@ fun SceneScreen(
                 }
             } else {
                 Spacer(Modifier.height(screenHeight))
+            }
+            if (bottomSpace != null) {
+                Spacer(Modifier.height(bottomSpace))
+                Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             }
         }
     }
@@ -181,5 +207,101 @@ fun FigmaCardHeartButton(
                 modifier = Modifier.size(size)
             )
         }
+    }
+}
+
+/** Destellos amarillos de Figma (446:942) que identifican a Spotty, el asistente de IA. */
+private const val SPOTTY_SPARKLES = "3b548698d9c8c1be.png"
+
+/**
+ * Barra de navegación inferior del Home: Inicio (activa), Spotty (asistente de IA) y Perfil.
+ * Flota fija sobre el contenido como una tarjeta blanca redondeada con sombra suave, igual que las
+ * tarjetas del dashboard; Spotty sobresale al centro con el degradado verde azulado de la marca.
+ * Cada destino lleva ícono y etiqueta para que se lea de un vistazo.
+ */
+@Composable
+fun HomeBottomBar(
+    onHome: () -> Unit,
+    onSpotty: () -> Unit,
+    onProfile: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(26.dp)
+    Box(
+        modifier
+            .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .height(BAR_HEIGHT)
+                .shadow(18.dp, shape, ambientColor = app_colors.navShadow, spotColor = app_colors.navShadow)
+                .background(app_colors.white, shape)
+                .border(1.dp, app_colors.navBorder, shape)
+                .padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            NavItem("Inicio", Icons.Rounded.Home, selected = true, onClick = onHome, modifier = Modifier.weight(1f))
+            // Hueco para el botón central de Spotty, que se dibuja encima
+            Spacer(Modifier.width(SPOTTY_SIZE + 24.dp))
+            NavItem("Perfil", Icons.Outlined.Person, selected = false, onClick = onProfile, modifier = Modifier.weight(1f))
+        }
+        SpottyButton(onSpotty, Modifier.padding(bottom = 8.dp))
+    }
+}
+
+/** Alto de la barra sin márgenes; las pantallas dejan este espacio libre al final del contenido. */
+val BAR_HEIGHT = 66.dp
+private val SPOTTY_SIZE = 62.dp
+
+@Composable
+private fun NavItem(label: String, icon: ImageVector, selected: Boolean, onClick: () -> Unit, modifier: Modifier) {
+    val tint = if (selected) app_colors.navActive else app_colors.navInactive
+    Column(
+        modifier
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(onClick = onClick, role = Role.Tab, onClickLabel = label)
+            .padding(vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            Modifier
+                .size(width = 56.dp, height = 30.dp)
+                .background(if (selected) app_colors.navActiveBg else Color.Transparent, RoundedCornerShape(15.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
+        }
+        Spacer(Modifier.height(3.dp))
+        Text(
+            label,
+            style = figmaText(app_fonts.inter, 12.sp, 16.sp, tint, if (selected) FontWeight.Bold else FontWeight.SemiBold),
+            maxLines = 1
+        )
+    }
+}
+
+/** Botón central de Spotty: círculo con el degradado de la marca, borde blanco y su nombre debajo. */
+@Composable
+private fun SpottyButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            Modifier
+                .size(SPOTTY_SIZE)
+                .shadow(10.dp, CircleShape, ambientColor = app_colors.spottyGradEnd, spotColor = app_colors.spottyGradStart)
+                .background(app_colors.white, CircleShape)
+                .padding(4.dp)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(listOf(app_colors.spottyGradStart, app_colors.spottyGradEnd)))
+                .clickable(onClick = onClick, role = Role.Button, onClickLabel = "Abrir Spotty, asistente de IA"),
+            contentAlignment = Alignment.Center
+        ) {
+            SceneImage(SPOTTY_SPARKLES, Modifier.size(32.dp))
+        }
+        Spacer(Modifier.height(2.dp))
+        Text("Spotty", style = figmaText(app_fonts.inter, 12.sp, 16.sp, app_colors.navLabel, FontWeight.ExtraBold), maxLines = 1)
     }
 }

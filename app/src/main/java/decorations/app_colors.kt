@@ -70,10 +70,15 @@ object app_colors {
     val tagAmberBg = Color(0xFFFEF3C7)
     val tagAmberText = Color(0xFF92400E)
 
-    // Barra inferior (Spotty)
-    val bottomBarBlue = Color(0xFF1363D5)
+    // Barra inferior (Inicio · Spotty · Perfil)
     val spottyGradStart = Color(0xFF1B5158)
     val spottyGradEnd = Color(0xFF10B981)
+    val navBorder = Color(0xFFE6ECF3)
+    val navShadow = Color(0xFF0F2548)
+    val navActiveBg = Color(0xFFE6F8F3)
+    val navActive = Color(0xFF0F766E)
+    val navInactive = Color(0xFF64748B)
+    val navLabel = Color(0xFF091E42)
 
     // Perfil ("Bienvenida Perfil App")
     val profileCorner = Color(0xFF00BFA5)

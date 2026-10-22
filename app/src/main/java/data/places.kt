@@ -29,6 +29,9 @@ data class Place(
     val name: String,
     val category: HomeCategory,
     val address: String,
+    /** Coordenadas verificadas (data_import/geocodificar.ps1); null si el lugar aún no las tiene. */
+    val lat: Double? = null,
+    val lng: Double? = null,
     val distanceM: Int,
     val distance: String,
     val walkMin: Int,
@@ -67,6 +70,8 @@ private fun placeOf(o: JSONObject): Place? {
         name = o.getString("name"),
         category = category,
         address = o.optString("address"),
+        lat = o.optDouble("lat").takeUnless { it.isNaN() },
+        lng = o.optDouble("lng").takeUnless { it.isNaN() },
         distanceM = o.optInt("distanceM"),
         distance = o.optString("distance"),
         walkMin = o.optInt("walkMin", 1),
@@ -129,7 +134,12 @@ object PlaceStore {
                     Log.w(TAG, "Lugares de Firestore no disponibles, se usan los de la app: ${error.message}")
                     return@addSnapshotListener
                 }
-                val list = snap?.documents?.mapNotNull { it.toPlace() }.orEmpty()
+                // Los documentos de Firestore se subieron antes de geocodificar: las coordenadas que
+                // les falten se toman de places.json (mismo id), sin escribir nada en la base.
+                val coords = (bundled ?: loadBundled(context)).associate { it.id to (it.lat to it.lng) }
+                val list = snap?.documents?.mapNotNull { it.toPlace() }.orEmpty().map { p ->
+                    if (p.lat != null) p else coords[p.id]?.let { (lat, lng) -> p.copy(lat = lat, lng = lng) } ?: p
+                }
                 if (list.isNotEmpty()) {
                     remote = list.sortedWith(compareBy({ it.category.ordinal }, { it.distanceM }, { it.name }))
                     observers.forEach { it(remote!!) }

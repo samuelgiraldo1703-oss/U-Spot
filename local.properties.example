@@ -1,0 +1,12 @@
+## Plantilla de local.properties (este archivo SÍ va en Git; local.properties NO).
+##
+## 1. Abre tu local.properties (Android Studio → Gradle Scripts → local.properties).
+##    Android Studio ya pone ahí tu sdk.dir: no lo borres.
+## 2. Agrega al final la línea de abajo con la clave de Gemini que te pasó el equipo por un
+##    canal privado (nunca por un grupo, el chat de GitHub ni capturas). El repositorio es
+##    público: si la clave se sube a GitHub, cualquiera puede usarla y Google la desactiva.
+## 3. Guarda (Ctrl + S) y haz clic en "Sync Now".
+##
+## Paso a paso completo (incluye cómo crear tu propia clave gratis): docs/spotty/TUTORIAL_API_KEY.md
+
+GEMINI_API_KEY=

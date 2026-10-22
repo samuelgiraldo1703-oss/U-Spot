@@ -147,12 +147,23 @@ foreach ($g in ($rows | Group-Object { CategoryOf $_ })) {
     }
 }
 
+# ---- Coordenadas (data_import/geocodificar.ps1): Spotty calcula distancias reales con ellas ----
+$coords = @{}
+$coordsPath = Join-Path $PSScriptRoot 'coordenadas.csv'
+if (Test-Path $coordsPath) {
+    Import-Csv -Encoding UTF8 $coordsPath | Where-Object { $_.lat } | ForEach-Object {
+        $coords[$_.id] = @([double]::Parse($_.lat, [Globalization.CultureInfo]::InvariantCulture),
+                           [double]::Parse($_.lng, [Globalization.CultureInfo]::InvariantCulture))
+    }
+}
+
 # ---- Lugares ----
 $dayWords = '^(Lun|Mar|Mi|Jue|Vie|S|Dom)'
 $places = foreach ($row in $rows) {
     $plainName = Plain $row.name
     $cat = CategoryOf $row
     $figmaKey = $figma[$plainName]
+    $placeId = if ($figmaKey) { $figmaKey } else { Slug $row.name }
 
     $meters = if ($row.distance -match '^([\d.]+)\s*km$') { [int]([double]$Matches[1] * 1000) }
               elseif ($row.distance -match '^(\d+)\s*m$') { [int]$Matches[1] }
@@ -187,11 +198,14 @@ $places = foreach ($row in $rows) {
     }
 
     [ordered]@{
-        id            = if ($figmaKey) { $figmaKey } else { Slug $row.name }
+        id            = $placeId
         figma         = $figmaKey
         name          = $(if ($renames[$plainName]) { $renames[$plainName] } else { $row.name })
         category      = $cat
         address       = $row.address
+        # null si el lugar aún no tiene coordenadas verificadas (Spotty usa entonces distanceM)
+        lat           = $(if ($coords[$placeId]) { $coords[$placeId][0] } else { $null })
+        lng           = $(if ($coords[$placeId]) { $coords[$placeId][1] } else { $null })
         distanceM     = $meters
         distance      = $distance
         walkMin       = [int][math]::Max(1, [math]::Ceiling($meters / 75))

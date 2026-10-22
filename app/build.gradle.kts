@@ -4,6 +4,14 @@ plugins {
     alias(libs.plugins.google.services)
 }
 
+// Clave de Gemini para Spotty: cada integrante la pone en su local.properties (ignorado por Git),
+// ver docs/spotty/TUTORIAL_API_KEY.md. Sin ella la app compila y Spotty avisa que falta.
+val geminiApiKey: String = rootProject.file("local.properties").takeIf { it.exists() }
+    ?.readLines()
+    ?.firstOrNull { it.trim().startsWith("GEMINI_API_KEY=") }
+    ?.substringAfter("=")?.trim()
+    ?: ""
+
 android {
     namespace = "com.example.u_spot"
     compileSdk {
@@ -18,6 +26,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
     }
 
     // Keystore de depuración compartido (versionado en el repo): todos los equipos firman con el
@@ -48,6 +58,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -76,6 +87,10 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+
+    // Spotty (chatbot): conexión a Gemini y ubicación del usuario
+    implementation(libs.okhttp)
+    implementation(libs.play.services.location)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

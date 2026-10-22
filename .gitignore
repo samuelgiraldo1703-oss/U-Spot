@@ -17,3 +17,5 @@ captures/
 .firebase/
 emulator_screen.png
 figma_export/
+data_import/osm_calles_centro.json
+data_import/osm_nominatim_cache.xml
