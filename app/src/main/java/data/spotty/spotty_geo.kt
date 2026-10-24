@@ -33,5 +33,6 @@ object SpottyGeo {
     /** "A 350 m" / "A 1.2 km" (estilo de las tarjetas de Figma). */
     fun label(meters: Int): String =
         if (meters < 1000) "A ${((meters + 25) / 50) * 50} m"
-        else "A ${"%.1f".format(java.util.Locale.US, meters / 1000.0)} km"
+        else if (meters < 10000) "A ${"%.1f".format(java.util.Locale.US, meters / 1000.0)} km"
+        else "A ${"%,d".format(java.util.Locale.US, meters / 1000).replace(',', '.')} km"
 }

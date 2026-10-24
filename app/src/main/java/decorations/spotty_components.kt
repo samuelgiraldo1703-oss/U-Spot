@@ -52,6 +52,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,6 +64,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -98,6 +101,8 @@ private object SpottyColors {
     val cornerBlue = Color(0xFF1363D5)
     val bubble = Color(0xFF87B8AE)
     val bubbleBorder = Color(0xFFF1F5F9)
+    // Contorno negro de las burbujas y tarjetas de Spotty (más legible sobre el fondo verde)
+    val outline = Color(0xFF000000)
     val bubbleShadow1 = Color(0x0A0D56CF)
     val bubbleShadow2 = Color(0x120D56CF)
     val greetingTitle = Color(0xFF0A2540)
@@ -202,7 +207,8 @@ fun BoxScope.SpottyHistoryCorner(welcome: Boolean, onHistory: () -> Unit) {
             // Más abajo que el ✨ / 🏠 de Figma para no quedar bajo los íconos de la barra de estado
             .figmaPosition(left = if (welcome) 345.dp else 347.dp, top = if (welcome) 36.dp else 42.dp, width = 48.dp, height = 48.dp)
             .clip(CircleShape)
-            .clickable(onClick = onHistory, role = Role.Button, onClickLabel = "Ver historial de chats"),
+            .clickable(onClick = onHistory, role = Role.Button, onClickLabel = "Ver historial de chats")
+            .semantics { contentDescription = "Ver historial de chats" },
         contentAlignment = Alignment.Center
     ) {
         SceneImage("c0d84cd6689db51c.png", Modifier.size(36.dp))
@@ -245,49 +251,18 @@ fun SpottyModelBadge(label: String, modifier: Modifier = Modifier) {
 // Mensajes
 // ---------------------------------------------------------------------------------------------
 
-/** Burbuja de saludo con el avatar de Spotty ("Spotty Welcome Message" 444:706). */
-@Composable
-fun SpottyGreeting(userName: String, time: Long, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth().padding(start = 12.dp, end = 16.dp)) {
-        SceneImage("09e6a5010822005b.png", Modifier.size(50.dp))
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.widthIn(max = 296.dp)) {
-            Column(
-                Modifier
-                    .spottyShadow(bubbleShape)
-                    .background(SpottyColors.bubble, bubbleShape)
-                    .border(1.dp, SpottyColors.bubbleBorder, bubbleShape)
-                    .padding(17.dp)
-            ) {
-                Text("¡Hola, $userName! 👋", style = jakarta(14, 22.75f, SpottyColors.greetingTitle, 700))
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    buildAnnotatedString {
-                        append("Soy ")
-                        withStyle(SpanStyle(color = SpottyColors.amber)) { append("Spotty") }
-                        append(", tu copiloto inteligente de planes y ocio. ¿Qué experiencia o ambiente buscas para hoy o este fin de semana?")
-                    },
-                    style = jakarta(14, 22.75f, SpottyColors.body)
-                )
-            }
-            Spacer(Modifier.height(4.dp))
-            Text("Spotty • ${spottyClock(time)}", style = jakarta(10, 15f, SpottyColors.timeGray), modifier = Modifier.padding(start = 4.dp))
-        }
-    }
-}
-
 /** Respuesta de texto de Spotty ("Text Intro" 444:764). */
 @Composable
 fun SpottyTextBubble(text: String, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().padding(start = 31.dp, end = 16.dp)) {
         Text(
             text,
-            style = jakarta(14, 20f, SpottyColors.body),
+            style = jakarta(15, 22f, SpottyColors.body, 500),
             modifier = Modifier
                 .widthIn(max = 306.dp)
                 .spottyShadow(bubbleShape)
                 .background(SpottyColors.bubble, bubbleShape)
-                .border(1.dp, SpottyColors.bubbleBorder, bubbleShape)
+                .border(1.5.dp, SpottyColors.outline, bubbleShape)
                 .padding(15.dp)
         )
     }
@@ -308,7 +283,7 @@ fun SpottyUserBubble(text: String, time: Long, modifier: Modifier = Modifier) {
                 .padding(14.dp)
         )
         Spacer(Modifier.height(4.dp))
-        Text("Tú • ${spottyClock(time)}", style = jakarta(10, 15f, Color.White), modifier = Modifier.padding(end = 4.dp))
+        Text("Tú • ${spottyClock(time)}", style = jakarta(11, 15f, Color.White), modifier = Modifier.padding(end = 4.dp))
     }
 }
 
@@ -322,13 +297,13 @@ fun SpottyAnalysisPill(text: String, modifier: Modifier = Modifier) {
                 .widthIn(max = 300.dp)
                 .heightIn(min = 43.dp)
                 .background(SpottyColors.bubble, shape)
-                .border(1.dp, SpottyColors.pillBorder, shape)
+                .border(1.5.dp, SpottyColors.outline, shape)
                 .padding(start = 13.dp, end = 14.dp, top = 5.dp, bottom = 5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(Modifier.size(8.dp).background(SpottyColors.pillDot, CircleShape))
             Spacer(Modifier.width(16.dp))
-            Text(text, style = jakarta(11, 16.5f, SpottyColors.pillText, 600))
+            Text(text, style = jakarta(12, 17f, SpottyColors.pillText, 700))
         }
     }
 }
@@ -338,7 +313,7 @@ fun SpottyAnalysisPill(text: String, modifier: Modifier = Modifier) {
 fun SpottyFollowUp(text: String?, time: Long, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth().padding(start = 35.dp, end = 20.dp)) {
         if (text != null) {
-            Text(text, style = jakarta(11, 16.5f, Color.White, 500))
+            Text(text, style = jakarta(13, 19f, Color.White, 600))
             Spacer(Modifier.height(11.dp))
         }
         Text("Spotty • ${spottyClock(time)}", style = jakarta(12, 15f, SpottyColors.amber))
@@ -354,7 +329,7 @@ fun SpottyTypingBubble(modifier: Modifier = Modifier) {
             Modifier
                 .spottyShadow(bubbleShape)
                 .background(SpottyColors.bubble, bubbleShape)
-                .border(1.dp, SpottyColors.bubbleBorder, bubbleShape)
+                .border(1.5.dp, SpottyColors.outline, bubbleShape)
                 .padding(horizontal = 18.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -392,7 +367,7 @@ fun SpottyProblemBubble(problem: SpottyProblem, onRetry: (() -> Unit)?, modifier
         ) {
             Text(title, style = jakarta(14, 20f, SpottyColors.greetingTitle, 700))
             Spacer(Modifier.height(4.dp))
-            Text(body, style = jakarta(13, 19f, SpottyColors.body))
+            Text(body, style = jakarta(14, 20f, SpottyColors.body, 500))
             if (onRetry != null) {
                 Spacer(Modifier.height(10.dp))
                 Row(
@@ -418,12 +393,12 @@ fun SpottyProblemBubble(problem: SpottyProblem, onRetry: (() -> Unit)?, modifier
 
 /** Filtros rápidos bajo el saludo ("Quick Filter Suggestion Chips" 444:724): blancos, redondos. */
 @Composable
-fun SpottyQuickChips(chips: List<String>, onClick: (String) -> Unit, modifier: Modifier = Modifier) {
+fun SpottyQuickChips(chips: List<String>, onClick: (String) -> Unit, modifier: Modifier = Modifier, start: Dp = 60.dp) {
     Row(
         modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(start = 60.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
+            .padding(start = start, end = 16.dp, top = 4.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         chips.forEachIndexed { i, chip ->
@@ -499,7 +474,9 @@ private enum class CardChipColor(val bg: Color, val fg: Color) {
 
 /** Hasta tres etiquetas con datos reales: categoría, un rasgo y el nivel de precio. */
 private fun Place.cardChips(): List<Pair<String, CardChipColor>> = buildList {
-    add("${category.emoji} ${category.singular}" to CardChipColor.TEAL)
+    // Los cines están en la categoría teatros, pero se muestran como lo que son
+    val cinema = category == HomeCategory.TEATROS && Regex("\\bcine").containsMatchIn(name.lowercase())
+    add((if (cinema) "🎬 Cine" else "${category.emoji} ${category.singular}") to CardChipColor.TEAL)
     when {
         group -> add("👥 Apto grupos" to CardChipColor.PURPLE)
         nequi -> add("📲 Acepta Nequi" to CardChipColor.GREEN)
@@ -512,15 +489,19 @@ private fun Place.cardChips(): List<Pair<String, CardChipColor>> = buildList {
 
 /**
  * Foto propia del lugar. Los 16 lugares con pantalla de Figma no traen foto en places.json: se
- * toma la foto grande de su pantalla (la imagen más grande de la parte superior), así ninguna
- * tarjeta repite la foto genérica de la categoría.
+ * toma la foto de la cabecera de su pantalla, así ninguna tarjeta repite la foto genérica de la
+ * categoría. Encima de la foto Figma pone una capa de degradado del mismo tamaño ("Gradient",
+ * "Dark Gradient Overlay…"): esas capas se descartan para no tomar el degradado como foto.
  */
 @Composable
 fun rememberPlacePhoto(place: Place): String {
     val figma = place.figma ?: return place.photo
     val scene = rememberScene(figma.sceneKey) ?: return place.photo
     return remember(scene) {
-        scene.allNodes { it is SceneNode.Picture && it.y < 300f && it.w >= 300f }
+        scene.allNodes {
+            it is SceneNode.Picture && it.y < 300f && it.w >= 300f &&
+                !it.name.contains("gradient", ignoreCase = true) && !it.name.contains("overlay", ignoreCase = true)
+        }
             .maxByOrNull { it.w * it.h }
             ?.let { (it as SceneNode.Picture).src }
             ?: place.photo
@@ -545,13 +526,16 @@ fun SpottyPlaceCard(
                 .spottyShadow(shape)
                 .clip(shape)
                 .background(SpottyColors.bubble)
-                .border(1.dp, SpottyColors.bubbleBorder, shape)
+                .border(1.5.dp, SpottyColors.outline, shape)
                 .clickable(onClick = onDetails)
                 .padding(1.dp)
         ) {
             // Foto con degradado, insignias, corazón, nombre y dirección (112 de alto)
             Box(Modifier.fillMaxWidth().height(112.dp).background(SpottyColors.photoBg)) {
-                SceneImage(rememberPlacePhoto(place), Modifier.fillMaxSize(), crop = true)
+                // key(): SceneImage conserva la primera imagen que pinta; al llegar la foto de la
+                // pantalla de Figma (tras la genérica de la categoría) hay que recrearla
+                val photo = rememberPlacePhoto(place)
+                key(photo) { SceneImage(photo, Modifier.fillMaxSize(), crop = true) }
                 Box(
                     Modifier
                         .fillMaxSize()
@@ -712,7 +696,8 @@ fun SpottyWelcomeInput(
                 .offset(302.dp, 50.dp)
                 .size(40.dp)
                 .clip(CircleShape)
-                .clickable(enabled = value.isNotBlank(), onClick = onSend, role = Role.Button, onClickLabel = "Enviar"),
+                .clickable(enabled = value.isNotBlank(), onClick = onSend, role = Role.Button, onClickLabel = "Enviar")
+                .semantics { contentDescription = "Enviar mensaje" },
             contentAlignment = Alignment.Center
         ) {
             SceneImage("34bf19e525a99cc3.png", Modifier.size(40.dp).alpha(if (value.isNotBlank()) 1f else 0.6f))
@@ -770,64 +755,14 @@ fun SpottyInputBar(
                 Modifier
                     .size(51.dp, 50.dp)
                     .clip(CircleShape)
-                    .clickable(enabled = enabled && value.isNotBlank(), onClick = onSend, role = Role.Button, onClickLabel = "Enviar"),
+                    .clickable(enabled = enabled && value.isNotBlank(), onClick = onSend, role = Role.Button, onClickLabel = "Enviar")
+                .semantics { contentDescription = "Enviar mensaje" },
                 contentAlignment = Alignment.Center
             ) {
                 SceneImage("e93de06e24f5d8bc.png", Modifier.size(51.dp, 50.dp).alpha(if (enabled && value.isNotBlank()) 1f else 0.55f))
             }
         }
         Spacer(Modifier.height(10.dp))
-    }
-}
-
-// ---------------------------------------------------------------------------------------------
-// Barra inferior (Navegación principal 448:1344): 🏠 | Spotty | 👤
-// ---------------------------------------------------------------------------------------------
-
-/**
- * Píldora azul con borde negro de Figma, con Spotty resaltado al centro. Mide 387 x 113; en
- * Figma sobresale 10 dp por debajo del frame, aquí queda completa sobre la barra del sistema.
- */
-@Composable
-fun SpottyNavBar(onHome: () -> Unit, onProfile: () -> Unit, modifier: Modifier = Modifier, background: Color = Color.Transparent) {
-    Column(modifier.fillMaxWidth().background(background)) {
-        Box(Modifier.fillMaxWidth().height(103.dp)) {
-            val pill = RoundedCornerShape(56.dp)
-            Box(
-                Modifier
-                    .align(Alignment.TopCenter)
-                    .size(387.dp, 113.dp)
-                    .dropShadow(pill, Shadow(radius = 10.dp, spread = (-6).dp, color = Color(0x1A000000), offset = DpOffset(0.dp, 8.dp)))
-                    .dropShadow(pill, Shadow(radius = 25.dp, spread = (-5).dp, color = Color(0x1A000000), offset = DpOffset(0.dp, 20.dp)))
-                    .background(SpottyColors.nav, pill)
-                    .border(BorderStroke(3.dp, Color.Black), pill)
-            ) {
-                Box(
-                    Modifier
-                        .offset(35.dp, 27.dp)
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .clickable(onClick = onHome, role = Role.Tab, onClickLabel = "Inicio"),
-                    contentAlignment = Alignment.Center
-                ) { SceneImage("b0402e91c56f9b37.png", Modifier.size(44.dp)) }
-                SceneImage("450eb77d94dda0c3.png", Modifier.offset(118.dp, 8.5.dp).size(142.dp, 48.dp))
-                SceneImage("3b548698d9c8c1be.png", Modifier.offset(171.dp, 13.dp).size(40.dp))
-                Text(
-                    "Spotty",
-                    style = figmaText(app_fonts.inter, 20.sp, 15.sp, SpottyColors.navLabel, FontWeight.Bold),
-                    modifier = Modifier.offset(158.dp, 67.dp).figmaLineBox(15.sp)
-                )
-                Box(
-                    Modifier
-                        .offset(295.dp, 27.dp)
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .clickable(onClick = onProfile, role = Role.Tab, onClickLabel = "Perfil"),
-                    contentAlignment = Alignment.Center
-                ) { SceneImage("6466dec44cff2292.png", Modifier.size(44.dp)) }
-            }
-        }
-        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }
 }
 

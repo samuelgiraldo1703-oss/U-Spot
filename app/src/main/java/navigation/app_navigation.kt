@@ -186,6 +186,8 @@ fun AppNavigation() {
                     onAccountSettings = { navController.navigate(Routes.PROFILE_SETTINGS) },
                     onPreferences = { navController.navigate(Routes.PROFILE_PREFERENCES) },
                     onHelp = { navController.navigate(Routes.PROFILE_HELP) },
+                    // Tarjetas de "Recomendaciones": abren el detalle del lugar
+                    onOpenPlace = { navController.navigate("home/place/$it") },
                     onSaveBio = { text ->
                         scope.launch { if (!data.saveBio(text)) toast("No se pudo guardar la descripción") }
                     }

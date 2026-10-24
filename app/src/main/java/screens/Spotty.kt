@@ -61,6 +61,13 @@ import data.isOnline
 import data.spotty.AndroidSpottyLocator
 import data.spotty.GeminiClient
 import data.spotty.SpottyEngine
+import data.spotty.SpottyChatRepository
+import data.spotty.SpottyGps
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.DisposableEffect
+import com.google.firebase.firestore.ListenerRegistration
 import data.spotty.SpottyException
 
 import data.spotty.SpottyChatSummary
@@ -75,13 +82,12 @@ import decorations.SpottyChatHeader
 import decorations.SpottyDeleteDialog
 import decorations.SpottyFavoriteToast
 import decorations.SpottyFollowUp
-import decorations.SpottyGreeting
 import decorations.SpottyHistoryCorner
 import decorations.SpottyHistoryPanel
 import decorations.SpottyInputBar
 import decorations.SpottyLogo
 import decorations.SpottyModelBadge
-import decorations.SpottyNavBar
+import decorations.HomeBottomBar
 import decorations.SpottyPlaceCard
 import decorations.SpottyProblemBubble
 import decorations.SpottyQuickChips
@@ -123,7 +129,28 @@ fun SpottyScreen(
     val placesById = remember(places) { places.associateBy { it.id } }
     val favorites = rememberFavorites()
     val scope = rememberCoroutineScope()
-    val demo = remember { SpottyChat(SpottyEngine({ PlaceStore.all(context) }, AndroidSpottyLocator(context))) { isOnline(context) } }
+    val gps = remember { SpottyGps(context) }
+    val chat = remember {
+        SpottyChat(
+            engine = SpottyEngine({ PlaceStore.all(context) }, AndroidSpottyLocator(context, gps::current)),
+            repo = SpottyChatRepository.forCurrentUser(),
+            isOnline = { isOnline(context) }
+        )
+    }
+    DisposableEffect(Unit) {
+        chat.start()
+        onDispose { chat.stop() }
+    }
+
+    // Permiso de ubicación: se pide solo cuando Spotty lo necesita ("cerca de mí")
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        gps.onPermissionResult(result.values.any { it })
+    }
+    LaunchedEffect(gps.pendingRequest) {
+        if (gps.pendingRequest != null) {
+            permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+        }
+    }
 
     var input by rememberSaveable { mutableStateOf("") }
     var showHistory by rememberSaveable { mutableStateOf(false) }
@@ -132,9 +159,9 @@ fun SpottyScreen(
 
     fun send(text: String) {
         val clean = text.trim()
-        if (clean.isEmpty() || demo.typing) return
+        if (clean.isEmpty() || chat.typing) return
         input = ""
-        scope.launch { demo.send(clean, userName) }
+        scope.launch { chat.send(clean, userName) }
     }
 
     BackHandler(enabled = showHistory || toDelete != null) {
@@ -148,47 +175,45 @@ fun SpottyScreen(
     Box(Modifier.fillMaxSize().background(spottyBackground)) {
         Column(Modifier.fillMaxSize().imePadding()) {
             Box(Modifier.fillMaxWidth().weight(1f)) {
-                if (demo.messages.isEmpty() && !demo.typing) {
+                if (chat.messages.isEmpty() && !chat.typing) {
                     SpottyWelcome(
                         userName = userName,
                         input = input,
                         onInput = { input = it },
                         onSend = { send(input) },
-                        onHistory = { showHistory = true }
+                        onHistory = { showHistory = true },
+                        onChip = ::send
                     )
                 } else {
                     SpottyConversation(
-                        userName = userName,
-                        demo = demo,
+                        chat = chat,
                         placesById = placesById,
                         favorites = favorites,
-                        onChip = ::send,
                         onHistory = { showHistory = true },
                         onOpenPlace = onOpenPlace,
                         onFavorite = { id ->
                             if (id !in favorites) showFavToast = true
                             FavoriteStore.toggle(context, id)
                         },
-                        onRetry = { scope.launch { demo.retry(userName) } }
+                        onRetry = { scope.launch { chat.retry(userName) } }
                     )
                 }
             }
-            if (demo.messages.isNotEmpty() || demo.typing) {
+            if (chat.messages.isNotEmpty() || chat.typing) {
                 SpottyInputBar(
                     value = input,
                     onValueChange = { input = it },
                     onSend = { send(input) },
-                    suggestions = demo.messages.lastOrNull()?.takeIf { it.role == SpottyRole.SPOTTY }?.suggestions.orEmpty(),
+                    suggestions = chat.messages.lastOrNull()?.takeIf { it.role == SpottyRole.SPOTTY }?.suggestions.orEmpty(),
                     onSuggestion = ::send,
-                    enabled = !demo.typing
+                    enabled = !chat.typing
                 )
             }
             if (!imeVisible) {
-                SpottyNavBar(
-                    onHome = onHome,
-                    onProfile = onProfile,
-                    background = if (demo.messages.isEmpty() && !demo.typing) Color.Transparent else Color(0xFF3F8578)
-                )
+                // Misma barra del Home, con Spotty resaltado (estamos dentro de Spotty)
+                Box(Modifier.fillMaxWidth().background(if (chat.messages.isEmpty() && !chat.typing) Color.Transparent else Color(0xFF3F8578))) {
+                    HomeBottomBar(onHome = onHome, onSpotty = {}, onProfile = onProfile, spottyActive = true)
+                }
             }
         }
 
@@ -218,21 +243,21 @@ fun SpottyScreen(
             modifier = Modifier.align(Alignment.CenterEnd)
         ) {
             SpottyHistoryPanel(
-                chats = demo.chats,
-                currentChatId = demo.currentChatId,
-                onNewChat = { demo.newChat(); showHistory = false },
-                onOpen = { demo.open(it.id); showHistory = false },
+                chats = chat.chats,
+                currentChatId = chat.currentChatId,
+                onNewChat = { chat.newChat(); showHistory = false },
+                onOpen = { chat.open(it.id); showHistory = false },
                 onDelete = { toDelete = it },
                 onClose = { showHistory = false },
                 modifier = Modifier.width(SPOTTY_PANEL_WIDTH)
             )
         }
 
-        toDelete?.let { chat ->
+        toDelete?.let { summary ->
             SpottyDeleteDialog(
-                chatTitle = chat.title,
+                chatTitle = summary.title,
                 onCancel = { toDelete = null },
-                onDelete = { demo.delete(chat.id); toDelete = null }
+                onDelete = { scope.launch { chat.delete(summary.id) }; toDelete = null }
             )
         }
     }
@@ -245,7 +270,8 @@ private fun SpottyWelcome(
     input: String,
     onInput: (String) -> Unit,
     onSend: () -> Unit,
-    onHistory: () -> Unit
+    onHistory: () -> Unit,
+    onChip: (String) -> Unit
 ) {
     Box(Modifier.fillMaxSize()) {
         SpottyLogo(Modifier.offset(30.dp, 32.dp))
@@ -270,6 +296,9 @@ private fun SpottyWelcome(
             }
             Spacer(Modifier.height(80.dp))
             SpottyWelcomeInput(input, onInput, onSend, MODEL_LABEL, Modifier.offset(x = 6.dp))
+            // Ideas para empezar (antes estaban bajo el saludo de la conversación)
+            Spacer(Modifier.height(14.dp))
+            SpottyQuickChips(QUICK_CHIPS, onChip, start = 34.dp)
             Spacer(Modifier.weight(1f))
         }
     }
@@ -278,11 +307,9 @@ private fun SpottyWelcome(
 /** Conversación (579:369 arriba, 593:11 abajo) bajo el encabezado fijo. */
 @Composable
 private fun SpottyConversation(
-    userName: String,
-    demo: SpottyChat,
+    chat: SpottyChat,
     placesById: Map<String, Place>,
     favorites: Set<String>,
-    onChip: (String) -> Unit,
     onHistory: () -> Unit,
     onOpenPlace: (String) -> Unit,
     onFavorite: (String) -> Unit,
@@ -290,15 +317,15 @@ private fun SpottyConversation(
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    // Índices: 0 etiqueta del modelo, 1 saludo, 2.. mensajes, luego "escribiendo" o el aviso
-    val extra = if (demo.typing || demo.problem != null) 1 else 0
-    val lastIndex = 1 + demo.messages.size + extra
-    LaunchedEffect(demo.messages.size, extra) {
-        val last = demo.messages.lastOrNull() ?: return@LaunchedEffect
+    // Índices: 0 etiqueta del modelo, 1.. mensajes, luego "escribiendo" o el aviso
+    val extra = if (chat.typing || chat.problem != null) 1 else 0
+    val lastIndex = chat.messages.size + extra
+    LaunchedEffect(chat.messages.size, extra) {
+        val last = chat.messages.lastOrNull() ?: return@LaunchedEffect
         if (last.role == SpottyRole.SPOTTY && extra == 0) {
             // Como en los chats de IA: la pregunta queda arriba y la respuesta se lee hacia abajo
-            val question = demo.messages.indexOfLast { it.role == SpottyRole.USER }
-            listState.animateScrollToItem(2 + question.coerceAtLeast(0))
+            val question = chat.messages.indexOfLast { it.role == SpottyRole.USER }
+            listState.animateScrollToItem(1 + question.coerceAtLeast(0))
         } else {
             listState.animateScrollToItem(lastIndex)
             listState.scrollToItem(lastIndex, Int.MAX_VALUE / 2)
@@ -318,14 +345,7 @@ private fun SpottyConversation(
                     SpottyModelBadge(MODEL_LABEL)
                 }
             }
-            item(key = "greeting") {
-                Column {
-                    SpottyGreeting(userName, demo.startedAt)
-                    Spacer(Modifier.height(12.dp))
-                    SpottyQuickChips(QUICK_CHIPS, onChip)
-                }
-            }
-            items(demo.messages, key = { it.id }) { msg ->
+            items(chat.messages, key = { it.id }) { msg ->
                 if (msg.role == SpottyRole.USER) {
                     SpottyUserBubble(msg.text, msg.time)
                 } else {
@@ -347,8 +367,8 @@ private fun SpottyConversation(
                     }
                 }
             }
-            if (demo.typing) item(key = "typing") { SpottyTypingBubble() }
-            demo.problem?.let { p -> item(key = "problem") { SpottyProblemBubble(p, onRetry.takeIf { p == SpottyProblem.OFFLINE || p == SpottyProblem.GENERIC }) } }
+            if (chat.typing) item(key = "typing") { SpottyTypingBubble() }
+            chat.problem?.let { p -> item(key = "problem") { SpottyProblemBubble(p, onRetry.takeIf { p == SpottyProblem.OFFLINE || p == SpottyProblem.GENERIC }) } }
         }
 
         SpottyChatHeader(onHistory = onHistory, modifier = Modifier.align(Alignment.TopCenter))
@@ -370,58 +390,102 @@ private fun SpottyConversation(
 }
 
 // =============================================================================================
-// Estado de los chats. Fase 3: en memoria (se pierde al cerrar la app); Fase 5 lo guarda en
-// Firestore (users/{uid}/chats).
+// Estado de los chats: historial en Firestore (users/{uid}/chats). Sin sesión, solo en memoria.
 // =============================================================================================
 
-private class SpottyChat(private val engine: SpottyEngine, private val isOnline: () -> Boolean) {
+private class SpottyChat(
+    private val engine: SpottyEngine,
+    repo: SpottyChatRepository?,
+    private val isOnline: () -> Boolean
+) {
+    /** Se vuelve null si Firestore rechaza el acceso: desde ahí el historial vive en memoria. */
+    private var repo: SpottyChatRepository? = repo
     val chats = mutableStateListOf<SpottyChatSummary>()
-    private val store = mutableStateMapOf<String, List<SpottyMessage>>()
+    val messages = mutableStateListOf<SpottyMessage>()
     var currentChatId by mutableStateOf<String?>(null)
     var typing by mutableStateOf(false)
     var problem by mutableStateOf<SpottyProblem?>(null)
     var startedAt by mutableStateOf(System.currentTimeMillis())
 
-    val messages: List<SpottyMessage> get() = currentChatId?.let { store[it] }.orEmpty()
+    private var chatsListener: ListenerRegistration? = null
+    private var messagesListener: ListenerRegistration? = null
+    /** Sin sesión: mensajes de cada chat en memoria. */
+    private val memory = mutableMapOf<String, List<SpottyMessage>>()
+
+    fun start() {
+        chatsListener = repo?.observeChats(onError = { goLocal() }) { list -> chats.clear(); chats.addAll(list) }
+    }
+
+    /** Firestore no disponible (p. ej. reglas sin publicar): se sigue en memoria sin perder lo que hay en pantalla. */
+    private fun goLocal() {
+        repo = null
+        messagesListener?.remove(); messagesListener = null
+        currentChatId?.let { memory[it] = messages.toList() }
+    }
+
+    fun stop() {
+        chatsListener?.remove(); messagesListener?.remove()
+    }
 
     fun newChat() {
-        currentChatId = null; problem = null; typing = false; startedAt = System.currentTimeMillis()
+        messagesListener?.remove(); messagesListener = null
+        currentChatId = null; messages.clear(); problem = null; typing = false
+        startedAt = System.currentTimeMillis()
     }
 
     fun open(id: String) {
-        currentChatId = id; problem = null; typing = false
-        startedAt = store[id]?.firstOrNull()?.time ?: System.currentTimeMillis()
+        newChat()
+        currentChatId = id
+        if (repo == null) { messages.addAll(memory[id].orEmpty()); startedAt = messages.firstOrNull()?.time ?: startedAt; return }
+        listen(id)
     }
 
-    fun delete(id: String) {
-        chats.removeAll { it.id == id }
-        store.remove(id)
+    private fun listen(id: String) {
+        messagesListener?.remove()
+        messagesListener = repo?.observeMessages(id) { list ->
+            if (currentChatId != id) return@observeMessages
+            messages.clear(); messages.addAll(list)
+            list.firstOrNull()?.let { startedAt = it.time }
+        }
+    }
+
+    suspend fun delete(id: String) {
         if (currentChatId == id) newChat()
+        chats.removeAll { it.id == id }
+        memory.remove(id)
+        repo?.delete(id)
     }
 
-    private fun add(chatId: String, msg: SpottyMessage) {
-        store[chatId] = store[chatId].orEmpty() + msg
-        val i = chats.indexOfFirst { it.id == chatId }
-        if (i >= 0) chats[i] = chats[i].copy(updatedAt = msg.time)
+    private fun save(chatId: String, msg: SpottyMessage, title: String? = null) {
+        if (currentChatId == chatId && messages.none { it.id == msg.id }) messages.add(msg)
+        val cloud = repo
+        if (cloud != null) cloud.add(chatId, msg, title)
+        else {
+            memory[chatId] = memory[chatId].orEmpty() + msg
+            val i = chats.indexOfFirst { it.id == chatId }
+            if (i >= 0) chats[i] = chats[i].copy(updatedAt = msg.time) else chats.add(0, SpottyChatSummary(chatId, title ?: msg.text.take(60), msg.time))
+        }
     }
 
     suspend fun send(text: String, userName: String) {
         val now = System.currentTimeMillis()
-        val chatId = currentChatId ?: UUID.randomUUID().toString().also { id ->
+        var title: String? = null
+        val chatId = currentChatId ?: (repo?.newChatId() ?: UUID.randomUUID().toString()).also { id ->
             // El título sale de la primera pregunta (sin gastar una llamada a Gemini)
-            chats.add(0, SpottyChatSummary(id, text.take(60), now))
+            title = text.take(60)
             currentChatId = id
             startedAt = now
         }
         problem = null
-        add(chatId, SpottyMessage(UUID.randomUUID().toString(), SpottyRole.USER, text, now))
+        save(chatId, SpottyMessage(UUID.randomUUID().toString(), SpottyRole.USER, text, now), title)
+        if (title != null && repo != null) listen(chatId)
         answer(chatId, userName)
     }
 
     /** Vuelve a pedir la respuesta de la última pregunta (después de un error). */
     suspend fun retry(userName: String) {
         val chatId = currentChatId ?: return
-        if (store[chatId]?.lastOrNull()?.role != SpottyRole.USER) return
+        if (messages.lastOrNull()?.role != SpottyRole.USER) return
         problem = null
         answer(chatId, userName)
     }
@@ -430,8 +494,8 @@ private class SpottyChat(private val engine: SpottyEngine, private val isOnline:
         if (!isOnline()) { problem = SpottyProblem.OFFLINE; return }
         typing = true
         try {
-            val reply = engine.reply(store[chatId].orEmpty(), userName)
-            add(chatId, reply)
+            val reply = engine.reply(messages.toList(), userName)
+            save(chatId, reply)
         } catch (e: SpottyException) {
             if (currentChatId == chatId) problem = e.problem
         } catch (e: Exception) {

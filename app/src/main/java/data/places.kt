@@ -134,11 +134,19 @@ object PlaceStore {
                     Log.w(TAG, "Lugares de Firestore no disponibles, se usan los de la app: ${error.message}")
                     return@addSnapshotListener
                 }
-                // Los documentos de Firestore se subieron antes de geocodificar: las coordenadas que
-                // les falten se toman de places.json (mismo id), sin escribir nada en la base.
-                val coords = (bundled ?: loadBundled(context)).associate { it.id to (it.lat to it.lng) }
-                val list = snap?.documents?.mapNotNull { it.toPlace() }.orEmpty().map { p ->
-                    if (p.lat != null) p else coords[p.id]?.let { (lat, lng) -> p.copy(lat = lat, lng = lng) } ?: p
+                // Los documentos de Firestore se subieron antes de geocodificar y sin el enlace a la
+                // pantalla de Figma ni la foto propia: lo que les falte se toma de places.json (mismo
+                // id), sin escribir nada en la base.
+                val local = (bundled ?: loadBundled(context)).associateBy { it.id }
+                val raw = snap?.documents?.mapNotNull { it.toPlace() }.orEmpty()
+                val list = raw.map { p ->
+                    val l = local[p.id] ?: return@map p
+                    p.copy(
+                        lat = p.lat ?: l.lat,
+                        lng = p.lng ?: l.lng,
+                        figma = p.figma ?: l.figma,
+                        photoFile = p.photoFile ?: l.photoFile
+                    )
                 }
                 if (list.isNotEmpty()) {
                     remote = list.sortedWith(compareBy({ it.category.ordinal }, { it.distanceM }, { it.name }))

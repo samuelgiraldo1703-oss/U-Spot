@@ -50,6 +50,21 @@ import androidx.compose.ui.unit.sp
 import com.example.u_spot.R
 import data.BIO_MAX_LENGTH
 import data.UserProfile
+import data.FavoriteStore
+import data.HomeCategory
+import data.Place
+import data.rememberFavorites
+import data.rememberPlaces
+import data.spotty.SpottyBudget
+import data.spotty.SpottyGeo
+import decorations.SceneImage
+import decorations.rememberPlacePhoto
+import decorations.singular
+import androidx.compose.runtime.key
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.ui.platform.LocalContext
 import decorations.BackButton
 import decorations.ProfileCanvas
 import decorations.ProfileCorner
@@ -83,14 +98,44 @@ private data class ProfileMenuSpec(
     val onClick: () -> Unit
 )
 
-private data class RecommendationSpec(
-    @param:DrawableRes val photoRes: Int,
-    val rating: String,
-    val name: String,
-    val category: String,
-    val distance: String,
-    val price: String
+/** Orden de las categorías en "Recomendaciones": una tarjeta por categoría, para que sean variadas. */
+private val RECOMMENDATION_ORDER = listOf(
+    HomeCategory.CAFES, HomeCategory.BARES, HomeCategory.OCIO, HomeCategory.RESTAURANTES,
+    HomeCategory.MUSEOS, HomeCategory.TEATROS
 )
+
+/**
+ * Recomendaciones del perfil con lugares reales: el mejor de cada categoría por cercanía a la
+ * Tadeo y precio, sin los que el usuario ya tiene en favoritos. Entre los 3 mejores de cada
+ * categoría se rota uno distinto cada día, para que la sección no sea siempre igual.
+ */
+private fun recommendedPlaces(places: List<Place>, favorites: Set<String>): List<Place> {
+    val day = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR)
+    fun score(p: Place): Double {
+        val meters = SpottyGeo.meters(SpottyGeo.UTADEO, p) ?: 3000
+        val price = SpottyBudget.pricePerPerson(p)?.let { (it.first + it.last) / 2 } ?: 60000
+        return meters / 1000.0 + price / 25000.0
+    }
+    return RECOMMENDATION_ORDER.mapNotNull { category ->
+        val top = places.filter { it.category == category && it.id !in favorites && it.lat != null }
+            .sortedBy(::score)
+            .take(3)
+        top.getOrNull(day % top.size.coerceAtLeast(1))
+    }
+}
+
+/** "1.2 km" / "450 m" desde la Tadeo, como en la tarjeta de Figma. */
+private fun Place.distanceFromUtadeo(): String =
+    SpottyGeo.meters(SpottyGeo.UTADEO, this)?.let { SpottyGeo.label(it).removePrefix("A ") } ?: distance
+
+/** "$", "$$" o "$$$" según lo que gasta una persona. */
+private fun Place.priceLevel(): String =
+    when (val min = SpottyBudget.pricePerPerson(this)?.first) {
+        null -> "$$"
+        in 0 until 15000 -> "$"
+        in 15000 until 35000 -> "$$"
+        else -> "$$$"
+    }
 
 /** Figma: "Bienvenida Perfil App" (202:6). */
 @Composable
@@ -102,9 +147,13 @@ fun ProfileScreen(
     onAccountSettings: () -> Unit = {},
     onPreferences: () -> Unit = {},
     onHelp: () -> Unit = {},
-    onSeeAllRecommendations: () -> Unit = {},
+    /** Abre el detalle de un lugar recomendado (Place.id). */
+    onOpenPlace: (String) -> Unit = {},
     onSaveBio: (String) -> Unit = {}
 ) {
+    val context = LocalContext.current.applicationContext
+    val places = rememberPlaces()
+    val favorites = rememberFavorites()
     val menu = listOf(
         ProfileMenuSpec(
             R.drawable.ic_profile_menu_heart, app_colors.profileMenuFavoritesBg,
@@ -123,13 +172,9 @@ fun ProfileScreen(
             "Ayuda y soporte", "Preguntas frecuentes y contacto", onHelp
         )
     )
-    val recommendations = remember {
-        listOf(
-            RecommendationSpec(R.drawable.profile_rec_la_embajada, "4.6", "La Embajada", "Bar", "1.2 km", "$$"),
-            RecommendationSpec(R.drawable.profile_rec_tostao, "4.8", "Tostao Café", "Cafetería", "0.8 km", "$"),
-            RecommendationSpec(R.drawable.profile_rec_mundo_bowling, "4.4", "Mundo Bowling", "Bolos", "2.1 km", "$$")
-        )
-    }
+    // Se calcula al entrar (con los favoritos de ese momento): si el usuario guarda una tarjeta,
+    // se queda en su sitio con el corazón lleno en vez de desaparecer.
+    val recommendations = remember(places) { recommendedPlaces(places, favorites) }
 
     ProfileCanvas(designHeight = 916.dp) {
         ProfileCorner(app_colors.profileCorner)
@@ -243,24 +288,9 @@ fun ProfileScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Recomendaciónes",
+                text = "Recomendaciones",
                 style = jakartaText(17.sp, 25.5.sp, app_colors.profileNavy, FontWeight.Bold)
             )
-            Row(
-                modifier = Modifier.clickable(onClick = onSeeAllRecommendations),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Ver todos",
-                    style = jakartaText(12.sp, 16.sp, app_colors.profileTeal, FontWeight.SemiBold)
-                )
-                Image(
-                    painter = painterResource(R.drawable.ic_profile_arrow_right),
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp)
-                )
-            }
         }
         Row(
             modifier = Modifier
@@ -269,7 +299,14 @@ fun ProfileScreen(
                 .padding(horizontal = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            recommendations.forEach { RecommendationCard(it) }
+            recommendations.forEach { place ->
+                RecommendationCard(
+                    place = place,
+                    isFavorite = place.id in favorites,
+                    onClick = { onOpenPlace(place.id) },
+                    onFavorite = { FavoriteStore.toggle(context, place.id) }
+                )
+            }
         }
     }
 }
@@ -490,7 +527,7 @@ private fun ProfileMenuCard(spec: ProfileMenuSpec) {
 }
 
 @Composable
-private fun RecommendationCard(spec: RecommendationSpec) {
+private fun RecommendationCard(place: Place, isFavorite: Boolean, onClick: () -> Unit, onFavorite: () -> Unit) {
     val shape = RoundedCornerShape(16.dp)
     Column(
         modifier = Modifier
@@ -499,52 +536,43 @@ private fun RecommendationCard(spec: RecommendationSpec) {
             .clip(shape)
             .background(app_colors.white)
             .border(1.dp, app_colors.profileCardBorder, shape)
+            .clickable(onClick = onClick, onClickLabel = "Ver ${place.name}")
             .padding(1.dp)
     ) {
-        // "Thumbnail with Rating & Heart Badges"
+        // "Thumbnail with Heart Badge" (sin calificación: no hay estrellas reales)
         Box(
             Modifier
                 .fillMaxWidth()
                 .height(88.dp)
         ) {
-            Image(
-                painter = painterResource(spec.photoRes),
-                contentDescription = spec.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-            Row(
-                modifier = Modifier
-                    .padding(start = 6.dp, top = 6.dp)
-                    .background(app_colors.profileRatingBadge, CircleShape)
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.ic_profile_rating_star),
-                    contentDescription = null,
-                    modifier = Modifier.size(10.dp)
-                )
-                Spacer(Modifier.width(2.dp))
-                Text(
-                    text = spec.rating,
-                    style = jakartaText(10.sp, 10.sp, app_colors.profileNavy, FontWeight.Bold),
-                    modifier = Modifier.figmaLineBox(10.sp)
-                )
-            }
+            // Foto propia del lugar (la de su pantalla de Figma o la del Excel); key() porque la
+            // de Figma llega después de la genérica de la categoría
+            val photo = rememberPlacePhoto(place)
+            key(photo) { SceneImage(photo, Modifier.fillMaxSize(), crop = true) }
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = 6.dp, end = 6.dp)
-                    .size(20.dp)
-                    .background(app_colors.profileSavedBadge, CircleShape),
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(app_colors.profileSavedBadge)
+                    .clickable(onClick = onFavorite, onClickLabel = if (isFavorite) "Quitar de favoritos" else "Guardar en favoritos"),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(R.drawable.ic_profile_heart_filled),
-                    contentDescription = "Guardado",
-                    modifier = Modifier.size(12.dp)
-                )
+                if (isFavorite) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_profile_heart_filled),
+                        contentDescription = "Guardado en favoritos",
+                        modifier = Modifier.size(12.dp)
+                    )
+                } else {
+                    Icon(
+                        Icons.Outlined.FavoriteBorder,
+                        contentDescription = "Guardar en favoritos",
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
             }
         }
         // "Info Details"
@@ -557,13 +585,13 @@ private fun RecommendationCard(spec: RecommendationSpec) {
         ) {
             Column {
                 Text(
-                    text = spec.name,
+                    text = place.name,
                     style = jakartaText(12.sp, 16.sp, app_colors.profileNavy, FontWeight.Bold),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = spec.category,
+                    text = if (place.category == HomeCategory.TEATROS && Regex("\\bcine").containsMatchIn(place.name.lowercase())) "Cine" else place.category.singular,
                     style = jakartaText(10.sp, 15.sp, app_colors.profileMuted, FontWeight.Medium),
                     maxLines = 1
                 )
@@ -585,12 +613,12 @@ private fun RecommendationCard(spec: RecommendationSpec) {
                         modifier = Modifier.size(10.dp)
                     )
                     Text(
-                        text = spec.distance,
+                        text = place.distanceFromUtadeo(),
                         style = jakartaText(9.5.sp, 14.25.sp, app_colors.profileMuted, FontWeight.Medium)
                     )
                 }
                 Text(
-                    text = spec.price,
+                    text = place.priceLevel(),
                     style = jakartaText(9.5.sp, 14.25.sp, app_colors.profilePrice, FontWeight.SemiBold)
                 )
             }

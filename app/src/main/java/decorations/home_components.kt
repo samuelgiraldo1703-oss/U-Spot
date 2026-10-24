@@ -214,7 +214,8 @@ fun FigmaCardHeartButton(
 private const val SPOTTY_SPARKLES = "3b548698d9c8c1be.png"
 
 /**
- * Barra de navegación inferior del Home: Inicio (activa), Spotty (asistente de IA) y Perfil.
+ * Barra de navegación inferior: Inicio, Spotty (asistente de IA) y Perfil. La usan el Home
+ * (Inicio activa) y Spotty ([spottyActive]: Spotty resaltado).
  * Flota fija sobre el contenido como una tarjeta blanca redondeada con sombra suave, igual que las
  * tarjetas del dashboard; Spotty sobresale al centro con el degradado verde azulado de la marca.
  * Cada destino lleva ícono y etiqueta para que se lea de un vistazo.
@@ -224,7 +225,8 @@ fun HomeBottomBar(
     onHome: () -> Unit,
     onSpotty: () -> Unit,
     onProfile: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    spottyActive: Boolean = false
 ) {
     val shape = RoundedCornerShape(26.dp)
     Box(
@@ -244,12 +246,12 @@ fun HomeBottomBar(
                 .padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            NavItem("Inicio", Icons.Rounded.Home, selected = true, onClick = onHome, modifier = Modifier.weight(1f))
+            NavItem("Inicio", Icons.Rounded.Home, selected = !spottyActive, onClick = onHome, modifier = Modifier.weight(1f))
             // Hueco para el botón central de Spotty, que se dibuja encima
             Spacer(Modifier.width(SPOTTY_SIZE + 24.dp))
             NavItem("Perfil", Icons.Outlined.Person, selected = false, onClick = onProfile, modifier = Modifier.weight(1f))
         }
-        SpottyButton(onSpotty, Modifier.padding(bottom = 8.dp))
+        SpottyButton(onSpotty, spottyActive, Modifier.padding(bottom = 8.dp))
     }
 }
 
@@ -286,13 +288,15 @@ private fun NavItem(label: String, icon: ImageVector, selected: Boolean, onClick
 
 /** Botón central de Spotty: círculo con el degradado de la marca, borde blanco y su nombre debajo. */
 @Composable
-private fun SpottyButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun SpottyButton(onClick: () -> Unit, active: Boolean, modifier: Modifier = Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier
                 .size(SPOTTY_SIZE)
                 .shadow(10.dp, CircleShape, ambientColor = app_colors.spottyGradEnd, spotColor = app_colors.spottyGradStart)
                 .background(app_colors.white, CircleShape)
+                // Activo (dentro de Spotty): anillo del color de la pestaña activa
+                .then(if (active) Modifier.border(3.dp, app_colors.navActive, CircleShape) else Modifier)
                 .padding(4.dp)
                 .clip(CircleShape)
                 .background(Brush.linearGradient(listOf(app_colors.spottyGradStart, app_colors.spottyGradEnd)))
@@ -302,6 +306,6 @@ private fun SpottyButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             SceneImage(SPOTTY_SPARKLES, Modifier.size(32.dp))
         }
         Spacer(Modifier.height(2.dp))
-        Text("Spotty", style = figmaText(app_fonts.inter, 12.sp, 16.sp, app_colors.navLabel, FontWeight.ExtraBold), maxLines = 1)
+        Text("Spotty", style = figmaText(app_fonts.inter, 12.sp, 16.sp, if (active) app_colors.navActive else app_colors.navLabel, FontWeight.ExtraBold), maxLines = 1)
     }
 }

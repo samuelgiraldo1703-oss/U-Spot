@@ -21,7 +21,12 @@ data class SpottyHit(val place: Place, val meters: Int?, val match: Int, val peo
  * Funciones que Gemini puede pedir. Todas se ejecutan aquí, sobre el catálogo real: el modelo
  * solo decide qué buscar y redacta; los lugares, precios, distancias y cuentas salen de Kotlin.
  */
-class SpottyTools(private val places: List<Place>, private val locator: SpottyLocator) {
+class SpottyTools(
+    private val places: List<Place>,
+    private val locator: SpottyLocator,
+    /** Última pregunta del usuario: si nombra un tipo concreto ("cine") se aplica aunque el modelo no lo pida. */
+    private val userText: String = ""
+) {
 
     /** Todo lo que devolvieron las búsquedas de esta pregunta, por id (las tarjetas salen de aquí). */
     val hits = linkedMapOf<String, SpottyHit>()
@@ -41,9 +46,10 @@ class SpottyTools(private val places: List<Place>, private val locator: SpottyLo
                 .put("name", "buscar_lugares")
                 .put("description", "Busca lugares del catálogo de U-Spot (centro de Bogotá) y devuelve los mejores con precios por persona, cuenta del grupo y distancia reales. Úsala siempre antes de recomendar.")
                 .put("parameters", JSONObject().put("type", "object").put("properties", JSONObject()
-                    .put("categoria", prop("string", "Tipo de lugar. Omitir si el usuario no lo dice.").put("enum", JSONArray(CATEGORIES)))
+                    .put("categoria", prop("string", "Categoría del catálogo. teatros = teatros Y CINES (Cine Colombia CityU, Cinemateca de Bogotá); ocio = billar, tejo, bolos, parques, Monserrate, centros culturales; museos = museos y galerías; restaurantes = comida; cafes = cafés y panaderías; librerias = librerías. Omitir si el usuario no lo dice o no estás seguro.").put("enum", JSONArray(CATEGORIES)))
+                    .put("tipo_lugar", prop("string", "Tipo concreto que pide el usuario, en una o dos palabras: cine, billar, tejo, bolos, karaoke, galería, pizza, sushi, hamburguesas, café, brunch, salsa, jazz, cerveza artesanal… Se busca en el nombre del lugar y funciona aunque la categoría no sea la exacta."))
                     .put("personas", prop("integer", "Cuántas personas van, contando al usuario. 1 si va solo."))
-                    .put("presupuesto_max_por_persona", prop("integer", "Máximo que puede gastar cada persona, en pesos colombianos (40 lucas = 40000)."))
+                    .put("presupuesto_max_por_persona", prop("integer", "Máximo que puede gastar cada persona, en pesos colombianos (40 lucas = 40000; 0 = gratis). Omitir si no lo dice."))
                     .put("acepta_nequi", prop("boolean", "true si debe aceptar pago con Nequi."))
                     .put("para_estudiar", prop("boolean", "true si es para estudiar o trabajar con calma."))
                     .put("plan_solo", prop("boolean", "true si la persona va sola."))
@@ -85,6 +91,52 @@ class SpottyTools(private val places: List<Place>, private val locator: SpottyLo
         ))
     }
 
+    /** Minúsculas y sin tildes, para comparar nombres ("Cinemateca de Bogotá" → "cinemateca de bogota"). */
+    private fun plain(s: String): String =
+        java.text.Normalizer.normalize(s.lowercase().trim(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
+
+    /** Tipos concretos que no son una categoría del catálogo: etiqueta y palabras que los delatan en el nombre. */
+    private val kinds = listOf(
+        "Cine" to listOf("cine", "cinema", "pelicula", "peliculas", "cinemateca"),
+        "Billar" to listOf("billar", "pool"),
+        "Tejo" to listOf("tejo"),
+        "Bolos" to listOf("bolos", "bolera", "boliche"),
+        "Karaoke" to listOf("karaoke"),
+        "Galería" to listOf("galeria", "gallery"),
+        "Cervecería" to listOf("cerveza", "cerveceria", "beer", "pub", "brew"),
+        "Salsa" to listOf("salsa"),
+        "Jazz" to listOf("jazz"),
+        "Pizzería" to listOf("pizza", "pizzeria"),
+        "Sushi" to listOf("sushi"),
+        "Hamburguesas" to listOf("hamburguesa", "hamburguesas", "burger"),
+        "Crepes y waffles" to listOf("crepe", "crepes", "waffle"),
+        "Brunch" to listOf("brunch")
+    )
+
+    /** ¿El lugar es del tipo pedido? Se mira el nombre (con sinónimos) y, si no, la palabra tal cual. */
+    private fun kindMatches(p: Place, kind: String): Boolean {
+        val name = plain(p.name)
+        val group = kinds.firstOrNull { (_, words) -> words.any { it == kind || kind.startsWith(it) || it.startsWith(kind) } }
+        return group?.second?.any { Regex("\\b$it").containsMatchIn(name) } ?: Regex("\\b${Regex.escape(kind)}").containsMatchIn(name)
+    }
+
+    /**
+     * Tipo de sitio inequívoco mencionado en la pregunta ("quiero ir a un cine", "ver una película",
+     * "jugar billar"). Solo tipos que son un sitio en sí mismos: "cerveza" o "pizza" no, porque
+     * filtrarían de más un "bar para tomar cerveza".
+     */
+    private fun kindInText(text: String): String? {
+        val t = plain(text)
+        return listOf("cine", "cinema", "pelicula", "billar", "tejo", "bolos", "bolera", "karaoke")
+            .firstOrNull { Regex("\\b$it").containsMatchIn(t) }
+    }
+
+    /** "Cine", "Billar"… si el nombre lo delata (se le pasa al modelo para que lo describa bien). */
+    private fun kindOf(p: Place): String? {
+        val name = plain(p.name)
+        return kinds.firstOrNull { (_, words) -> words.any { Regex("\\b$it").containsMatchIn(name) } }?.first
+    }
+
     /** Ejecuta una función (menos [RESPONDER]) y devuelve el JSON que se le manda al modelo. */
     suspend fun run(name: String, args: JSONObject): JSONObject = when (name) {
         "buscar_lugares" -> search(args)
@@ -96,7 +148,8 @@ class SpottyTools(private val places: List<Place>, private val locator: SpottyLo
     private suspend fun search(a: JSONObject): JSONObject {
         val category = HomeCategory.fromKey(a.optString("categoria").takeIf { it.isNotBlank() })
         val people = a.optInt("personas", 1).coerceIn(1, 50)
-        val budgetMax = a.optInt("presupuesto_max_por_persona", 0).takeIf { it > 0 }
+        // 0 es válido: "gratis"
+        val budgetMax = if (a.has("presupuesto_max_por_persona")) a.optInt("presupuesto_max_por_persona", 0).coerceAtLeast(0) else null
         val nequi = a.optBoolean("acepta_nequi", false)
         val study = a.optBoolean("para_estudiar", false)
         val solo = a.optBoolean("plan_solo", false)
@@ -110,6 +163,14 @@ class SpottyTools(private val places: List<Place>, private val locator: SpottyLo
         val origin = locator.origin(zone, nearMe)
         var pool = places.filter { category == null || it.category == category }
         if (name != null) pool = pool.filter { name in it.name.lowercase() }
+        // Tipo concreto ("cine", "billar"…): se busca en todo el catálogo por nombre y sinónimos; si la
+        // categoría pedida no lo tiene pero otra sí (p. ej. cines en teatros), gana el tipo.
+        val kind = a.optString("tipo_lugar").takeIf { it.isNotBlank() }?.let(::plain) ?: kindInText(userText)
+        if (kind != null) {
+            val byKind = places.filter { p -> kindMatches(p, kind) && (name == null || name in p.name.lowercase()) }
+            val inCategory = byKind.filter { category == null || it.category == category }
+            pool = inCategory.ifEmpty { byKind }.ifEmpty { pool }
+        }
         analyzed = pool.size
 
         // Filtros: obligatorios primero; los opcionales se aflojan (y se avisa) si dejan la lista vacía
@@ -163,8 +224,13 @@ class SpottyTools(private val places: List<Place>, private val locator: SpottyLo
             "Todos los lugares de U-Spot están en el centro de Bogotá; el más cercano a ${origin.label} está a ${SpottyGeo.label(nearest).removePrefix("A ")}. Díselo al usuario con honestidad."
         else null
 
+        val locationHint = if (nearMe && !origin.precise)
+            "No tengo la ubicación del usuario (no dio permiso o no hay GPS): las distancias son desde la Universidad Jorge Tadeo Lozano. Díselo y pregúntale en qué barrio o lugar está."
+        else null
+
         return JSONObject()
             .apply { warning?.let { put("aviso", it) } }
+            .apply { locationHint?.let { put("aviso_ubicacion", it) } }
             .put("lugares_analizados", analyzed)
             .put("coincidencias", pool.size)
             .put("distancias_desde", origin.label + if (origin.precise) "" else " (aproximado)")
@@ -178,6 +244,7 @@ class SpottyTools(private val places: List<Place>, private val locator: SpottyLo
             .put("id", p.id)
             .put("nombre", p.name)
             .put("categoria", p.category.label)
+            .apply { kindOf(p)?.let { put("tipo", it) } }
             .put("direccion", p.address)
             .put("horario", p.hours + if (p.hoursVaries) " (aproximado)" else "")
             .put("precio_por_persona", p.price + if (p.priceVaries) " (varía según el evento)" else "")
