@@ -82,6 +82,7 @@ fun AppNavigation() {
 
     // Cierra la sesión de Firebase y de Credential Manager (vuelve a salir el selector de cuentas)
     fun signOut() {
+        data.spotty.SpottyChat.reset()
         scope.launch { googleAuthHelper.signOut() }
     }
 

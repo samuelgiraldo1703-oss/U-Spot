@@ -61,6 +61,7 @@ import data.isOnline
 import data.spotty.AndroidSpottyLocator
 import data.spotty.GeminiClient
 import data.spotty.SpottyEngine
+import data.spotty.SpottyChat
 import data.spotty.SpottyChatRepository
 import data.spotty.SpottyGps
 import android.Manifest
@@ -129,14 +130,8 @@ fun SpottyScreen(
     val placesById = remember(places) { places.associateBy { it.id } }
     val favorites = rememberFavorites()
     val scope = rememberCoroutineScope()
-    val gps = remember { SpottyGps(context) }
-    val chat = remember {
-        SpottyChat(
-            engine = SpottyEngine({ PlaceStore.all(context) }, AndroidSpottyLocator(context, gps::current)),
-            repo = SpottyChatRepository.forCurrentUser(),
-            isOnline = { isOnline(context) }
-        )
-    }
+    val chat = remember { SpottyChat.getInstance(context) }
+    val gps = chat.gps
     DisposableEffect(Unit) {
         chat.start()
         onDispose { chat.stop() }
@@ -385,124 +380,6 @@ private fun SpottyConversation(
                     listState.scrollToItem(lastIndex, Int.MAX_VALUE / 2)
                 }
             })
-        }
-    }
-}
-
-// =============================================================================================
-// Estado de los chats: historial en Firestore (users/{uid}/chats). Sin sesión, solo en memoria.
-// =============================================================================================
-
-private class SpottyChat(
-    private val engine: SpottyEngine,
-    repo: SpottyChatRepository?,
-    private val isOnline: () -> Boolean
-) {
-    /** Se vuelve null si Firestore rechaza el acceso: desde ahí el historial vive en memoria. */
-    private var repo: SpottyChatRepository? = repo
-    val chats = mutableStateListOf<SpottyChatSummary>()
-    val messages = mutableStateListOf<SpottyMessage>()
-    var currentChatId by mutableStateOf<String?>(null)
-    var typing by mutableStateOf(false)
-    var problem by mutableStateOf<SpottyProblem?>(null)
-    var startedAt by mutableStateOf(System.currentTimeMillis())
-
-    private var chatsListener: ListenerRegistration? = null
-    private var messagesListener: ListenerRegistration? = null
-    /** Sin sesión: mensajes de cada chat en memoria. */
-    private val memory = mutableMapOf<String, List<SpottyMessage>>()
-
-    fun start() {
-        chatsListener = repo?.observeChats(onError = { goLocal() }) { list -> chats.clear(); chats.addAll(list) }
-    }
-
-    /** Firestore no disponible (p. ej. reglas sin publicar): se sigue en memoria sin perder lo que hay en pantalla. */
-    private fun goLocal() {
-        repo = null
-        messagesListener?.remove(); messagesListener = null
-        currentChatId?.let { memory[it] = messages.toList() }
-    }
-
-    fun stop() {
-        chatsListener?.remove(); messagesListener?.remove()
-    }
-
-    fun newChat() {
-        messagesListener?.remove(); messagesListener = null
-        currentChatId = null; messages.clear(); problem = null; typing = false
-        startedAt = System.currentTimeMillis()
-    }
-
-    fun open(id: String) {
-        newChat()
-        currentChatId = id
-        if (repo == null) { messages.addAll(memory[id].orEmpty()); startedAt = messages.firstOrNull()?.time ?: startedAt; return }
-        listen(id)
-    }
-
-    private fun listen(id: String) {
-        messagesListener?.remove()
-        messagesListener = repo?.observeMessages(id) { list ->
-            if (currentChatId != id) return@observeMessages
-            messages.clear(); messages.addAll(list)
-            list.firstOrNull()?.let { startedAt = it.time }
-        }
-    }
-
-    suspend fun delete(id: String) {
-        if (currentChatId == id) newChat()
-        chats.removeAll { it.id == id }
-        memory.remove(id)
-        repo?.delete(id)
-    }
-
-    private fun save(chatId: String, msg: SpottyMessage, title: String? = null) {
-        if (currentChatId == chatId && messages.none { it.id == msg.id }) messages.add(msg)
-        val cloud = repo
-        if (cloud != null) cloud.add(chatId, msg, title)
-        else {
-            memory[chatId] = memory[chatId].orEmpty() + msg
-            val i = chats.indexOfFirst { it.id == chatId }
-            if (i >= 0) chats[i] = chats[i].copy(updatedAt = msg.time) else chats.add(0, SpottyChatSummary(chatId, title ?: msg.text.take(60), msg.time))
-        }
-    }
-
-    suspend fun send(text: String, userName: String) {
-        val now = System.currentTimeMillis()
-        var title: String? = null
-        val chatId = currentChatId ?: (repo?.newChatId() ?: UUID.randomUUID().toString()).also { id ->
-            // El título sale de la primera pregunta (sin gastar una llamada a Gemini)
-            title = text.take(60)
-            currentChatId = id
-            startedAt = now
-        }
-        problem = null
-        save(chatId, SpottyMessage(UUID.randomUUID().toString(), SpottyRole.USER, text, now), title)
-        if (title != null && repo != null) listen(chatId)
-        answer(chatId, userName)
-    }
-
-    /** Vuelve a pedir la respuesta de la última pregunta (después de un error). */
-    suspend fun retry(userName: String) {
-        val chatId = currentChatId ?: return
-        if (messages.lastOrNull()?.role != SpottyRole.USER) return
-        problem = null
-        answer(chatId, userName)
-    }
-
-    private suspend fun answer(chatId: String, userName: String) {
-        if (!isOnline()) { problem = SpottyProblem.OFFLINE; return }
-        typing = true
-        try {
-            val reply = engine.reply(messages.toList(), userName)
-            save(chatId, reply)
-        } catch (e: SpottyException) {
-            if (currentChatId == chatId) problem = e.problem
-        } catch (e: Exception) {
-            Log.e("Spotty", "Error inesperado", e)
-            if (currentChatId == chatId) problem = SpottyProblem.GENERIC
-        } finally {
-            typing = false
         }
     }
 }

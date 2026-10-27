@@ -6,6 +6,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -63,6 +64,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.res.painterResource
+import com.example.u_spot.R
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -204,14 +207,17 @@ fun BoxScope.SpottyHistoryCorner(welcome: Boolean, onHistory: () -> Unit) {
     }
     Box(
         Modifier
-            // Más abajo que el ✨ / 🏠 de Figma para no quedar bajo los íconos de la barra de estado
-            .figmaPosition(left = if (welcome) 345.dp else 347.dp, top = if (welcome) 36.dp else 42.dp, width = 48.dp, height = 48.dp)
+            .figmaPosition(left = if (welcome) 344.dp else 347.dp, top = if (welcome) 32.dp else 38.dp, width = 50.dp, height = 50.dp)
             .clip(CircleShape)
             .clickable(onClick = onHistory, role = Role.Button, onClickLabel = "Ver historial de chats")
             .semantics { contentDescription = "Ver historial de chats" },
         contentAlignment = Alignment.Center
     ) {
-        SceneImage("c0d84cd6689db51c.png", Modifier.size(36.dp))
+        Image(
+            painter = painterResource(R.drawable.ic_spotty_sparkles_header),
+            contentDescription = "Ver historial de chats",
+            modifier = Modifier.size(46.dp)
+        )
     }
 }
 
