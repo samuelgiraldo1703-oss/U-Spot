@@ -131,7 +131,7 @@ fun RegisterScreen(
 
         BackButton(onClick = onBack, modifier = Modifier.figmaPosition(left = 15.dp, top = belowStatusBar(12.dp)))
         Sparkles(Modifier.figmaPosition(right = 16.dp, top = belowStatusBar(32.dp), width = 40.dp, height = 40.dp))
-        HeaderLogo(Modifier.figmaPosition(left = 58.dp, top = 32.dp, width = 287.dp, height = 100.dp))
+        HeaderLogo(Modifier.figmaPosition(left = 58.dp, top = belowStatusBar(32.dp), width = 287.dp, height = 100.dp))
 
         Column(Modifier.figmaPosition(left = 37.5.dp, right = 10.5.dp, top = 145.48.dp)) {
             Text(

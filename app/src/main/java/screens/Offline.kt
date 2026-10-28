@@ -29,6 +29,7 @@ import decorations.SvgCanvas
 import decorations.SvgPath
 import decorations.app_colors
 import decorations.app_fonts
+import decorations.belowStatusBar
 import decorations.figmaPosition
 import decorations.figmaText
 
@@ -53,8 +54,8 @@ fun OfflineScreen(onRetry: () -> Unit = {}) {
                 .background(app_colors.white)
                 .border(1.dp, app_colors.black, RoundedCornerShape(30.dp))
         ) {
-            HeaderLogo(Modifier.figmaPosition(left = 28.dp, top = 73.dp, width = 353.dp, height = 123.dp))
-            Sparkles(Modifier.figmaPosition(left = 359.dp, top = 11.dp, width = 40.dp, height = 40.dp))
+            HeaderLogo(Modifier.figmaPosition(left = 28.dp, top = belowStatusBar(73.dp), width = 353.dp, height = 123.dp))
+            Sparkles(Modifier.figmaPosition(left = 359.dp, top = belowStatusBar(11.dp), width = 40.dp, height = 40.dp))
         }
 
         // Tarjeta "Mensaje Verificacion Correo"

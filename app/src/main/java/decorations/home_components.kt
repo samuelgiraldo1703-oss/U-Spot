@@ -32,8 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -52,9 +54,8 @@ import androidx.compose.ui.unit.sp
 
 /**
  * Pantalla del módulo Home dibujada desde una escena de Figma ([sceneKey], ver [FigmaScene]).
- * El diseño se dibuja desde el borde superior de la pantalla, combinándose uniformemente
- * con la barra de estado de Android. Se escala al ancho del teléfono y se desplaza
- * verticalmente si no cabe.
+ * El contenido se desplaza debajo de la barra de estado para evitar colisiones con los botones
+ * superiores y el centro de notificaciones, manteniendo el fondo/statusBarColor uniforme.
  */
 @Composable
 fun SceneScreen(
@@ -71,6 +72,7 @@ fun SceneScreen(
     overlay: @Composable BoxScope.(Scene) -> Unit = {}
 ) {
     val scene = rememberScene(sceneKey)
+    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     BoxWithConstraints(
         Modifier
             .fillMaxSize()
@@ -83,6 +85,14 @@ fun SceneScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
         ) {
+            if (statusBar > 0.dp) {
+                Spacer(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(statusBar)
+                        .background(if (statusBarColor != Color.Transparent) statusBarColor else background)
+                )
+            }
             if (scene != null) {
                 FigmaWidthScale(scene.width) {
                     Box(

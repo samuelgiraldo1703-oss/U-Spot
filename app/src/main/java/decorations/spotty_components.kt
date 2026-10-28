@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -102,12 +103,6 @@ private object SpottyColors {
     val gradBottom = Color(0xFF3F8678)
     val header = Color(0xFF5488B0)
     val cornerBlue = Color(0xFF1363D5)
-    val bubble = Color(0xFF87B8AE)
-    val bubbleBorder = Color(0xFFF1F5F9)
-    // Contorno negro de las burbujas y tarjetas de Spotty (más legible sobre el fondo verde)
-    val outline = Color(0xFF000000)
-    val bubbleShadow1 = Color(0x0A0D56CF)
-    val bubbleShadow2 = Color(0x120D56CF)
     val greetingTitle = Color(0xFF0A2540)
     val body = Color(0xFF1E293B)
     val timeGray = Color(0xFF94A3B8)
@@ -149,16 +144,32 @@ val spottyBackground: Brush = Brush.verticalGradient(
 /** Alto del encabezado fijo de la conversación (TopHeader de 579:369). */
 val SPOTTY_HEADER_HEIGHT = 143.dp
 
-private val bubbleShape = RoundedCornerShape(topStart = 2.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp)
 private val userShape = RoundedCornerShape(topStart = 16.dp, topEnd = 2.dp, bottomEnd = 16.dp, bottomStart = 16.dp)
+
+// Estilo Glass para las respuestas de Spotty (translúcido, borde suave iluminado y sin contorno negro)
+private val glassBubbleShape = RoundedCornerShape(topStart = 4.dp, topEnd = 20.dp, bottomEnd = 20.dp, bottomStart = 20.dp)
+private val glassPillShape = RoundedCornerShape(12.dp)
+
+private val glassBubbleBrush = Brush.verticalGradient(
+    colors = listOf(
+        Color(0x59FFFFFF), // ~35% blanco translúcido arriba
+        Color(0x33FFFFFF)  // ~20% blanco translúcido abajo
+    )
+)
+
+private val glassBorderBrush = Brush.verticalGradient(
+    colors = listOf(
+        Color(0xB3FFFFFF), // ~70% blanco para el reflejo superior de cristal
+        Color(0x4DFFFFFF)  // ~30% blanco en la parte inferior
+    )
+)
+
+private fun Modifier.glassShadow(shape: androidx.compose.ui.graphics.Shape) = this
+    .dropShadow(shape, Shadow(radius = 16.dp, spread = (-2).dp, color = Color(0x1F001026), offset = DpOffset(0.dp, 6.dp)))
+    .dropShadow(shape, Shadow(radius = 4.dp, color = Color(0x12001026), offset = DpOffset(0.dp, 2.dp)))
 
 private fun jakarta(size: Int, line: Float, color: Color, weight: Int = 400, spacing: Float = 0f, align: TextAlign = TextAlign.Start) =
     figmaText(app_fonts.plusJakarta, size.sp, line.sp, color, FontWeight(weight), spacing.sp, align)
-
-/** Sombra doble de las burbujas y tarjetas de Spotty (0,8 b10 s-6 | 0,10 b25 s-5). */
-private fun Modifier.spottyShadow(shape: androidx.compose.ui.graphics.Shape) = this
-    .dropShadow(shape, Shadow(radius = 10.dp, spread = (-6).dp, color = SpottyColors.bubbleShadow1, offset = DpOffset(0.dp, 8.dp)))
-    .dropShadow(shape, Shadow(radius = 25.dp, spread = (-5).dp, color = SpottyColors.bubbleShadow2, offset = DpOffset(0.dp, 10.dp)))
 
 /** "7:02 PM", igual que en Figma. */
 fun spottyClock(time: Long): String = SimpleDateFormat("h:mm a", Locale.US).format(Date(time))
@@ -195,19 +206,24 @@ fun SpottyLogo(modifier: Modifier = Modifier) {
  * (donde tenía 🏠). El ícono de dos burbujas es el del campo de la bienvenida en Figma.
  */
 @Composable
-fun BoxScope.SpottyHistoryCorner(welcome: Boolean, onHistory: () -> Unit) {
+fun BoxScope.SpottyHistoryCorner(welcome: Boolean, onHistory: () -> Unit, topOffset: Dp = 0.dp) {
     if (welcome) {
-        SceneImage("d16b0e4fc231ebc1.png", Modifier.figmaPosition(left = 291.36.dp, top = 0.dp, width = 120.64.dp, height = 86.63.dp))
+        SceneImage("d16b0e4fc231ebc1.png", Modifier.figmaPosition(left = 291.36.dp, top = topOffset, width = 120.64.dp, height = 86.63.dp))
     } else {
         Box(
             Modifier
-                .figmaPosition(left = 304.dp, top = (-18).dp, width = 123.dp, height = 123.dp)
+                .figmaPosition(left = 304.dp, top = (-18).dp, width = 123.dp, height = 123.dp + topOffset)
                 .background(SpottyColors.cornerBlue, RoundedCornerShape(bottomStart = 90.dp))
         )
     }
     Box(
         Modifier
-            .figmaPosition(left = if (welcome) 344.dp else 347.dp, top = if (welcome) 32.dp else 38.dp, width = 50.dp, height = 50.dp)
+            .figmaPosition(
+                left = if (welcome) 344.dp else 347.dp,
+                top = (if (welcome) 32.dp else 38.dp) + topOffset,
+                width = 50.dp,
+                height = 50.dp
+            )
             .clip(CircleShape)
             .clickable(onClick = onHistory, role = Role.Button, onClickLabel = "Ver historial de chats")
             .semantics { contentDescription = "Ver historial de chats" },
@@ -221,17 +237,18 @@ fun BoxScope.SpottyHistoryCorner(welcome: Boolean, onHistory: () -> Unit) {
     }
 }
 
-/** Encabezado fijo de la conversación (TopHeader de 579:369): fondo, logo y esquina. */
+/** Encabezado fijo de la conversación (TopHeader de 579:369): fondo, logo y esquina con respeto a la barra de estado. */
 @Composable
 fun SpottyChatHeader(onHistory: () -> Unit, modifier: Modifier = Modifier) {
+    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     Box(
         modifier
             .fillMaxWidth()
-            .height(SPOTTY_HEADER_HEIGHT)
+            .height(SPOTTY_HEADER_HEIGHT + statusBar)
             .background(SpottyColors.header)
     ) {
-        SpottyLogo(Modifier.offset(16.dp, 39.dp))
-        SpottyHistoryCorner(welcome = false, onHistory = onHistory)
+        SpottyLogo(Modifier.offset(16.dp, 39.dp + statusBar))
+        SpottyHistoryCorner(welcome = false, onHistory = onHistory, topOffset = statusBar)
     }
 }
 
@@ -257,20 +274,24 @@ fun SpottyModelBadge(label: String, modifier: Modifier = Modifier) {
 // Mensajes
 // ---------------------------------------------------------------------------------------------
 
-/** Respuesta de texto de Spotty ("Text Intro" 444:764). */
+/** Respuesta de texto de Spotty con estilo Glass (translúcido, reflejo suave y sin contorno negro). */
 @Composable
 fun SpottyTextBubble(text: String, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().padding(start = 31.dp, end = 16.dp)) {
-        Text(
-            text,
-            style = jakarta(15, 22f, SpottyColors.body, 500),
+        Box(
             modifier = Modifier
                 .widthIn(max = 306.dp)
-                .spottyShadow(bubbleShape)
-                .background(SpottyColors.bubble, bubbleShape)
-                .border(1.5.dp, SpottyColors.outline, bubbleShape)
+                .glassShadow(glassBubbleShape)
+                .clip(glassBubbleShape)
+                .background(glassBubbleBrush)
+                .border(1.2.dp, glassBorderBrush, glassBubbleShape)
                 .padding(15.dp)
-        )
+        ) {
+            Text(
+                text = text,
+                style = jakarta(15, 22f, Color.White, 500)
+            )
+        }
     }
 }
 
@@ -293,23 +314,24 @@ fun SpottyUserBubble(text: String, time: Long, modifier: Modifier = Modifier) {
     }
 }
 
-/** "Reasoning Pill" (444:758): resumen de lo que analizó Spotty. */
+/** "Reasoning Pill" (444:758): resumen de lo que analizó Spotty en estilo glass. */
 @Composable
 fun SpottyAnalysisPill(text: String, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(8.dp)
     Box(modifier.fillMaxWidth().padding(start = 31.dp, end = 16.dp)) {
         Row(
             Modifier
                 .widthIn(max = 300.dp)
                 .heightIn(min = 43.dp)
-                .background(SpottyColors.bubble, shape)
-                .border(1.5.dp, SpottyColors.outline, shape)
+                .glassShadow(glassPillShape)
+                .clip(glassPillShape)
+                .background(glassBubbleBrush)
+                .border(1.2.dp, glassBorderBrush, glassPillShape)
                 .padding(start = 13.dp, end = 14.dp, top = 5.dp, bottom = 5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(Modifier.size(8.dp).background(SpottyColors.pillDot, CircleShape))
+            Box(Modifier.size(8.dp).background(SpottyColors.pillDotHalo, CircleShape))
             Spacer(Modifier.width(16.dp))
-            Text(text, style = jakarta(12, 17f, SpottyColors.pillText, 700))
+            Text(text, style = jakarta(12, 17f, Color.White, 700))
         }
     }
 }
@@ -326,28 +348,29 @@ fun SpottyFollowUp(text: String?, time: Long, modifier: Modifier = Modifier) {
     }
 }
 
-/** Spotty está pensando: tres puntos que laten dentro de una burbuja. */
+/** Spotty está pensando: tres puntos que laten dentro de una burbuja glass. */
 @Composable
 fun SpottyTypingBubble(modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "typing")
     Box(modifier.fillMaxWidth().padding(start = 31.dp)) {
         Row(
             Modifier
-                .spottyShadow(bubbleShape)
-                .background(SpottyColors.bubble, bubbleShape)
-                .border(1.5.dp, SpottyColors.outline, bubbleShape)
+                .glassShadow(glassBubbleShape)
+                .clip(glassBubbleShape)
+                .background(glassBubbleBrush)
+                .border(1.2.dp, glassBorderBrush, glassBubbleShape)
                 .padding(horizontal = 18.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             repeat(3) { i ->
                 val a by transition.animateFloat(
-                    initialValue = 0.25f,
+                    initialValue = 0.35f,
                     targetValue = 1f,
                     animationSpec = infiniteRepeatable(tween(500, delayMillis = i * 160), RepeatMode.Reverse),
                     label = "dot$i"
                 )
-                Box(Modifier.size(8.dp).alpha(a).background(SpottyColors.pillText, CircleShape))
+                Box(Modifier.size(8.dp).alpha(a).background(Color.White, CircleShape))
             }
         }
     }
@@ -366,14 +389,15 @@ fun SpottyProblemBubble(problem: SpottyProblem, onRetry: (() -> Unit)?, modifier
         Column(
             Modifier
                 .widthIn(max = 306.dp)
-                .spottyShadow(bubbleShape)
-                .background(SpottyColors.bubble, bubbleShape)
-                .border(1.dp, SpottyColors.amber, bubbleShape)
+                .glassShadow(glassBubbleShape)
+                .clip(glassBubbleShape)
+                .background(glassBubbleBrush)
+                .border(1.2.dp, SpottyColors.amber.copy(alpha = 0.85f), glassBubbleShape)
                 .padding(15.dp)
         ) {
-            Text(title, style = jakarta(14, 20f, SpottyColors.greetingTitle, 700))
+            Text(title, style = jakarta(14, 20f, SpottyColors.amber, 700))
             Spacer(Modifier.height(4.dp))
-            Text(body, style = jakarta(14, 20f, SpottyColors.body, 500))
+            Text(body, style = jakarta(14, 20f, Color.White, 500))
             if (onRetry != null) {
                 Spacer(Modifier.height(10.dp))
                 Row(
@@ -514,6 +538,7 @@ fun rememberPlacePhoto(place: Place): String {
     }
 }
 
+/** Tarjeta de lugar recomendado por Spotty con estilo Glass (translúcido, reflejo superior suave y sin contorno negro). */
 @Composable
 fun SpottyPlaceCard(
     place: Place,
@@ -526,117 +551,123 @@ fun SpottyPlaceCard(
 ) {
     val shape = RoundedCornerShape(16.dp)
     Box(modifier.fillMaxWidth().padding(start = 31.dp, end = 16.dp)) {
-        Column(
+        Box(
             Modifier
                 .width(306.dp)
-                .spottyShadow(shape)
+                .glassShadow(shape)
                 .clip(shape)
-                .background(SpottyColors.bubble)
-                .border(1.5.dp, SpottyColors.outline, shape)
+                .background(glassBubbleBrush)
                 .clickable(onClick = onDetails)
-                .padding(1.dp)
         ) {
-            // Foto con degradado, insignias, corazón, nombre y dirección (112 de alto)
-            Box(Modifier.fillMaxWidth().height(112.dp).background(SpottyColors.photoBg)) {
-                // key(): SceneImage conserva la primera imagen que pinta; al llegar la foto de la
-                // pantalla de Figma (tras la genérica de la categoría) hay que recrearla
-                val photo = rememberPlacePhoto(place)
-                key(photo) { SceneImage(photo, Modifier.fillMaxSize(), crop = true) }
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(Brush.verticalGradient(0f to Color(0x1A000000), 0.45f to Color(0x33000000), 1f to Color(0xD9000000)))
-                )
-                Row(Modifier.offset(8.dp, 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (card.match > 0) Row(
-                        Modifier.height(19.dp).background(SpottyColors.match, CircleShape).padding(start = 8.dp, end = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+            Column(Modifier.fillMaxWidth()) {
+                // Foto con degradado, insignias, corazón, nombre y dirección (112 de alto)
+                Box(Modifier.fillMaxWidth().height(112.dp).background(SpottyColors.photoBg)) {
+                    // key(): SceneImage conserva la primera imagen que pinta; al llegar la foto de la
+                    // pantalla de Figma (tras la genérica de la categoría) hay que recrearla
+                    val photo = rememberPlacePhoto(place)
+                    key(photo) { SceneImage(photo, Modifier.fillMaxSize(), crop = true) }
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(Brush.verticalGradient(0f to Color(0x1A000000), 0.45f to Color(0x33000000), 1f to Color(0xD9000000)))
+                    )
+                    Row(Modifier.offset(8.dp, 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        if (card.match > 0) Row(
+                            Modifier.height(19.dp).background(SpottyColors.match, CircleShape).padding(start = 8.dp, end = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            SceneImage("7f18ce5dc44f11bb.png", Modifier.size(12.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("${card.match}% Match", style = jakarta(10, 15f, Color.White, 700), maxLines = 1)
+                        }
+                        if (card.distance != null) {
+                            Text(
+                                card.distance,
+                                style = jakarta(10, 15f, Color.White, 700),
+                                maxLines = 1,
+                                modifier = Modifier.height(19.dp).background(SpottyColors.distance, CircleShape).padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                    Box(
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .offset((-8).dp, 8.dp)
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF020A26).copy(alpha = 0.85f))
+                            .clickable(onClick = onFavorite, role = Role.Button, onClickLabel = if (isFavorite) "Quitar de favoritos" else "Guardar en favoritos"),
+                        contentAlignment = Alignment.Center
                     ) {
-                        SceneImage("7f18ce5dc44f11bb.png", Modifier.size(12.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("${card.match}% Match", style = jakarta(10, 15f, Color.White, 700), maxLines = 1)
+                        Icon(
+                            if (isFavorite) Icons.Rounded.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = null,
+                            tint = if (isFavorite) SpottyColors.amber else Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
                     }
-                    if (card.distance != null) {
+                    Column(Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 8.dp)) {
                         Text(
-                            card.distance,
-                            style = jakarta(10, 15f, Color.White, 700),
+                            place.name,
+                            style = jakarta(14, 20f, Color.White, 700, -0.35f),
                             maxLines = 1,
-                            modifier = Modifier.height(19.dp).background(SpottyColors.distance, CircleShape).padding(horizontal = 8.dp, vertical = 2.dp)
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            "${place.address} • ${place.hours}",
+                            style = jakarta(11, 16.5f, SpottyColors.subtitle, 500),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
-                Box(
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .offset((-8).dp, 8.dp)
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF020A26))
-                        .clickable(onClick = onFavorite, role = Role.Button, onClickLabel = if (isFavorite) "Quitar de favoritos" else "Guardar en favoritos"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        if (isFavorite) Icons.Rounded.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = null,
-                        tint = if (isFavorite) SpottyColors.amber else Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-                Column(Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 8.dp)) {
-                    Text(
-                        place.name,
-                        style = jakarta(14, 20f, Color.White, 700, -0.35f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        "${place.address} • ${place.hours}",
-                        style = jakarta(11, 16.5f, SpottyColors.subtitle, 500),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-            // Cuerpo: etiquetas, línea divisoria, precio y "Ver detalles" (90 de alto)
-            Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    place.cardChips().forEach { (text, color) ->
+                // Cuerpo: etiquetas, línea divisoria, precio y "Ver detalles" (90 de alto)
+                Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        place.cardChips().forEach { (text, color) ->
+                            Text(
+                                text,
+                                style = jakarta(10, 15f, color.fg, 600),
+                                maxLines = 1,
+                                modifier = Modifier.height(19.dp).background(color.bg, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x33FFFFFF)))
+                    Row(Modifier.fillMaxWidth().height(37.dp).padding(top = 9.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text,
-                            style = jakarta(10, 15f, color.fg, 600),
+                            buildAnnotatedString {
+                                withStyle(SpanStyle(color = Color.White.copy(alpha = 0.85f))) { append("${card.priceLabel}: ") }
+                                withStyle(SpanStyle(color = Color.White, fontWeight = FontWeight.Bold)) { append(card.priceValue) }
+                            },
+                            style = jakarta(11, 16.5f, Color.White, 500),
                             maxLines = 1,
-                            modifier = Modifier.height(19.dp).background(color.bg, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp)
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        val btnShape = RoundedCornerShape(12.dp)
+                        Text(
+                            "Ver detalles",
+                            style = jakarta(12, 16f, if (primary) Color.White else SpottyColors.primary, if (primary) 600 else 700),
+                            modifier = Modifier
+                                .height(28.dp)
+                                .then(if (primary) Modifier.dropShadow(btnShape, Shadow(radius = 2.dp, color = Color(0x0D000000), offset = DpOffset(0.dp, 1.dp))) else Modifier)
+                                .clip(btnShape)
+                                .background(if (primary) SpottyColors.primary else SpottyColors.secondaryBtn)
+                                .clickable(onClick = onDetails, role = Role.Button)
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
                         )
                     }
                 }
-                Spacer(Modifier.height(10.dp))
-                Box(Modifier.fillMaxWidth().height(1.dp).background(SpottyColors.bubbleBorder))
-                Row(Modifier.fillMaxWidth().height(37.dp).padding(top = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        buildAnnotatedString {
-                            withStyle(SpanStyle(color = SpottyColors.priceLabel)) { append("${card.priceLabel}: ") }
-                            withStyle(SpanStyle(color = SpottyColors.body, fontWeight = FontWeight.SemiBold)) { append(card.priceValue) }
-                        },
-                        style = jakarta(11, 16.5f, SpottyColors.priceLabel, 500),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    val btnShape = RoundedCornerShape(12.dp)
-                    Text(
-                        "Ver detalles",
-                        style = jakarta(12, 16f, if (primary) Color.White else SpottyColors.primary, if (primary) 600 else 700),
-                        modifier = Modifier
-                            .height(28.dp)
-                            .then(if (primary) Modifier.dropShadow(btnShape, Shadow(radius = 2.dp, color = Color(0x0D000000), offset = DpOffset(0.dp, 1.dp))) else Modifier)
-                            .clip(btnShape)
-                            .background(if (primary) SpottyColors.primary else SpottyColors.secondaryBtn)
-                            .clickable(onClick = onDetails, role = Role.Button)
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                }
+                Spacer(Modifier.height(12.dp))
             }
-            Spacer(Modifier.height(12.dp))
+            // Borde glass iluminado por encima de toda la tarjeta (incluso sobre la foto superior)
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .border(1.2.dp, glassBorderBrush, shape)
+            )
         }
     }
 }
