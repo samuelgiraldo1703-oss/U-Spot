@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -268,11 +270,12 @@ private fun SpottyWelcome(
     onHistory: () -> Unit,
     onChip: (String) -> Unit
 ) {
+    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     Box(Modifier.fillMaxSize()) {
-        SpottyLogo(Modifier.offset(30.dp, 32.dp))
-        SpottyHistoryCorner(welcome = true, onHistory = onHistory)
+        SpottyLogo(Modifier.offset(30.dp, 32.dp + statusBar))
+        SpottyHistoryCorner(welcome = true, onHistory = onHistory, topOffset = statusBar)
         Column(
-            Modifier.fillMaxSize().padding(top = 123.dp),
+            Modifier.fillMaxSize().padding(top = 123.dp + statusBar),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.weight(1f))
@@ -328,11 +331,12 @@ private fun SpottyConversation(
     }
     val atBottom by remember { derivedStateOf { !listState.canScrollForward } }
 
+    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = SPOTTY_HEADER_HEIGHT, bottom = 16.dp),
+            contentPadding = PaddingValues(top = SPOTTY_HEADER_HEIGHT + statusBar, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item(key = "badge") {

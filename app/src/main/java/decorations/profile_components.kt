@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
@@ -72,9 +73,9 @@ fun jakartaText(
 fun statusBarHeight(): Dp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
 /**
- * Lienzo de las pantallas del módulo de perfil. Igual que [FigmaCanvas], pero el diseño empieza
- * justo debajo de la barra de estado; los adornos pueden dibujarse por detrás de ella usando
- * posiciones negativas (ver [ProfileCorner]).
+ * Lienzo de las pantallas del módulo de perfil. El contenido inicia debajo de la barra
+ * de estado para respetar las zonas seguras del sistema; los adornos pueden extenderse
+ * hacia la barra de estado (ver [ProfileCorner]).
  */
 @Composable
 fun ProfileCanvas(
@@ -82,12 +83,15 @@ fun ProfileCanvas(
     background: Color = app_colors.white,
     content: @Composable BoxScope.() -> Unit
 ) {
+    val statusBar = statusBarHeight()
+    val navBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val totalDesignHeight = designHeight + statusBar + navBar
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(background)
     ) {
-        val canvasHeight = if (maxHeight > designHeight) maxHeight else designHeight
+        val canvasHeight = if (maxHeight > totalDesignHeight) maxHeight else totalDesignHeight
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -97,9 +101,16 @@ fun ProfileCanvas(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(canvasHeight)
-                    .clipToBounds(),
-                content = content
-            )
+                    .clipToBounds()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(canvasHeight - statusBar)
+                        .offset(y = statusBar),
+                    content = content
+                )
+            }
         }
     }
 }
@@ -107,9 +118,15 @@ fun ProfileCanvas(
 /** "Background Corner Ornaments": esquina de color superior derecha, extendida hasta el borde superior. */
 @Composable
 fun ProfileCorner(color: Color) {
+    val statusBar = statusBarHeight()
     Box(
         Modifier
-            .figmaPosition(right = (-28).dp, top = (-20).dp, width = 140.dp, height = 140.dp)
+            .figmaPosition(
+                right = (-28).dp,
+                top = (-20).dp - statusBar,
+                width = 140.dp + statusBar,
+                height = 140.dp + statusBar
+            )
             .background(color, RoundedCornerShape(bottomStart = 90.dp))
     )
 }

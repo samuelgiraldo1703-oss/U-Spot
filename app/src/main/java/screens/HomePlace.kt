@@ -232,6 +232,7 @@ fun PlaceDetailScreen(
     val nav = rememberScene("place_wok")?.firstNode { it.name == "Top Action Navigation Bar" } as? SceneNode.Picture
     val badge = rememberScene(place.category.sceneKey)?.find(place.category.badgeId) as? SceneNode.Picture
 
+    val statusBar = statusBarHeight()
     Column(
         Modifier
             .fillMaxSize()
@@ -239,6 +240,9 @@ fun PlaceDetailScreen(
             .imePadding()
             .verticalScroll(rememberScrollState())
     ) {
+        if (statusBar > 0.dp) {
+            Spacer(Modifier.fillMaxWidth().height(statusBar).background(HeroDark))
+        }
         FigmaWidthScale(412f) {
             Box(Modifier.fillMaxWidth()) {
                 // Foto de la categoría con el degradado oscuro de Figma

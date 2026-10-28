@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -152,6 +153,28 @@ val SPOTTY_HEADER_HEIGHT = 143.dp
 private val bubbleShape = RoundedCornerShape(topStart = 2.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp)
 private val userShape = RoundedCornerShape(topStart = 16.dp, topEnd = 2.dp, bottomEnd = 16.dp, bottomStart = 16.dp)
 
+// Estilo Glass para las respuestas de Spotty (translúcido, borde suave iluminado y sin contorno negro)
+private val glassBubbleShape = RoundedCornerShape(topStart = 4.dp, topEnd = 20.dp, bottomEnd = 20.dp, bottomStart = 20.dp)
+private val glassPillShape = RoundedCornerShape(12.dp)
+
+private val glassBubbleBrush = Brush.verticalGradient(
+    colors = listOf(
+        Color(0x59FFFFFF), // ~35% blanco translúcido arriba
+        Color(0x33FFFFFF)  // ~20% blanco translúcido abajo
+    )
+)
+
+private val glassBorderBrush = Brush.verticalGradient(
+    colors = listOf(
+        Color(0xB3FFFFFF), // ~70% blanco para el reflejo superior de cristal
+        Color(0x4DFFFFFF)  // ~30% blanco en la parte inferior
+    )
+)
+
+private fun Modifier.glassShadow(shape: androidx.compose.ui.graphics.Shape) = this
+    .dropShadow(shape, Shadow(radius = 16.dp, spread = (-2).dp, color = Color(0x1F001026), offset = DpOffset(0.dp, 6.dp)))
+    .dropShadow(shape, Shadow(radius = 4.dp, color = Color(0x12001026), offset = DpOffset(0.dp, 2.dp)))
+
 private fun jakarta(size: Int, line: Float, color: Color, weight: Int = 400, spacing: Float = 0f, align: TextAlign = TextAlign.Start) =
     figmaText(app_fonts.plusJakarta, size.sp, line.sp, color, FontWeight(weight), spacing.sp, align)
 
@@ -195,19 +218,24 @@ fun SpottyLogo(modifier: Modifier = Modifier) {
  * (donde tenía 🏠). El ícono de dos burbujas es el del campo de la bienvenida en Figma.
  */
 @Composable
-fun BoxScope.SpottyHistoryCorner(welcome: Boolean, onHistory: () -> Unit) {
+fun BoxScope.SpottyHistoryCorner(welcome: Boolean, onHistory: () -> Unit, topOffset: Dp = 0.dp) {
     if (welcome) {
-        SceneImage("d16b0e4fc231ebc1.png", Modifier.figmaPosition(left = 291.36.dp, top = 0.dp, width = 120.64.dp, height = 86.63.dp))
+        SceneImage("d16b0e4fc231ebc1.png", Modifier.figmaPosition(left = 291.36.dp, top = topOffset, width = 120.64.dp, height = 86.63.dp))
     } else {
         Box(
             Modifier
-                .figmaPosition(left = 304.dp, top = (-18).dp, width = 123.dp, height = 123.dp)
+                .figmaPosition(left = 304.dp, top = (-18).dp, width = 123.dp, height = 123.dp + topOffset)
                 .background(SpottyColors.cornerBlue, RoundedCornerShape(bottomStart = 90.dp))
         )
     }
     Box(
         Modifier
-            .figmaPosition(left = if (welcome) 344.dp else 347.dp, top = if (welcome) 32.dp else 38.dp, width = 50.dp, height = 50.dp)
+            .figmaPosition(
+                left = if (welcome) 344.dp else 347.dp,
+                top = (if (welcome) 32.dp else 38.dp) + topOffset,
+                width = 50.dp,
+                height = 50.dp
+            )
             .clip(CircleShape)
             .clickable(onClick = onHistory, role = Role.Button, onClickLabel = "Ver historial de chats")
             .semantics { contentDescription = "Ver historial de chats" },
@@ -221,17 +249,18 @@ fun BoxScope.SpottyHistoryCorner(welcome: Boolean, onHistory: () -> Unit) {
     }
 }
 
-/** Encabezado fijo de la conversación (TopHeader de 579:369): fondo, logo y esquina. */
+/** Encabezado fijo de la conversación (TopHeader de 579:369): fondo, logo y esquina con respeto a la barra de estado. */
 @Composable
 fun SpottyChatHeader(onHistory: () -> Unit, modifier: Modifier = Modifier) {
+    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     Box(
         modifier
             .fillMaxWidth()
-            .height(SPOTTY_HEADER_HEIGHT)
+            .height(SPOTTY_HEADER_HEIGHT + statusBar)
             .background(SpottyColors.header)
     ) {
-        SpottyLogo(Modifier.offset(16.dp, 39.dp))
-        SpottyHistoryCorner(welcome = false, onHistory = onHistory)
+        SpottyLogo(Modifier.offset(16.dp, 39.dp + statusBar))
+        SpottyHistoryCorner(welcome = false, onHistory = onHistory, topOffset = statusBar)
     }
 }
 
@@ -257,20 +286,24 @@ fun SpottyModelBadge(label: String, modifier: Modifier = Modifier) {
 // Mensajes
 // ---------------------------------------------------------------------------------------------
 
-/** Respuesta de texto de Spotty ("Text Intro" 444:764). */
+/** Respuesta de texto de Spotty con estilo Glass (translúcido, reflejo suave y sin contorno negro). */
 @Composable
 fun SpottyTextBubble(text: String, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().padding(start = 31.dp, end = 16.dp)) {
-        Text(
-            text,
-            style = jakarta(15, 22f, SpottyColors.body, 500),
+        Box(
             modifier = Modifier
                 .widthIn(max = 306.dp)
-                .spottyShadow(bubbleShape)
-                .background(SpottyColors.bubble, bubbleShape)
-                .border(1.5.dp, SpottyColors.outline, bubbleShape)
+                .glassShadow(glassBubbleShape)
+                .clip(glassBubbleShape)
+                .background(glassBubbleBrush)
+                .border(1.2.dp, glassBorderBrush, glassBubbleShape)
                 .padding(15.dp)
-        )
+        ) {
+            Text(
+                text = text,
+                style = jakarta(15, 22f, Color.White, 500)
+            )
+        }
     }
 }
 
@@ -293,23 +326,24 @@ fun SpottyUserBubble(text: String, time: Long, modifier: Modifier = Modifier) {
     }
 }
 
-/** "Reasoning Pill" (444:758): resumen de lo que analizó Spotty. */
+/** "Reasoning Pill" (444:758): resumen de lo que analizó Spotty en estilo glass. */
 @Composable
 fun SpottyAnalysisPill(text: String, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(8.dp)
     Box(modifier.fillMaxWidth().padding(start = 31.dp, end = 16.dp)) {
         Row(
             Modifier
                 .widthIn(max = 300.dp)
                 .heightIn(min = 43.dp)
-                .background(SpottyColors.bubble, shape)
-                .border(1.5.dp, SpottyColors.outline, shape)
+                .glassShadow(glassPillShape)
+                .clip(glassPillShape)
+                .background(glassBubbleBrush)
+                .border(1.2.dp, glassBorderBrush, glassPillShape)
                 .padding(start = 13.dp, end = 14.dp, top = 5.dp, bottom = 5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(Modifier.size(8.dp).background(SpottyColors.pillDot, CircleShape))
+            Box(Modifier.size(8.dp).background(SpottyColors.pillDotHalo, CircleShape))
             Spacer(Modifier.width(16.dp))
-            Text(text, style = jakarta(12, 17f, SpottyColors.pillText, 700))
+            Text(text, style = jakarta(12, 17f, Color.White, 700))
         }
     }
 }
@@ -326,28 +360,29 @@ fun SpottyFollowUp(text: String?, time: Long, modifier: Modifier = Modifier) {
     }
 }
 
-/** Spotty está pensando: tres puntos que laten dentro de una burbuja. */
+/** Spotty está pensando: tres puntos que laten dentro de una burbuja glass. */
 @Composable
 fun SpottyTypingBubble(modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "typing")
     Box(modifier.fillMaxWidth().padding(start = 31.dp)) {
         Row(
             Modifier
-                .spottyShadow(bubbleShape)
-                .background(SpottyColors.bubble, bubbleShape)
-                .border(1.5.dp, SpottyColors.outline, bubbleShape)
+                .glassShadow(glassBubbleShape)
+                .clip(glassBubbleShape)
+                .background(glassBubbleBrush)
+                .border(1.2.dp, glassBorderBrush, glassBubbleShape)
                 .padding(horizontal = 18.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             repeat(3) { i ->
                 val a by transition.animateFloat(
-                    initialValue = 0.25f,
+                    initialValue = 0.35f,
                     targetValue = 1f,
                     animationSpec = infiniteRepeatable(tween(500, delayMillis = i * 160), RepeatMode.Reverse),
                     label = "dot$i"
                 )
-                Box(Modifier.size(8.dp).alpha(a).background(SpottyColors.pillText, CircleShape))
+                Box(Modifier.size(8.dp).alpha(a).background(Color.White, CircleShape))
             }
         }
     }
@@ -366,14 +401,15 @@ fun SpottyProblemBubble(problem: SpottyProblem, onRetry: (() -> Unit)?, modifier
         Column(
             Modifier
                 .widthIn(max = 306.dp)
-                .spottyShadow(bubbleShape)
-                .background(SpottyColors.bubble, bubbleShape)
-                .border(1.dp, SpottyColors.amber, bubbleShape)
+                .glassShadow(glassBubbleShape)
+                .clip(glassBubbleShape)
+                .background(glassBubbleBrush)
+                .border(1.2.dp, SpottyColors.amber.copy(alpha = 0.85f), glassBubbleShape)
                 .padding(15.dp)
         ) {
-            Text(title, style = jakarta(14, 20f, SpottyColors.greetingTitle, 700))
+            Text(title, style = jakarta(14, 20f, SpottyColors.amber, 700))
             Spacer(Modifier.height(4.dp))
-            Text(body, style = jakarta(14, 20f, SpottyColors.body, 500))
+            Text(body, style = jakarta(14, 20f, Color.White, 500))
             if (onRetry != null) {
                 Spacer(Modifier.height(10.dp))
                 Row(

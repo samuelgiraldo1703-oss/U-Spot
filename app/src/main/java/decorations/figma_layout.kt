@@ -106,8 +106,9 @@ fun FigmaCanvas(
 }
 
 /**
- * Posición superior de elementos pegados arriba. Mantiene el diseño original uniforme de Figma.
+ * Posición superior de elementos pegados arriba. Considera la barra de estado para evitar colisiones con las barras del sistema.
  */
 @Composable
-fun belowStatusBar(figmaTop: Dp): Dp = figmaTop
+fun belowStatusBar(figmaTop: Dp): Dp =
+    figmaTop + WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
