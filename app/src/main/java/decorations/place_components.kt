@@ -258,7 +258,7 @@ fun HeroCategoryBadge(text: String, modifier: Modifier = Modifier) {
 
 /**
  * Bloque "Información" del detalle: sede (si el nombre de la pantalla es el de la marca),
- * dirección, horario y precio. "Más info" (horario por día y notas) solo sale si el lugar lo tiene.
+ * dirección, horario y precio. "Más info" (descripción, horario por día y notas) solo sale si el lugar lo tiene.
  */
 @Composable
 fun PlaceInfoSection(place: Place, showName: Boolean, cardColor: Color, modifier: Modifier = Modifier) {
@@ -342,6 +342,13 @@ private fun InfoIcon(style: CategoryStyle, icon: ImageVector) {
 @Composable
 private fun MoreInfo(place: Place, style: CategoryStyle) {
     Column(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+        if (place.description.isNotBlank()) {
+            Text(
+                place.description,
+                style = jakartaText(11.sp, 16.5.sp, Ink, FontWeight.Medium),
+                modifier = Modifier.fillMaxWidth().padding(bottom = if (place.schedule.isNotEmpty() || place.notes.isNotEmpty()) 10.dp else 0.dp)
+            )
+        }
         if (place.schedule.isNotEmpty()) {
             Text("Horario por día", style = jakartaText(11.sp, 16.sp, SlateLight, FontWeight.SemiBold))
             Spacer(Modifier.height(6.dp))
@@ -381,7 +388,7 @@ private fun MoreInfo(place: Place, style: CategoryStyle) {
 // ---------------------------------------------------------------------------------------------
 
 /** Etiquetas de la tarjeta según los datos del lugar. */
-private fun Place.tags(): List<String> = buildList {
+private fun Place.cardBadges(): List<String> = buildList {
     if (distanceM <= 600) add("Cerca de la U")
     add(if (study) "Apto para estudiar" else "Ambiente animado")
     if (solo) add("Ideal para persona sola")
@@ -449,7 +456,7 @@ fun PlaceCard(place: Place, onClick: () -> Unit, modifier: Modifier = Modifier) 
         // Detalles
         Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 16.dp)) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                for (t in place.tags()) Chip(t, style)
+                for (t in place.cardBadges()) Chip(t, style)
                 if (place.nequi) NequiChip(style)
             }
             Box(Modifier.padding(vertical = 12.dp).fillMaxWidth().height(1.dp).background(Color(0xFFF1F5F9)))

@@ -157,6 +157,16 @@ if (Test-Path $coordsPath) {
     }
 }
 
+# ---- Descripciones y tags de IA (data_import/enriquecimiento_lugares.json) ----
+$enrichment = @{}
+$enrichPath = Join-Path $PSScriptRoot 'enriquecimiento_lugares.json'
+if (Test-Path $enrichPath) {
+    $rawEnrich = [IO.File]::ReadAllText($enrichPath, [Text.Encoding]::UTF8) | ConvertFrom-Json
+    foreach ($prop in $rawEnrich.PSObject.Properties) {
+        $enrichment[$prop.Name] = $prop.Value
+    }
+}
+
 # ---- Lugares ----
 $dayWords = '^(Lun|Mar|Mi|Jue|Vie|S|Dom)'
 $places = foreach ($row in $rows) {
@@ -197,13 +207,17 @@ $places = foreach ($row in $rows) {
         }
     }
 
+    $enrichItem = $enrichment[$placeId]
+    $desc = if ($enrichItem -and $enrichItem.description) { [string]$enrichItem.description } else { '' }
+    $tags = if ($enrichItem -and $enrichItem.tags) { @($enrichItem.tags | ForEach-Object { [string]$_ }) } else { @() }
+
     [ordered]@{
         id            = $placeId
         figma         = $figmaKey
         name          = $(if ($renames[$plainName]) { $renames[$plainName] } else { $row.name })
         category      = $cat
         address       = $row.address
-        # null si el lugar aún no tiene coordenadas verificadas (Spotty usa entonces distanceM)
+        # null si el lugar aun no tiene coordenadas verificadas (Spotty usa entonces distanceM)
         lat           = $(if ($coords[$placeId]) { $coords[$placeId][0] } else { $null })
         lng           = $(if ($coords[$placeId]) { $coords[$placeId][1] } else { $null })
         distanceM     = $meters
@@ -220,6 +234,8 @@ $places = foreach ($row in $rows) {
         hoursVaries   = $hoursVaries
         schedule      = $schedule
         notes         = $notes
+        description   = $desc
+        tags          = $tags
         # Foto propia (data_import/reducir_fotos.ps1); sin ella la app usa la de la categoria
         photo         = $(if (-not $figmaKey -and (Test-Path (Join-Path $root "app\src\main\assets\figma\img\place_$(Slug $row.name).jpg"))) { "place_$(Slug $row.name).jpg" } else { $null })
     }
@@ -229,6 +245,9 @@ $dupes = $places | Group-Object { $_.id } | Where-Object Count -gt 1
 if ($dupes) { throw "Ids repetidos: $(($dupes | ForEach-Object Name) -join ', ')" }
 $missing = $figma.Values | Where-Object { $_ -notin ($places | ForEach-Object { $_.figma }) }
 if ($missing) { throw "Lugares de Figma sin fila en el Excel: $($missing -join ', ')" }
+
+$missingEnrich = $places | Where-Object { -not $_.description -or $_.tags.Count -eq 0 }
+if ($missingEnrich) { throw "Lugares sin descripcion o tags: $(($missingEnrich | ForEach-Object id) -join ', ')" }
 
 # Orden: por categoria y distancia (lo mas cerca primero)
 $places = @($places | Sort-Object { $_.category }, { $_.distanceM }, { $_.name })

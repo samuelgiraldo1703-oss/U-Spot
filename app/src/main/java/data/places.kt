@@ -48,11 +48,15 @@ data class Place(
     val hoursVaries: Boolean,
     val schedule: List<PlaceSchedule>,
     val notes: List<String>,
+    /** Descripción breve del lugar (30-40 palabras) para el detalle y el buscador de Spotty. */
+    val description: String = "",
+    /** Etiquetas de búsqueda (platos, tipo de cocina, actividades, ambiente) para Spotty. */
+    val tags: List<String> = emptyList(),
     /** Foto propia del lugar en assets/figma/img (null: se usa la de su categoría). */
     val photoFile: String? = null
 ) {
     /** "Más info" solo aparece en los lugares que tienen algo que contar. */
-    val hasMoreInfo: Boolean get() = schedule.isNotEmpty() || notes.isNotEmpty()
+    val hasMoreInfo: Boolean get() = description.isNotBlank() || schedule.isNotEmpty() || notes.isNotEmpty()
 
     /** "A 400 m de UTADEO" */
     val distanceLabel: String get() = "A $distance de UTADEO"
@@ -89,6 +93,8 @@ private fun placeOf(o: JSONObject): Place? {
             PlaceSchedule(s.optString("days"), s.optString("hours"))
         },
         notes = o.strings("notes"),
+        description = o.optString("description"),
+        tags = o.strings("tags"),
         photoFile = o.optString("photo").takeIf { it.isNotEmpty() && it != "null" }
     )
 }
@@ -145,7 +151,9 @@ object PlaceStore {
                         lat = p.lat ?: l.lat,
                         lng = p.lng ?: l.lng,
                         figma = p.figma ?: l.figma,
-                        photoFile = p.photoFile ?: l.photoFile
+                        photoFile = p.photoFile ?: l.photoFile,
+                        description = p.description.ifBlank { l.description },
+                        tags = p.tags.ifEmpty { l.tags }
                     )
                 }
                 if (list.isNotEmpty()) {
