@@ -16,17 +16,23 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -83,7 +89,17 @@ private enum class ReportStep {
     FinalVideo      // 325:1978
 }
 
-private enum class ReportDialog { None, LeaveReport, LeaveImage, LeaveVideo, ImageAttached, VideoAttached, Sent }
+private enum class ReportDialog {
+    None,
+    LeaveReport,
+    LeaveImage,
+    LeaveVideo,
+    ImageAttached,
+    VideoAttached,
+    Sent,
+    NoFieldSelected,
+    NoMediaAttached
+}
 
 private val reportOptions = listOf("Fallo de inicio de sesión", "Enlace roto ", "Actividad mal vinculada", "Otro")
 
@@ -96,6 +112,8 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
     var option by rememberSaveable { mutableStateOf(-1) }
     var email by rememberSaveable { mutableStateOf("") }
     var username by rememberSaveable { mutableStateOf("") }
+    var title by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
     var mediaUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingCameraUriString by rememberSaveable { mutableStateOf<String?>(null) }
     val mediaUri = mediaUriString?.let { Uri.parse(it) }
@@ -196,9 +214,17 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
                     selected = option,
                     onSelect = { option = it },
                     onBack = { step = ReportStep.Identify },
-                    onNext = { if (option >= 0) step = ReportStep.Details }
+                    onNext = { step = ReportStep.Details },
+                    onValidationError = { dialog = ReportDialog.NoFieldSelected }
                 )
-                ReportStep.Details -> DetailsStep(onBack = { step = ReportStep.Classify }, onNext = { step = ReportStep.Evidence })
+                ReportStep.Details -> DetailsStep(
+                    title = title,
+                    onTitleChange = { title = it },
+                    description = description,
+                    onDescriptionChange = { description = it },
+                    onBack = { step = ReportStep.Classify },
+                    onNext = { step = ReportStep.Evidence }
+                )
                 ReportStep.Evidence -> EvidenceStep(
                     question = null,
                     mediaUri = null,
@@ -206,7 +232,13 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
                     onBack = { step = ReportStep.Details },
                     onAddCamera = openCamera,
                     onAddGallery = chooseFromGallery,
-                    onFinish = { dialog = ReportDialog.Sent }
+                    onFinish = {
+                        if (mediaUri == null) {
+                            dialog = ReportDialog.NoMediaAttached
+                        } else {
+                            dialog = ReportDialog.Sent
+                        }
+                    }
                 )
                 ReportStep.PreviewImage -> EvidenceStep(
                     question = "¿Deseas usar esta imágen?",
@@ -247,6 +279,10 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
                 onAction = {
                     email = ""
                     username = ""
+                    title = ""
+                    description = ""
+                    option = -1
+                    mediaUriString = null
                     onExit()
                 }
             )
@@ -269,9 +305,19 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
                 option = -1
                 email = ""
                 username = ""
+                title = ""
+                description = ""
                 mediaUriString = null
                 step = ReportStep.Hub
             })
+            ReportDialog.NoFieldSelected -> WarningDialog(
+                message = "Ningún campo seleccionado",
+                onContinue = { dialog = ReportDialog.None }
+            )
+            ReportDialog.NoMediaAttached -> WarningDialog(
+                message = "No se ha adjuntado ningún vídeo o imagen",
+                onContinue = { dialog = ReportDialog.None }
+            )
             ReportDialog.None -> Unit
         }
     }
@@ -433,39 +479,20 @@ private fun BoxScope.IdentifyStep(
     onUsernameChange: (String) -> Unit,
     onNext: () -> Unit
 ) {
-    val context = LocalContext.current
-    var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var emailError by rememberSaveable { mutableStateOf(false) }
     var userError by rememberSaveable { mutableStateOf(false) }
 
     fun validateAndProceed() {
         val emailTrimmed = email.trim()
         val userTrimmed = username.trim()
-        when {
-            emailTrimmed.isEmpty() && userTrimmed.isEmpty() -> {
-                errorMessage = "Es necesario introducir el correo electrónico y el usuario"
-                emailError = true
-                userError = true
-                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
-            }
-            emailTrimmed.isEmpty() -> {
-                errorMessage = "Es necesario introducir el campo del correo electrónico"
-                emailError = true
-                userError = false
-                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
-            }
-            userTrimmed.isEmpty() -> {
-                errorMessage = "Es necesario introducir el campo del usuario"
-                emailError = false
-                userError = true
-                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
-            }
-            else -> {
-                errorMessage = null
-                emailError = false
-                userError = false
-                onNext()
-            }
+        val isEmailBlank = emailTrimmed.isEmpty()
+        val isUserBlank = userTrimmed.isEmpty()
+
+        emailError = isEmailBlank
+        userError = isUserBlank
+
+        if (!isEmailBlank && !isUserBlank) {
+            onNext()
         }
     }
 
@@ -487,15 +514,12 @@ private fun BoxScope.IdentifyStep(
             modifier = Modifier.offset(23.dp, 77.dp)
         )
         ReportInput(
-            modifier = Modifier.offset(23.dp, 146.dp).size(348.dp, 45.dp),
+            modifier = Modifier.offset(23.dp, 132.dp).size(348.dp, 45.dp),
             placeholder = "Correo electrónico",
             value = email,
             onValueChange = {
                 onEmailChange(it)
-                if (emailError && it.isNotBlank()) {
-                    emailError = false
-                    if (!userError) errorMessage = null
-                }
+                if (emailError && it.isNotBlank()) emailError = false
             },
             required = true,
             isError = emailError,
@@ -507,16 +531,20 @@ private fun BoxScope.IdentifyStep(
                 )
             }
         )
+        if (emailError) {
+            Text(
+                text = "Ningún correo ingresado, verifique nuevamente",
+                style = jakartaText(12.sp, 16.sp, app_colors.formError, FontWeight.SemiBold),
+                modifier = Modifier.offset(25.dp, 180.dp)
+            )
+        }
         ReportInput(
-            modifier = Modifier.offset(23.dp, 213.dp).size(348.dp, 45.dp),
+            modifier = Modifier.offset(23.dp, if (emailError) 205.dp else 195.dp).size(348.dp, 45.dp),
             placeholder = "Usuario",
             value = username,
             onValueChange = {
                 onUsernameChange(it)
-                if (userError && it.isNotBlank()) {
-                    userError = false
-                    if (!emailError) errorMessage = null
-                }
+                if (userError && it.isNotBlank()) userError = false
             },
             required = true,
             isError = userError,
@@ -528,13 +556,11 @@ private fun BoxScope.IdentifyStep(
                 )
             }
         )
-        if (errorMessage != null) {
+        if (userError) {
             Text(
-                text = errorMessage!!,
-                style = jakartaText(12.5.sp, 18.sp, app_colors.formError, FontWeight.SemiBold),
-                modifier = Modifier
-                    .offset(25.dp, 272.dp)
-                    .padding(end = 25.dp)
+                text = "Ningún usuario ingresado, verifique nuevamente",
+                style = jakartaText(12.sp, 16.sp, app_colors.formError, FontWeight.SemiBold),
+                modifier = Modifier.offset(25.dp, if (emailError) 253.dp else 243.dp)
             )
         }
     }
@@ -546,7 +572,25 @@ private fun BoxScope.IdentifyStep(
 }
 
 @Composable
-private fun BoxScope.ClassifyStep(selected: Int, onSelect: (Int) -> Unit, onBack: () -> Unit, onNext: () -> Unit) {
+private fun BoxScope.ClassifyStep(
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    onBack: () -> Unit,
+    onNext: () -> Unit,
+    onValidationError: () -> Unit
+) {
+    var showError by rememberSaveable { mutableStateOf(false) }
+
+    fun validateAndProceed() {
+        if (selected < 0) {
+            showError = true
+            onValidationError()
+        } else {
+            showError = false
+            onNext()
+        }
+    }
+
     SectionRow(235.dp, "Clasificación del problema")
     StepCard(height = 541.dp) {
         val tops = listOf(16.dp, 116.dp, 216.dp, 326.dp)
@@ -558,7 +602,10 @@ private fun BoxScope.ClassifyStep(selected: Int, onSelect: (Int) -> Unit, onBack
                     .size(370.dp, 85.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(app_colors.profileCorner)
-                    .clickable { onSelect(index) }
+                    .clickable {
+                        onSelect(index)
+                        showError = false
+                    }
             ) {
                 Text(label, style = sectionTitle, modifier = Modifier.offset(20.dp, 27.dp))
                 val radio = Modifier
@@ -575,20 +622,53 @@ private fun BoxScope.ClassifyStep(selected: Int, onSelect: (Int) -> Unit, onBack
                 }
             }
         }
+        if (showError && selected < 0) {
+            Text(
+                text = "Ningún campo seleccionado, marque uno",
+                style = jakartaText(13.sp, 18.sp, app_colors.formError, FontWeight.SemiBold),
+                modifier = Modifier.offset(20.dp, 435.dp)
+            )
+        }
     }
     BackChevron(left = 36.09.dp, top = 819.09.dp, onClick = onBack)
-    ReportButton("Siguiente paso", left = 69.dp, top = 800.dp, arrow = true, onClick = onNext)
+    ReportButton("Siguiente paso", left = 69.dp, top = 800.dp, arrow = true, onClick = ::validateAndProceed)
 }
 
 @Composable
-private fun BoxScope.DetailsStep(onBack: () -> Unit, onNext: () -> Unit) {
+private fun BoxScope.DetailsStep(
+    title: String,
+    onTitleChange: (String) -> Unit,
+    description: String,
+    onDescriptionChange: (String) -> Unit,
+    onBack: () -> Unit,
+    onNext: () -> Unit
+) {
+    var titleError by rememberSaveable { mutableStateOf(false) }
+    var descError by rememberSaveable { mutableStateOf(false) }
+
+    fun validateAndProceed() {
+        val isTitleEmpty = title.trim().isEmpty()
+        val isDescEmpty = description.trim().isEmpty()
+        titleError = isTitleEmpty
+        descError = isDescEmpty
+        if (!isTitleEmpty && !isDescEmpty) {
+            onNext()
+        }
+    }
+
     SectionRow(235.dp, "Detalles del incidente")
     StepCard(height = 540.dp) {
         Text("Título", style = sectionTitle, modifier = Modifier.offset(25.dp, 11.dp))
         ReportInput(
-            modifier = Modifier.offset(23.dp, 61.dp).size(348.dp, 45.dp),
+            modifier = Modifier.offset(23.dp, 44.dp).size(348.dp, 45.dp),
             placeholder = "Resumen del problema",
+            value = title,
+            onValueChange = {
+                onTitleChange(it)
+                if (titleError && it.isNotBlank()) titleError = false
+            },
             required = true,
+            isError = titleError,
             icon = {
                 Image(
                     painter = painterResource(R.drawable.report_title_icon),
@@ -597,16 +677,36 @@ private fun BoxScope.DetailsStep(onBack: () -> Unit, onNext: () -> Unit) {
                 )
             }
         )
-        Text("Descripción detallada", style = sectionTitle, modifier = Modifier.offset(26.dp, 115.dp))
+        if (titleError) {
+            Text(
+                text = "Ningún título ingresado, verifique nuevamente",
+                style = jakartaText(12.sp, 16.sp, app_colors.formError, FontWeight.SemiBold),
+                modifier = Modifier.offset(25.dp, 93.dp)
+            )
+        }
+
+        Text(
+            text = "Descripción detallada",
+            style = sectionTitle,
+            modifier = Modifier.offset(26.dp, if (titleError) 118.dp else 100.dp)
+        )
         Text(
             text = "Mín 0 - Máx 500",
             style = figmaText(app_fonts.poppins, 14.sp, 21.sp, app_colors.loginPlaceholder),
-            modifier = Modifier.offset(26.dp, 153.dp)
+            modifier = Modifier.offset(26.dp, if (titleError) 146.dp else 128.dp)
         )
         ReportInput(
-            modifier = Modifier.offset(24.dp, 182.dp).size(348.dp, 239.dp),
-            placeholder = "Indiquenos la descipción detallada ",
+            modifier = Modifier
+                .offset(24.dp, if (titleError) 172.dp else 154.dp)
+                .size(348.dp, 210.dp),
+            placeholder = "Indíquenos la descripción detallada",
+            value = description,
+            onValueChange = {
+                onDescriptionChange(it)
+                if (descError && it.isNotBlank()) descError = false
+            },
             required = true,
+            isError = descError,
             radius = 10.dp,
             singleLine = false,
             icon = {
@@ -618,9 +718,16 @@ private fun BoxScope.DetailsStep(onBack: () -> Unit, onNext: () -> Unit) {
                 )
             }
         )
+        if (descError) {
+            Text(
+                text = "Ninguna descripción ingresada, verifique nuevamente",
+                style = jakartaText(12.sp, 16.sp, app_colors.formError, FontWeight.SemiBold),
+                modifier = Modifier.offset(25.dp, if (titleError) 386.dp else 368.dp)
+            )
+        }
     }
     BackChevron(left = 37.09.dp, top = 815.09.dp, onClick = onBack)
-    ReportButton("Siguiente paso", left = 72.dp, top = 800.dp, arrow = true, onClick = onNext)
+    ReportButton("Siguiente paso", left = 72.dp, top = 800.dp, arrow = true, onClick = ::validateAndProceed)
 }
 
 /** Paso "Evidencias o pruebas visuales" (317:1111) y sus vistas previas (322:1278, 323:1535). */
@@ -858,8 +965,55 @@ private fun SentDialog(onFinish: () -> Unit) {
     }
 }
 
+/** Modales de advertencia ("Ningún campo seleccionado", "No se ha adjuntado ningún vídeo o imagen"). */
+@Composable
+private fun WarningDialog(message: String, onContinue: () -> Unit) {
+    ProfileOverlay(scrim = Color(0xB3000000)) {
+        ProfileDialogCard(top = 198.dp, background = app_colors.dialogCard) {
+            ProfileCardImage(R.drawable.shape_report_teal, (-96.85).dp, 435.23.dp, 178.44.dp, 179.93.dp)
+            ProfileCardImage(R.drawable.shape_report_blue, 273.48.dp, (-98.05).dp, 155.35.dp, 179.44.dp)
+            Image(
+                painter = painterResource(R.drawable.ic_report_error_cross),
+                contentDescription = null,
+                modifier = Modifier
+                    .offset(129.dp, 115.dp)
+                    .size(105.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .offset(20.dp, 248.dp)
+                    .size(324.dp, 60.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.ic_report_sparkles),
+                    contentDescription = null,
+                    modifier = Modifier.size(34.dp, 30.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = message,
+                    style = figmaText(app_fonts.poppins, 17.sp, 23.sp, app_colors.black, FontWeight.Bold),
+                    textAlign = TextAlign.Center
+                )
+            }
+            ProfileDialogButton(
+                text = "Continuar",
+                color = app_colors.formBlue,
+                textColor = app_colors.white,
+                onClick = onContinue,
+                modifier = Modifier.offset(45.dp, 350.dp),
+                width = 272.dp,
+                height = 52.dp
+            )
+        }
+    }
+}
+
 @Preview(widthDp = 412, heightDp = 917)
 @Composable
 private fun ReportProblemPreview() {
     ReportProblemScreen()
 }
+
