@@ -103,12 +103,6 @@ private object SpottyColors {
     val gradBottom = Color(0xFF3F8678)
     val header = Color(0xFF5488B0)
     val cornerBlue = Color(0xFF1363D5)
-    val bubble = Color(0xFF87B8AE)
-    val bubbleBorder = Color(0xFFF1F5F9)
-    // Contorno negro de las burbujas y tarjetas de Spotty (más legible sobre el fondo verde)
-    val outline = Color(0xFF000000)
-    val bubbleShadow1 = Color(0x0A0D56CF)
-    val bubbleShadow2 = Color(0x120D56CF)
     val greetingTitle = Color(0xFF0A2540)
     val body = Color(0xFF1E293B)
     val timeGray = Color(0xFF94A3B8)
@@ -150,7 +144,6 @@ val spottyBackground: Brush = Brush.verticalGradient(
 /** Alto del encabezado fijo de la conversación (TopHeader de 579:369). */
 val SPOTTY_HEADER_HEIGHT = 143.dp
 
-private val bubbleShape = RoundedCornerShape(topStart = 2.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp)
 private val userShape = RoundedCornerShape(topStart = 16.dp, topEnd = 2.dp, bottomEnd = 16.dp, bottomStart = 16.dp)
 
 // Estilo Glass para las respuestas de Spotty (translúcido, borde suave iluminado y sin contorno negro)
@@ -177,11 +170,6 @@ private fun Modifier.glassShadow(shape: androidx.compose.ui.graphics.Shape) = th
 
 private fun jakarta(size: Int, line: Float, color: Color, weight: Int = 400, spacing: Float = 0f, align: TextAlign = TextAlign.Start) =
     figmaText(app_fonts.plusJakarta, size.sp, line.sp, color, FontWeight(weight), spacing.sp, align)
-
-/** Sombra doble de las burbujas y tarjetas de Spotty (0,8 b10 s-6 | 0,10 b25 s-5). */
-private fun Modifier.spottyShadow(shape: androidx.compose.ui.graphics.Shape) = this
-    .dropShadow(shape, Shadow(radius = 10.dp, spread = (-6).dp, color = SpottyColors.bubbleShadow1, offset = DpOffset(0.dp, 8.dp)))
-    .dropShadow(shape, Shadow(radius = 25.dp, spread = (-5).dp, color = SpottyColors.bubbleShadow2, offset = DpOffset(0.dp, 10.dp)))
 
 /** "7:02 PM", igual que en Figma. */
 fun spottyClock(time: Long): String = SimpleDateFormat("h:mm a", Locale.US).format(Date(time))
@@ -550,6 +538,7 @@ fun rememberPlacePhoto(place: Place): String {
     }
 }
 
+/** Tarjeta de lugar recomendado por Spotty con estilo Glass (translúcido, reflejo superior suave y sin contorno negro). */
 @Composable
 fun SpottyPlaceCard(
     place: Place,
@@ -562,117 +551,123 @@ fun SpottyPlaceCard(
 ) {
     val shape = RoundedCornerShape(16.dp)
     Box(modifier.fillMaxWidth().padding(start = 31.dp, end = 16.dp)) {
-        Column(
+        Box(
             Modifier
                 .width(306.dp)
-                .spottyShadow(shape)
+                .glassShadow(shape)
                 .clip(shape)
-                .background(SpottyColors.bubble)
-                .border(1.5.dp, SpottyColors.outline, shape)
+                .background(glassBubbleBrush)
                 .clickable(onClick = onDetails)
-                .padding(1.dp)
         ) {
-            // Foto con degradado, insignias, corazón, nombre y dirección (112 de alto)
-            Box(Modifier.fillMaxWidth().height(112.dp).background(SpottyColors.photoBg)) {
-                // key(): SceneImage conserva la primera imagen que pinta; al llegar la foto de la
-                // pantalla de Figma (tras la genérica de la categoría) hay que recrearla
-                val photo = rememberPlacePhoto(place)
-                key(photo) { SceneImage(photo, Modifier.fillMaxSize(), crop = true) }
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(Brush.verticalGradient(0f to Color(0x1A000000), 0.45f to Color(0x33000000), 1f to Color(0xD9000000)))
-                )
-                Row(Modifier.offset(8.dp, 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (card.match > 0) Row(
-                        Modifier.height(19.dp).background(SpottyColors.match, CircleShape).padding(start = 8.dp, end = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+            Column(Modifier.fillMaxWidth()) {
+                // Foto con degradado, insignias, corazón, nombre y dirección (112 de alto)
+                Box(Modifier.fillMaxWidth().height(112.dp).background(SpottyColors.photoBg)) {
+                    // key(): SceneImage conserva la primera imagen que pinta; al llegar la foto de la
+                    // pantalla de Figma (tras la genérica de la categoría) hay que recrearla
+                    val photo = rememberPlacePhoto(place)
+                    key(photo) { SceneImage(photo, Modifier.fillMaxSize(), crop = true) }
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(Brush.verticalGradient(0f to Color(0x1A000000), 0.45f to Color(0x33000000), 1f to Color(0xD9000000)))
+                    )
+                    Row(Modifier.offset(8.dp, 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        if (card.match > 0) Row(
+                            Modifier.height(19.dp).background(SpottyColors.match, CircleShape).padding(start = 8.dp, end = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            SceneImage("7f18ce5dc44f11bb.png", Modifier.size(12.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("${card.match}% Match", style = jakarta(10, 15f, Color.White, 700), maxLines = 1)
+                        }
+                        if (card.distance != null) {
+                            Text(
+                                card.distance,
+                                style = jakarta(10, 15f, Color.White, 700),
+                                maxLines = 1,
+                                modifier = Modifier.height(19.dp).background(SpottyColors.distance, CircleShape).padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                    Box(
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .offset((-8).dp, 8.dp)
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF020A26).copy(alpha = 0.85f))
+                            .clickable(onClick = onFavorite, role = Role.Button, onClickLabel = if (isFavorite) "Quitar de favoritos" else "Guardar en favoritos"),
+                        contentAlignment = Alignment.Center
                     ) {
-                        SceneImage("7f18ce5dc44f11bb.png", Modifier.size(12.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("${card.match}% Match", style = jakarta(10, 15f, Color.White, 700), maxLines = 1)
+                        Icon(
+                            if (isFavorite) Icons.Rounded.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = null,
+                            tint = if (isFavorite) SpottyColors.amber else Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
                     }
-                    if (card.distance != null) {
+                    Column(Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 8.dp)) {
                         Text(
-                            card.distance,
-                            style = jakarta(10, 15f, Color.White, 700),
+                            place.name,
+                            style = jakarta(14, 20f, Color.White, 700, -0.35f),
                             maxLines = 1,
-                            modifier = Modifier.height(19.dp).background(SpottyColors.distance, CircleShape).padding(horizontal = 8.dp, vertical = 2.dp)
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            "${place.address} • ${place.hours}",
+                            style = jakarta(11, 16.5f, SpottyColors.subtitle, 500),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
-                Box(
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .offset((-8).dp, 8.dp)
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF020A26))
-                        .clickable(onClick = onFavorite, role = Role.Button, onClickLabel = if (isFavorite) "Quitar de favoritos" else "Guardar en favoritos"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        if (isFavorite) Icons.Rounded.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = null,
-                        tint = if (isFavorite) SpottyColors.amber else Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-                Column(Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 8.dp)) {
-                    Text(
-                        place.name,
-                        style = jakarta(14, 20f, Color.White, 700, -0.35f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        "${place.address} • ${place.hours}",
-                        style = jakarta(11, 16.5f, SpottyColors.subtitle, 500),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-            // Cuerpo: etiquetas, línea divisoria, precio y "Ver detalles" (90 de alto)
-            Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    place.cardChips().forEach { (text, color) ->
+                // Cuerpo: etiquetas, línea divisoria, precio y "Ver detalles" (90 de alto)
+                Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        place.cardChips().forEach { (text, color) ->
+                            Text(
+                                text,
+                                style = jakarta(10, 15f, color.fg, 600),
+                                maxLines = 1,
+                                modifier = Modifier.height(19.dp).background(color.bg, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x33FFFFFF)))
+                    Row(Modifier.fillMaxWidth().height(37.dp).padding(top = 9.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text,
-                            style = jakarta(10, 15f, color.fg, 600),
+                            buildAnnotatedString {
+                                withStyle(SpanStyle(color = Color.White.copy(alpha = 0.85f))) { append("${card.priceLabel}: ") }
+                                withStyle(SpanStyle(color = Color.White, fontWeight = FontWeight.Bold)) { append(card.priceValue) }
+                            },
+                            style = jakarta(11, 16.5f, Color.White, 500),
                             maxLines = 1,
-                            modifier = Modifier.height(19.dp).background(color.bg, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp)
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        val btnShape = RoundedCornerShape(12.dp)
+                        Text(
+                            "Ver detalles",
+                            style = jakarta(12, 16f, if (primary) Color.White else SpottyColors.primary, if (primary) 600 else 700),
+                            modifier = Modifier
+                                .height(28.dp)
+                                .then(if (primary) Modifier.dropShadow(btnShape, Shadow(radius = 2.dp, color = Color(0x0D000000), offset = DpOffset(0.dp, 1.dp))) else Modifier)
+                                .clip(btnShape)
+                                .background(if (primary) SpottyColors.primary else SpottyColors.secondaryBtn)
+                                .clickable(onClick = onDetails, role = Role.Button)
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
                         )
                     }
                 }
-                Spacer(Modifier.height(10.dp))
-                Box(Modifier.fillMaxWidth().height(1.dp).background(SpottyColors.bubbleBorder))
-                Row(Modifier.fillMaxWidth().height(37.dp).padding(top = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        buildAnnotatedString {
-                            withStyle(SpanStyle(color = SpottyColors.priceLabel)) { append("${card.priceLabel}: ") }
-                            withStyle(SpanStyle(color = SpottyColors.body, fontWeight = FontWeight.SemiBold)) { append(card.priceValue) }
-                        },
-                        style = jakarta(11, 16.5f, SpottyColors.priceLabel, 500),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    val btnShape = RoundedCornerShape(12.dp)
-                    Text(
-                        "Ver detalles",
-                        style = jakarta(12, 16f, if (primary) Color.White else SpottyColors.primary, if (primary) 600 else 700),
-                        modifier = Modifier
-                            .height(28.dp)
-                            .then(if (primary) Modifier.dropShadow(btnShape, Shadow(radius = 2.dp, color = Color(0x0D000000), offset = DpOffset(0.dp, 1.dp))) else Modifier)
-                            .clip(btnShape)
-                            .background(if (primary) SpottyColors.primary else SpottyColors.secondaryBtn)
-                            .clickable(onClick = onDetails, role = Role.Button)
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                }
+                Spacer(Modifier.height(12.dp))
             }
-            Spacer(Modifier.height(12.dp))
+            // Borde glass iluminado por encima de toda la tarjeta (incluso sobre la foto superior)
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .border(1.2.dp, glassBorderBrush, shape)
+            )
         }
     }
 }
