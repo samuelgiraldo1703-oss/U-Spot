@@ -65,6 +65,7 @@ android {
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.emoji2.emojipicker)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material3.lint)
     implementation(libs.androidx.compose.ui)
