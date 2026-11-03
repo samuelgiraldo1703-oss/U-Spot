@@ -54,20 +54,20 @@ class GoogleAuthHelper(private val context: Context) {
                 credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
             ) {
                 Log.e(TAG, "Tipo de credencial inesperado: ${credential.type}")
-                return GoogleSignInResult.Error("No se pudo iniciar sesión con Google")
+                return GoogleSignInResult.Error(context.getString(R.string.auth_google_sign_in_failed))
             }
             GoogleIdTokenCredential.createFrom(credential.data).idToken
         } catch (_: GetCredentialCancellationException) {
             return GoogleSignInResult.Cancelled
         } catch (e: NoCredentialException) {
             Log.e(TAG, "Sin cuentas de Google disponibles", e)
-            return GoogleSignInResult.Error("Agrega una cuenta de Google al dispositivo e inténtalo de nuevo")
+            return GoogleSignInResult.Error(context.getString(R.string.auth_google_no_accounts))
         } catch (e: GetCredentialException) {
             Log.e(TAG, "Error de Credential Manager (${e.type})", e)
-            return GoogleSignInResult.Error("No se pudo iniciar sesión con Google")
+            return GoogleSignInResult.Error(context.getString(R.string.auth_google_sign_in_failed))
         } catch (e: GoogleIdTokenParsingException) {
             Log.e(TAG, "ID token de Google inválido", e)
-            return GoogleSignInResult.Error("No se pudo iniciar sesión con Google")
+            return GoogleSignInResult.Error(context.getString(R.string.auth_google_sign_in_failed))
         }
 
         val user = try {
@@ -76,8 +76,10 @@ class GoogleAuthHelper(private val context: Context) {
             return GoogleSignInResult.NoNetwork
         } catch (e: Exception) {
             Log.e(TAG, "Error iniciando sesión en Firebase con Google", e)
-            return GoogleSignInResult.Error("No se pudo iniciar sesión con Google")
-        } ?: return GoogleSignInResult.Error("No se pudo iniciar sesión con Google")
+            return GoogleSignInResult.Error(context.getString(R.string.auth_google_sign_in_failed))
+        } ?: return GoogleSignInResult.Error(context.getString(R.string.auth_google_sign_in_failed))
+
+        val defaultUserName = context.getString(R.string.home_greeting_default_user)
 
         // Un fallo aquí no anula la sesión: el perfil se arma igual con los datos de Firebase Auth.
         try {
@@ -86,7 +88,7 @@ class GoogleAuthHelper(private val context: Context) {
                 val profile = hashMapOf(
                     "uid" to user.uid,
                     "username" to (user.displayName?.takeIf { it.isNotBlank() }
-                        ?: user.email?.substringBefore("@") ?: "Usuario"),
+                        ?: user.email?.substringBefore("@") ?: defaultUserName),
                     "email" to (user.email?.lowercase() ?: ""),
                     "photoUrl" to (user.photoUrl?.toString() ?: ""),
                     "createdAt" to System.currentTimeMillis()
@@ -97,7 +99,7 @@ class GoogleAuthHelper(private val context: Context) {
             Log.e(TAG, "Error asegurando perfil en Firestore", e)
         }
 
-        return GoogleSignInResult.Success(user.displayName ?: user.email ?: "Usuario")
+        return GoogleSignInResult.Success(user.displayName ?: user.email ?: defaultUserName)
     }
 
     /** Cierra la sesión de Firebase y olvida la cuenta elegida para que el selector vuelva a salir. */

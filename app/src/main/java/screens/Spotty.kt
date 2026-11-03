@@ -1,6 +1,9 @@
 package screens
 
+import android.Manifest
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -33,11 +36,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,35 +49,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.u_spot.R
 import data.FavoriteStore
-
 import data.Place
 import data.rememberFavorites
 import data.rememberPlaces
-import android.util.Log
-import data.PlaceStore
-import data.isOnline
-import data.spotty.AndroidSpottyLocator
 import data.spotty.GeminiClient
-import data.spotty.SpottyEngine
 import data.spotty.SpottyChat
-import data.spotty.SpottyChatRepository
-import data.spotty.SpottyGps
-import android.Manifest
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.DisposableEffect
-import com.google.firebase.firestore.ListenerRegistration
-import data.spotty.SpottyException
-
 import data.spotty.SpottyChatSummary
-
-import data.spotty.SpottyMessage
 import data.spotty.SpottyProblem
 import data.spotty.SpottyRole
 import decorations.SPOTTY_HEADER_HEIGHT
@@ -99,18 +86,15 @@ import decorations.SpottyTextBubble
 import decorations.SpottyTypingBubble
 import decorations.SpottyUserBubble
 import decorations.SpottyWelcomeInput
+import decorations.app_colors
 import decorations.app_fonts
 import decorations.figmaText
 import decorations.spottyBackground
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 /** Nombre del modelo que muestra la etiqueta (Fase 3 lo toma del modelo realmente usado). */
 private const val MODEL_LABEL = GeminiClient.MODEL_LABEL
-
-/** Filtros rápidos bajo el saludo, como en Figma ("Cerca de UTADEO" pasa a "Cerca de mí"). */
-private val QUICK_CHIPS = listOf("🎉 Conciertos & Música", "🍻 Bares & Cócteles", "📍 Cerca de mí", "💰 < \$30k COP")
 
 /**
  * Spotty, el asistente de planes (Figma "Home App (Vista IA)"). Sin mensajes muestra la
@@ -208,7 +192,7 @@ fun SpottyScreen(
             }
             if (!imeVisible) {
                 // Misma barra del Home, con Spotty resaltado (estamos dentro de Spotty)
-                Box(Modifier.fillMaxWidth().background(if (chat.messages.isEmpty() && !chat.typing) Color.Transparent else Color(0xFF3F8578))) {
+                Box(Modifier.fillMaxWidth().background(if (chat.messages.isEmpty() && !chat.typing) Color.Transparent else app_colors.spottyInputBand)) {
                     HomeBottomBar(onHome = onHome, onSpotty = {}, onProfile = onProfile, spottyActive = true)
                 }
             }
@@ -229,7 +213,7 @@ fun SpottyScreen(
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(Color(0x66000000))
+                    .background(app_colors.scrimDark40)
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { showHistory = false }
             )
         }
@@ -270,6 +254,12 @@ private fun SpottyWelcome(
     onHistory: () -> Unit,
     onChip: (String) -> Unit
 ) {
+    val quickChips = listOf(
+        stringResource(R.string.spotty_quick_chip_concerts),
+        stringResource(R.string.spotty_quick_chip_bars),
+        stringResource(R.string.spotty_quick_chip_near_me),
+        stringResource(R.string.spotty_quick_chip_budget)
+    )
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     Box(Modifier.fillMaxSize()) {
         SpottyLogo(Modifier.offset(30.dp, 32.dp + statusBar))
@@ -282,21 +272,21 @@ private fun SpottyWelcome(
             // En Figma el bloque del saludo está centrado sobre x = 215 (9 dp a la derecha del centro)
             Column(Modifier.offset(x = 9.dp).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    "¡Hola, $userName!",
-                    style = figmaText(app_fonts.inter, 45.sp, 39.sp, Color.White, FontWeight.ExtraBold, (-0.65).sp, TextAlign.Center)
+                    stringResource(R.string.spotty_welcome_greeting, userName),
+                    style = figmaText(app_fonts.inter, 45.sp, 39.sp, app_colors.white, FontWeight.ExtraBold, (-0.65).sp, TextAlign.Center)
                 )
                 Spacer(Modifier.height(6.dp))
-                Text("👋", style = figmaText(app_fonts.inter, 26.sp, 39.sp, Color(0xFF091E42), FontWeight.Bold))
+                Text("👋", style = figmaText(app_fonts.inter, 26.sp, 39.sp, app_colors.navLabel, FontWeight.Bold))
                 Text(
-                    "¿Qué quieres hacer hoy?",
-                    style = figmaText(app_fonts.inter, 20.sp, 24.sp, Color.White, FontWeight.Medium, textAlign = TextAlign.Center)
+                    stringResource(R.string.spotty_welcome_question),
+                    style = figmaText(app_fonts.inter, 20.sp, 24.sp, app_colors.white, FontWeight.Medium, textAlign = TextAlign.Center)
                 )
             }
             Spacer(Modifier.height(80.dp))
             SpottyWelcomeInput(input, onInput, onSend, MODEL_LABEL, Modifier.offset(x = 6.dp))
             // Ideas para empezar (antes estaban bajo el saludo de la conversación)
             Spacer(Modifier.height(14.dp))
-            SpottyQuickChips(QUICK_CHIPS, onChip, start = 34.dp)
+            SpottyQuickChips(quickChips, onChip, start = 34.dp)
             Spacer(Modifier.weight(1f))
         }
     }

@@ -33,10 +33,10 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -88,15 +88,15 @@ fun HelpSupportScreen(
         ProfileLogo(Modifier.figmaPosition(left = 72.dp, top = 27.dp))
 
         Text(
-            text = "Ayuda y soporte",
+            text = stringResource(R.string.help_support_title),
             style = jakartaText(26.sp, 39.sp, app_colors.helpTitle, FontWeight.ExtraBold, letterSpacing = (-0.65).sp),
             modifier = Modifier.figmaPosition(left = 18.dp, top = 109.dp)
         )
 
         HelpCard(
             top = 194.dp, height = 154.dp, icon = R.drawable.ic_help_center, iconTop = 44.dp,
-            title = "Centro de ayuda", titleTop = 37.37.dp,
-            body = "Encuentra respuestas a\npreguntas frecuentes sobre\nspots, pagos y más.", bodyWidth = 190.dp,
+            title = stringResource(R.string.help_card_center_title), titleTop = 37.37.dp,
+            body = stringResource(R.string.help_card_center_body), bodyWidth = 190.dp,
             arrowRight = 12.dp, arrowTop = 58.dp, onClick = onHelpCenter
         ) {
             // "?" dentro de la ilustración (en Figma es texto, no vector)
@@ -108,14 +108,14 @@ fun HelpSupportScreen(
         }
         HelpCard(
             top = 394.dp, height = 112.88.dp, icon = R.drawable.ic_help_security, iconTop = 23.44.dp,
-            title = "Status de seguridad", titleTop = 16.dp,
-            body = "Consulta el estado de tu\ncuenta y la seguridad de la\nplataforma.", bodyWidth = 165.05.dp,
+            title = stringResource(R.string.help_card_security_title), titleTop = 16.dp,
+            body = stringResource(R.string.help_card_security_body), bodyWidth = 165.05.dp,
             arrowRight = 17.dp, arrowTop = 37.44.dp, onClick = onSecurityStatus
         )
         HelpCard(
             top = 563.dp, height = 112.88.dp, icon = R.drawable.ic_help_report, iconTop = 23.44.dp,
-            title = "Reportar un problema", titleTop = 16.dp,
-            body = "Ayudanos a reportar un problema usando esta sección de nuestra App", bodyWidth = 232.dp,
+            title = stringResource(R.string.help_card_report_title), titleTop = 16.dp,
+            body = stringResource(R.string.help_card_report_body), bodyWidth = 232.dp,
             arrowRight = 17.dp, arrowTop = 37.44.dp, onClick = onReportProblem
         )
     }
@@ -140,8 +140,8 @@ private fun BoxScope.HelpCard(
     Box(
         modifier = Modifier
             .figmaPosition(left = 6.dp, right = 6.dp, top = top, height = height)
-            .dropShadow(shape, Shadow(radius = 25.dp, spread = (-4).dp, color = Color(0x14146E8C), offset = DpOffset(0.dp, 10.dp)))
-            .dropShadow(shape, Shadow(radius = 10.dp, spread = (-2).dp, color = Color(0x08000000), offset = DpOffset(0.dp, 4.dp)))
+            .dropShadow(shape, Shadow(radius = 25.dp, spread = (-4).dp, color = app_colors.shadowHelpCard, offset = DpOffset(0.dp, 10.dp)))
+            .dropShadow(shape, Shadow(radius = 10.dp, spread = (-2).dp, color = app_colors.shadowSoft08, offset = DpOffset(0.dp, 4.dp)))
             .clip(shape)
             .background(app_colors.helpCard)
             .border(1.dp, app_colors.profileCardBorder, shape)
@@ -174,7 +174,7 @@ private fun BoxScope.HelpCard(
                 .align(Alignment.TopEnd)
                 .offset(x = -arrowRight, y = arrowTop)
                 .size(38.dp)
-                .dropShadow(CircleShape, Shadow(radius = 12.dp, color = Color(0x5912A4B2), offset = DpOffset(0.dp, 4.dp)))
+                .dropShadow(CircleShape, Shadow(radius = 12.dp, color = app_colors.shadowHelpArrow, offset = DpOffset(0.dp, 4.dp)))
                 .clip(CircleShape)
                 .clickable(onClick = onClick)
         )
@@ -183,30 +183,6 @@ private fun BoxScope.HelpCard(
 
 private data class FaqSpec(@param:DrawableRes val icon: Int, val question: String, val answer: String, val danger: Boolean = false)
 
-private val faqs = listOf(
-    FaqSpec(
-        R.drawable.ic_cfg_lock, "¿Cómo cambiar mi contraseña?",
-        "Puede cambiar su contraseña en el inicio de sesion de su cuenta en el apartado de “Olvide Mi Contraseña”."
-    ),
-    FaqSpec(
-        R.drawable.ic_cfg_globe, "¿Cómo cambio el idioma de la app?",
-        "Puede cambiar el idioma de la aplicacion en la configuracion de su cuenta."
-    ),
-    FaqSpec(
-        R.drawable.ic_cfg_theme, "¿Cómo cambiar mi tema visual?",
-        "Podra cambiar su tema visual de oscuro a claro y viceversea en la configuracion de su cuenta seleccionando la opcion que requiera."
-    ),
-    FaqSpec(
-        R.drawable.ic_cfg_shield, "¿Como cambiar mi  privacidad?",
-        "Puede cambiar su privacidad de privada a publica y viceversa en la configuracion de su cuenta deslizando el icono hacia la opcion que usted requiera."
-    ),
-    FaqSpec(
-        R.drawable.ic_cfg_danger, "¿Cómo eliminar mi cuenta?",
-        "Si desea eliminar su cuenta de U-Spot tiene que dirigirse a la configuracion de su cuenta en el apartado de “Cuenta” para realizar el proceso de eliminacion de cuenta.",
-        danger = true
-    )
-)
-
 /**
  * Figma: "Centro de Ayuda" (255:142) y sus cinco variantes con una respuesta desplegada
  * (401:510, 401:615, 401:713, 401:811, 401:908).
@@ -214,6 +190,34 @@ private val faqs = listOf(
 @Composable
 fun HelpCenterScreen(onBack: () -> Unit = {}) {
     var expanded by rememberSaveable { mutableIntStateOf(-1) }
+    val faqs = listOf(
+        FaqSpec(
+            R.drawable.ic_cfg_lock,
+            stringResource(R.string.help_faq_1_q),
+            stringResource(R.string.help_faq_1_a)
+        ),
+        FaqSpec(
+            R.drawable.ic_cfg_globe,
+            stringResource(R.string.help_faq_2_q),
+            stringResource(R.string.help_faq_2_a)
+        ),
+        FaqSpec(
+            R.drawable.ic_cfg_theme,
+            stringResource(R.string.help_faq_3_q),
+            stringResource(R.string.help_faq_3_a)
+        ),
+        FaqSpec(
+            R.drawable.ic_cfg_shield,
+            stringResource(R.string.help_faq_4_q),
+            stringResource(R.string.help_faq_4_a)
+        ),
+        FaqSpec(
+            R.drawable.ic_cfg_danger,
+            stringResource(R.string.help_faq_5_q),
+            stringResource(R.string.help_faq_5_a),
+            danger = true
+        )
+    )
 
     ProfileCanvas(designHeight = 916.dp) {
         // "Ellipse 6": círculo turquesa de 600 que asoma por abajo
@@ -231,12 +235,12 @@ fun HelpCenterScreen(onBack: () -> Unit = {}) {
             res = R.drawable.ic_cfg_back
         )
         BoxedText(
-            text = "¿En qué requieres ayuda?",
+            text = stringResource(R.string.help_center_title),
             style = jakartaText(25.sp, 37.5.sp, app_colors.cfgTitle, FontWeight.ExtraBold, letterSpacing = (-0.62).sp),
             modifier = Modifier.figmaPosition(left = 31.dp, top = 16.dp, width = 243.dp, height = 75.dp)
         )
         Text(
-            text = "Soluciones que te podemos brindar...",
+            text = stringResource(R.string.help_center_subtitle),
             style = jakartaText(17.sp, 25.5.sp, app_colors.cfgHeading, FontWeight.Bold),
             modifier = Modifier.figmaPosition(left = 11.dp, top = 132.dp)
         )
@@ -302,12 +306,12 @@ fun SecurityStatusScreen(user: UserProfile = UserProfile.Preview, onBack: () -> 
             res = R.drawable.ic_status_back
         )
         BoxedText(
-            text = "Status de Seguridad",
+            text = stringResource(R.string.security_status_title),
             style = jakartaText(25.sp, 37.5.sp, app_colors.cfgTitle, FontWeight.ExtraBold, letterSpacing = (-0.62).sp),
             modifier = Modifier.figmaPosition(left = 33.dp, top = 40.dp, width = 247.dp, height = 38.dp)
         )
         Text(
-            text = "Datos generales",
+            text = stringResource(R.string.security_status_general_data),
             style = jakartaText(17.sp, 25.5.sp, app_colors.cfgHeading, FontWeight.Bold),
             modifier = Modifier.figmaPosition(left = 11.dp, top = 132.dp)
         )
@@ -326,8 +330,8 @@ fun SecurityStatusScreen(user: UserProfile = UserProfile.Preview, onBack: () -> 
             )
             VerifiedBadge(Modifier.align(Alignment.TopEnd).offset(x = (-19).dp, y = 21.dp))
         }
-        StatusRow(top = 266.dp, left = 9.dp, icon = R.drawable.ic_status_password, title = "Mi Contraseña")
-        StatusRow(top = 336.dp, left = 7.dp, icon = R.drawable.ic_status_phone, title = "Número Telefonico")
+        StatusRow(top = 266.dp, left = 9.dp, icon = R.drawable.ic_status_password, title = stringResource(R.string.security_status_row_password))
+        StatusRow(top = 336.dp, left = 7.dp, icon = R.drawable.ic_status_phone, title = stringResource(R.string.security_status_row_phone))
         ProfileRowCard(Modifier.figmaPosition(left = 7.dp, right = 11.dp, top = 416.dp, height = 70.dp)) {
             // "Background" azul oscuro con "image 7"
             Box(
@@ -335,7 +339,7 @@ fun SecurityStatusScreen(user: UserProfile = UserProfile.Preview, onBack: () -> 
                     .align(Alignment.CenterStart)
                     .offset(x = 13.dp)
                     .size(44.dp)
-                    .background(Color(0xFF0D254C), CircleShape),
+                    .background(app_colors.statusAddressBg, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
@@ -347,13 +351,13 @@ fun SecurityStatusScreen(user: UserProfile = UserProfile.Preview, onBack: () -> 
                         .clip(RoundedCornerShape(30.dp))
                 )
             }
-            Text("Direccion de Residencia", style = rowTitle, modifier = Modifier.align(Alignment.CenterStart).offset(x = 71.dp))
+            Text(stringResource(R.string.security_status_row_address), style = rowTitle, modifier = Modifier.align(Alignment.CenterStart).offset(x = 71.dp))
             VerifiedBadge(Modifier.align(Alignment.CenterEnd).offset(x = (-15).dp))
         }
         ProfileRowCard(Modifier.figmaPosition(left = 7.dp, right = 11.dp, top = 496.dp, height = 69.dp)) {
             ProfileRowIcon(R.drawable.ic_status_twostep)
             Text(
-                text = "Verificación de dos pasos (Opcional)",
+                text = stringResource(R.string.security_status_row_two_step),
                 style = rowTitle,
                 modifier = Modifier.offset(72.dp, 23.dp)
             )
@@ -393,7 +397,7 @@ fun SecurityStatusScreen(user: UserProfile = UserProfile.Preview, onBack: () -> 
             ) {
                 Image(
                     painter = profilePhotoPainter(user.photo),
-                    contentDescription = "Foto de perfil",
+                    contentDescription = stringResource(R.string.profile_photo_cd),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
@@ -413,7 +417,7 @@ fun SecurityStatusScreen(user: UserProfile = UserProfile.Preview, onBack: () -> 
 
         ProfileRowCard(Modifier.figmaPosition(left = 9.dp, right = 9.dp, top = 681.dp, height = 69.dp)) {
             BoxedText(
-                text = "Gracias por respetar las condiciones del servicio\ny las  Directivas de la comuindad de U-spot.\nSi infringes las reglas, aparareceran aquí.",
+                text = stringResource(R.string.security_status_guidelines_notice),
                 style = rowTitle,
                 modifier = Modifier.fillMaxSize()
             )
@@ -426,10 +430,10 @@ fun SecurityStatusScreen(user: UserProfile = UserProfile.Preview, onBack: () -> 
                 .offset(x = 1.dp, y = 773.dp)
                 .size(230.dp, 82.dp)
         ) {
-            BoxedText("Estado de Cuenta", small, Modifier.align(Alignment.TopCenter).height(22.dp))
+            BoxedText(stringResource(R.string.security_status_account_state_label), small, Modifier.align(Alignment.TopCenter).height(22.dp))
             Image(
                 painter = painterResource(R.drawable.status_ok),
-                contentDescription = "En orden",
+                contentDescription = stringResource(R.string.security_status_state_ok_cd),
                 modifier = Modifier
                     .offset(15.dp, 29.dp)
                     .size(30.dp)
@@ -454,9 +458,9 @@ fun SecurityStatusScreen(user: UserProfile = UserProfile.Preview, onBack: () -> 
                         .size(32.12.dp, 14.92.dp)
                 )
             }
-            BoxedText("En Orden!", small, Modifier.offset(8.dp, 59.dp).size(49.dp, 22.dp))
-            BoxedText("En Peligro", small, Modifier.offset(91.dp, 59.dp).size(48.dp, 22.dp))
-            BoxedText("Suspendida", small, Modifier.offset(171.dp, 59.dp).size(59.dp, 22.dp))
+            BoxedText(stringResource(R.string.security_status_state_ok), small, Modifier.offset(8.dp, 59.dp).size(49.dp, 22.dp))
+            BoxedText(stringResource(R.string.security_status_state_danger), small, Modifier.offset(91.dp, 59.dp).size(48.dp, 22.dp))
+            BoxedText(stringResource(R.string.security_status_state_suspended), small, Modifier.offset(171.dp, 59.dp).size(59.dp, 22.dp))
         }
     }
 }
@@ -484,7 +488,7 @@ private fun BoxScope.StatusRow(top: Dp, left: Dp, @DrawableRes icon: Int, title:
 private fun VerifiedBadge(modifier: Modifier) {
     Image(
         painter = painterResource(R.drawable.ic_status_verified),
-        contentDescription = "Verificado",
+        contentDescription = stringResource(R.string.common_verified_cd),
         modifier = modifier.size(16.dp)
     )
 }

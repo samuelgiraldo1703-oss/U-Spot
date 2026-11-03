@@ -1,5 +1,6 @@
 package screens
 
+import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -39,7 +40,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -54,7 +57,6 @@ import data.Place
 import data.rememberFavorites
 import data.rememberPlaces
 import decorations.BackButton
-import decorations.BoxedText
 import decorations.ProfileCanvas
 import decorations.ProfileCorner
 import decorations.ProfileFooter
@@ -64,32 +66,33 @@ import decorations.app_colors
 import decorations.figmaPosition
 import decorations.jakartaText
 import decorations.photo
-import decorations.singular
+import decorations.singularRes
 
 private data class InterestSpec(@param:DrawableRes val photo: Int, val label: String)
 
 /** Figma: "Preferencias" (212:1119). */
 @Composable
 fun PreferencesScreen(onBack: () -> Unit = {}) {
+    val cafesLabel = stringResource(R.string.cat_cafes)
     // Tercera fila: en Figma el hueco del centro queda vacío.
     val rows: List<List<InterestSpec?>> = listOf(
         listOf(
-            InterestSpec(R.drawable.pref_cafes, "Cafés"),
-            InterestSpec(R.drawable.pref_restaurantes, "Restaurantes"),
-            InterestSpec(R.drawable.pref_cines, "Cines")
+            InterestSpec(R.drawable.pref_cafes, cafesLabel),
+            InterestSpec(R.drawable.pref_restaurantes, stringResource(R.string.cat_restaurants)),
+            InterestSpec(R.drawable.pref_cines, stringResource(R.string.preferences_interest_cinemas))
         ),
         listOf(
-            InterestSpec(R.drawable.pref_museos, "Museos"),
-            InterestSpec(R.drawable.pref_bares, "Bares"),
-            InterestSpec(R.drawable.pref_discotecas, "Discotecas")
+            InterestSpec(R.drawable.pref_museos, stringResource(R.string.cat_museums)),
+            InterestSpec(R.drawable.pref_bares, stringResource(R.string.cat_bars)),
+            InterestSpec(R.drawable.pref_discotecas, stringResource(R.string.cat_clubs))
         ),
         listOf(
-            InterestSpec(R.drawable.pref_librerias, "Librerías"),
+            InterestSpec(R.drawable.pref_librerias, stringResource(R.string.cat_bookstores)),
             null,
-            InterestSpec(R.drawable.pref_ocio, "Ocio")
+            InterestSpec(R.drawable.pref_ocio, stringResource(R.string.cat_leisure))
         )
     )
-    val selected = remember { mutableStateListOf("Cafés") }
+    val selected = remember { mutableStateListOf(cafesLabel) }
 
     ProfileCanvas(designHeight = 916.dp) {
         ProfileFooter(app_colors.profileYellow)
@@ -102,12 +105,12 @@ fun PreferencesScreen(onBack: () -> Unit = {}) {
         ProfileLogo(Modifier.figmaPosition(left = 50.dp, top = 21.dp))
 
         Text(
-            text = "Preferencias",
+            text = stringResource(R.string.preferences_title),
             style = jakartaText(25.sp, 34.38.sp, app_colors.prefTitle, FontWeight.ExtraBold, letterSpacing = (-0.62).sp),
             modifier = Modifier.figmaPosition(left = 20.dp, top = 149.dp)
         )
         Text(
-            text = "Edita tus intereses para recibir recomendacionespersonalizadas",
+            text = stringResource(R.string.preferences_subtitle),
             style = jakartaText(14.sp, 21.sp, app_colors.prefTitle.copy(alpha = 0.8f)),
             modifier = Modifier.figmaPosition(left = 20.dp, right = 20.dp, top = 204.dp)
         )
@@ -142,7 +145,7 @@ private fun InterestTile(spec: InterestSpec, selected: Boolean, onToggle: () -> 
             modifier = Modifier
                 .fillMaxWidth()
                 .height(108.67.dp)
-                .dropShadow(shape, Shadow(radius = 2.dp, color = Color(0x0D000000), offset = DpOffset(0.dp, 1.dp)))
+                .dropShadow(shape, Shadow(radius = 2.dp, color = app_colors.shadowSoft05, offset = DpOffset(0.dp, 1.dp)))
                 .clip(shape)
                 .background(app_colors.profileCardBorder)
                 .clickable(onClick = onToggle)
@@ -155,7 +158,7 @@ private fun InterestTile(spec: InterestSpec, selected: Boolean, onToggle: () -> 
             )
             Image(
                 painter = painterResource(if (selected) R.drawable.ic_pref_selected else R.drawable.ic_pref_add),
-                contentDescription = if (selected) "Seleccionado" else "Agregar",
+                contentDescription = if (selected) stringResource(R.string.preferences_selected_cd) else stringResource(R.string.preferences_add_cd),
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .offset(x = (-6.33).dp, y = (-6).dp)
@@ -188,6 +191,7 @@ private data class FavoriteSpec(
 )
 
 private fun resolveFavoriteSpec(
+    context: Context,
     placeId: String,
     allPlaces: List<Place>,
     colorPair: Pair<Color, Color>
@@ -219,28 +223,28 @@ private fun resolveFavoriteSpec(
 
     val photoSrc: String? = if (photoRes != null) null else dbPlace?.photo
 
-    val type = dbPlace?.category?.singular ?: when (placeId) {
-        "juanvaldez", "starbucks", "tostao" -> "Cafetería"
-        "wok", "crepes" -> "Restaurante"
-        "goyurt" -> "Postres"
-        "bbc", "beerbar" -> "Bar"
-        "museo-del-oro", "museonacional", "museooro" -> "Museo"
-        else -> "Lugar"
+    val type = dbPlace?.category?.let { context.getString(it.singularRes) } ?: when (placeId) {
+        "juanvaldez", "starbucks", "tostao" -> context.getString(R.string.favorite_places_type_cafe)
+        "wok", "crepes" -> context.getString(R.string.cat_singular_restaurant)
+        "goyurt" -> context.getString(R.string.favorite_places_type_desserts)
+        "bbc", "beerbar" -> context.getString(R.string.cat_singular_bar)
+        "museo-del-oro", "museonacional", "museooro" -> context.getString(R.string.cat_singular_museum)
+        else -> context.getString(R.string.favorite_places_type_place)
     }
 
     val ratingVal = 4.2 + (kotlin.math.abs(placeId.hashCode()) % 7) / 10.0
     val rating = String.format(java.util.Locale.US, "%.1f", ratingVal)
-    val distance = dbPlace?.let { "${it.walkMin}\nmin" } ?: "0.6\nkm"
+    val distance = dbPlace?.let { context.getString(R.string.favorite_places_walk_min_format, it.walkMin) } ?: context.getString(R.string.favorite_places_default_distance)
     val price = dbPlace?.price?.takeIf { it.isNotBlank() } ?: "$$"
     val tag = when {
-        dbPlace?.group == true -> "Ideal para grupos"
-        dbPlace?.quiet == true -> "Ambiente tranquilo"
-        dbPlace?.study == true -> "Zona de estudio"
-        dbPlace?.solo == true -> "Plan individual"
-        placeId == "wok" -> "Ideal para parejas"
-        placeId == "crepes" -> "Ambiente agradable"
-        placeId in listOf("tostao", "goyurt") -> "Económico"
-        else -> "Recomendado"
+        dbPlace?.group == true -> context.getString(R.string.home_tag_groups)
+        dbPlace?.quiet == true -> context.getString(R.string.home_tag_quiet)
+        dbPlace?.study == true -> context.getString(R.string.favorite_places_tag_study_zone)
+        dbPlace?.solo == true -> context.getString(R.string.favorite_places_tag_solo)
+        placeId == "wok" -> context.getString(R.string.favorite_places_tag_couples)
+        placeId == "crepes" -> context.getString(R.string.favorite_places_tag_pleasant)
+        placeId in listOf("tostao", "goyurt") -> context.getString(R.string.favorite_places_tag_budget)
+        else -> context.getString(R.string.favorite_places_tag_recommended)
     }
 
     return FavoriteSpec(
@@ -267,7 +271,7 @@ fun FavoritePlacesScreen(
     onBack: () -> Unit = {},
     onPlace: (String) -> Unit = {}
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val favorites = rememberFavorites()
     val allPlaces = rememberPlaces()
 
@@ -278,9 +282,9 @@ fun FavoritePlacesScreen(
     )
 
     // Los 6 recuadros de prueba fueron eliminados. Solo se muestran los guardados por el usuario.
-    val favoriteSpecs = remember(favorites, allPlaces) {
+    val favoriteSpecs = remember(favorites, allPlaces, context) {
         favorites.toList().mapIndexed { index, id ->
-            resolveFavoriteSpec(id, allPlaces, colorPairs[index % colorPairs.size])
+            resolveFavoriteSpec(context, id, allPlaces, colorPairs[index % colorPairs.size])
         }
     }
 
@@ -309,12 +313,12 @@ fun FavoritePlacesScreen(
         )
 
         Text(
-            text = "Mis lugares favoritos",
+            text = stringResource(R.string.favorite_places_title),
             style = jakartaText(26.sp, 32.5.sp, app_colors.favTitle, FontWeight.ExtraBold, letterSpacing = (-0.65).sp),
             modifier = Modifier.figmaPosition(left = 22.dp, top = 97.dp)
         )
         Text(
-            text = "Aquí encuentras todos los lugares que has\nguardado para visitar más tarde.",
+            text = stringResource(R.string.favorite_places_subtitle),
             style = jakartaText(14.sp, 22.75.sp, app_colors.favSubtitle, FontWeight.Medium),
             modifier = Modifier.figmaPosition(left = 22.dp, top = 137.38.dp)
         )
@@ -349,13 +353,13 @@ fun FavoritePlacesScreen(
             FavoriteSparkle()
             Spacer(Modifier.height(14.dp))
             Text(
-                text = "¡Sigue explorando!",
+                text = stringResource(R.string.favorite_places_keep_exploring_title),
                 style = jakartaText(20.sp, 28.sp, app_colors.favTitle, FontWeight.ExtraBold, letterSpacing = (-0.5).sp, textAlign = TextAlign.Center),
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Guarda más lugares y crea tu lista\npersonal de favoritos.",
+                text = stringResource(R.string.favorite_places_keep_exploring_subtitle),
                 style = jakartaText(14.sp, 22.75.sp, app_colors.favSubtitle, FontWeight.Medium, textAlign = TextAlign.Center),
                 textAlign = TextAlign.Center
             )
@@ -375,7 +379,7 @@ private fun FavoriteCard(
     Column(
         modifier = modifier
             .height(187.48.dp)
-            .dropShadow(shape, Shadow(radius = 10.dp, color = Color(0x0F000000), offset = DpOffset(0.dp, 2.dp)))
+            .dropShadow(shape, Shadow(radius = 10.dp, color = app_colors.shadowSoft06, offset = DpOffset(0.dp, 2.dp)))
             .clip(shape)
             .background(app_colors.white)
             .border(2.dp, app_colors.favCardBorder, shape)
@@ -422,7 +426,7 @@ private fun FavoriteCard(
             ) {
                 Image(
                     painter = painterResource(if (spec.saved) R.drawable.ic_fav_bookmark_on else R.drawable.ic_fav_bookmark_off),
-                    contentDescription = if (spec.saved) "Guardado" else "Guardar",
+                    contentDescription = if (spec.saved) stringResource(R.string.favorite_places_saved_cd) else stringResource(R.string.favorite_places_save_cd),
                     modifier = Modifier.size(20.dp, 24.dp)
                 )
             }
@@ -530,7 +534,7 @@ private fun FavoriteSparkle(modifier: Modifier = Modifier) {
             Path().apply {
                 moveTo(21 * u, 58 * u); lineTo(36 * u, 46 * u); lineTo(51 * u, 58 * u); close()
             },
-            Color.White
+            app_colors.white
         )
     }
 }

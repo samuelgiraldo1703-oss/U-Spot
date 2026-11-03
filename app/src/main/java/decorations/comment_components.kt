@@ -17,6 +17,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,7 +27,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
@@ -90,6 +90,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -102,17 +103,16 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.emoji2.emojipicker.EmojiPickerView
+import com.example.u_spot.R
 import com.google.firebase.auth.FirebaseAuth
+import data.AuthorPicture
 import data.COMMENT_MAX_LENGTH
 import data.CommentAuthor
-import com.example.u_spot.R
-import data.AuthorPicture
 import data.PlaceComment
 import data.UserProfile
 import data.addCommentReply
 import data.addPlaceComment
 import data.commentAgeLabel
-import data.commentsButtonLabel
 import data.decodeBase64Image
 import data.deleteCommentReply
 import data.deletePlaceComment
@@ -128,14 +128,6 @@ import data.setCommentLiked
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-private val CommentTeal = Color(0xFF14A39E)
-private val CommentName = Color(0xFF0F766E)
-private val CommentInput = Color(0xFFEDF1F5)
-private val CommentText = Color(0xFF1E293B)
-private val CommentHint = Color(0xFF8A94A6)
-private val CommentDivider = Color(0xFFE2E8F0)
-private val CommentLiked = Color(0xFFE11D48)
 
 /** Comentarios que se piden cada vez que se llega al final de la lista. */
 private const val COMMENTS_PAGE = 15
@@ -172,18 +164,18 @@ fun CommentsSection(placeKey: String, user: UserProfile, accent: Color?, modifie
     var open by rememberSaveable(placeKey) { mutableStateOf(false) }
     var changes by remember { mutableIntStateOf(0) }
     val count = rememberCommentCount(placeKey, refresh = listOf(latest.items.map { it.id }, open, changes))
-    val buttonColor = accent ?: CommentTeal
+    val buttonColor = accent ?: app_colors.commentTeal
 
     Column(modifier) {
         Text(
-            text = if (count != null && count > 0) "Comentarios ($count)" else "Comentarios",
-            style = jakartaText(20.sp, 28.sp, CommentText, FontWeight.Bold, letterSpacing = (-0.3).sp)
+            text = if (count != null && count > 0) stringResource(R.string.comments_title_with_count, count) else stringResource(R.string.comments_title),
+            style = jakartaText(20.sp, 28.sp, app_colors.commentBody, FontWeight.Bold, letterSpacing = (-0.3).sp)
         )
         Spacer(Modifier.height(12.dp))
         if (latest.loaded && latest.items.isEmpty()) {
             Text(
-                text = "Aún no hay comentarios. ¡Sé el primero en contar tu experiencia!",
-                style = jakartaText(13.sp, 19.sp, CommentHint)
+                text = stringResource(R.string.comments_empty_section_hint),
+                style = jakartaText(13.sp, 19.sp, app_colors.commentHint)
             )
         }
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -202,11 +194,11 @@ fun CommentsSection(placeKey: String, user: UserProfile, accent: Color?, modifie
                     .padding(horizontal = 22.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val content = if (buttonColor.luminance() > 0.6f) CommentText else Color.White
+                val content = if (buttonColor.luminance() > 0.6f) app_colors.commentBody else app_colors.white
                 Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = null, tint = content, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = commentsButtonLabel(latest.items.isNotEmpty()),
+                    text = stringResource(if (latest.items.isNotEmpty()) R.string.comments_button_view else R.string.comments_button_first),
                     style = jakartaText(14.sp, 20.sp, content, FontWeight.Bold)
                 )
             }
@@ -241,8 +233,8 @@ private fun CommentPreviewRow(comment: PlaceComment, onClick: () -> Unit) {
             AuthorLine(comment)
             Spacer(Modifier.height(2.dp))
             Text(
-                text = comment.text.ifEmpty { "Compartió una foto" },
-                style = jakartaText(14.sp, 20.sp, if (comment.text.isEmpty()) CommentHint else CommentText),
+                text = comment.text.ifEmpty { stringResource(R.string.comments_shared_photo) },
+                style = jakartaText(14.sp, 20.sp, if (comment.text.isEmpty()) app_colors.commentHint else app_colors.commentBody),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -323,7 +315,7 @@ private fun CommentsSheet(
                 onChanged()
                 if (target != null) expanded[target.commentId] = true else list.animateScrollToItem(0)
             } else {
-                Toast.makeText(context, "No se pudo publicar el comentario", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.comments_error_publish), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -331,10 +323,10 @@ private fun CommentsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheet,
-        containerColor = Color.White,
+        containerColor = app_colors.white,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         dragHandle = {
-            Box(Modifier.padding(top = 10.dp, bottom = 4.dp).size(width = 36.dp, height = 4.dp).clip(CircleShape).background(CommentDivider))
+            Box(Modifier.padding(top = 10.dp, bottom = 4.dp).size(width = 36.dp, height = 4.dp).clip(CircleShape).background(app_colors.commentCardBorder))
         },
         contentWindowInsets = { WindowInsets(0) }
     ) {
@@ -353,11 +345,11 @@ private fun CommentsSheet(
             Box(Modifier.fillMaxWidth().height(40.dp).padding(horizontal = 8.dp)) {
                 Text(
                     text = when (count) {
-                        null, 0 -> "Comentarios"
-                        1 -> "1 comentario"
-                        else -> "$count comentarios"
+                        null, 0 -> stringResource(R.string.comments_title)
+                        1 -> stringResource(R.string.comments_count_badge_singular)
+                        else -> stringResource(R.string.comments_count_badge_plural, count)
                     },
-                    style = jakartaText(15.sp, 20.sp, CommentText, FontWeight.Bold),
+                    style = jakartaText(15.sp, 20.sp, app_colors.commentBody, FontWeight.Bold),
                     modifier = Modifier.align(Alignment.Center)
                 )
                 Box(
@@ -370,21 +362,21 @@ private fun CommentsSheet(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Rounded.Close, contentDescription = "Cerrar comentarios", tint = CommentText, modifier = Modifier.size(22.dp))
+                    Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.comments_close_cd), tint = app_colors.commentBody, modifier = Modifier.size(22.dp))
                 }
             }
-            HorizontalDivider(color = CommentDivider)
+            HorizontalDivider(color = app_colors.commentCardBorder)
 
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when {
                     !feed.loaded -> CircularProgressIndicator(
-                        color = CommentTeal,
+                        color = app_colors.commentTeal,
                         strokeWidth = 2.dp,
                         modifier = Modifier.align(Alignment.Center).size(28.dp)
                     )
                     feed.items.isEmpty() -> Text(
-                        text = "Aún no hay comentarios.\n¡Sé el primero en contar tu experiencia!",
-                        style = jakartaText(14.sp, 20.sp, CommentHint, textAlign = TextAlign.Center),
+                        text = stringResource(R.string.comments_empty_sheet_hint),
+                        style = jakartaText(14.sp, 20.sp, app_colors.commentHint, textAlign = TextAlign.Center),
                         modifier = Modifier.align(Alignment.Center).padding(horizontal = 32.dp)
                     )
                     else -> LazyColumn(
@@ -409,7 +401,7 @@ private fun CommentsSheet(
                         if (feed.hasMore) {
                             item(key = "cargando") {
                                 Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(color = CommentTeal, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+                                    CircularProgressIndicator(color = app_colors.commentTeal, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
                                 }
                             }
                         }
@@ -417,7 +409,7 @@ private fun CommentsSheet(
                 }
             }
 
-            HorizontalDivider(color = CommentDivider)
+            HorizontalDivider(color = app_colors.commentCardBorder)
             CommentComposer(
                 input = input,
                 onInput = { input = it.copy(text = it.text.take(COMMENT_MAX_LENGTH)) },
@@ -450,9 +442,9 @@ private fun CommentsSheet(
 
     toDelete?.let { c ->
         ConfirmDialog(
-            title = if (c.parentId != null) "¿Eliminar respuesta?" else "¿Eliminar comentario?",
-            message = "Esta acción eliminará tu aporte de forma permanente.",
-            confirm = "Eliminar",
+            title = stringResource(if (c.parentId != null) R.string.comments_delete_reply_title else R.string.comments_delete_comment_title),
+            message = stringResource(R.string.comments_delete_confirm_message),
+            confirm = stringResource(R.string.comments_delete_action),
             onDismiss = { toDelete = null },
             onConfirm = {
                 toDelete = null
@@ -461,7 +453,7 @@ private fun CommentsSheet(
                     if (ok) onChanged()
                     Toast.makeText(
                         context,
-                        if (ok) "Comentario eliminado" else "No se pudo eliminar el comentario",
+                        context.getString(if (ok) R.string.comments_deleted_toast else R.string.comments_error_delete),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -471,9 +463,9 @@ private fun CommentsSheet(
 
     photoToDelete?.let { c ->
         ConfirmDialog(
-            title = "¿Eliminar imagen?",
-            message = "Se eliminará la foto de tu comentario, pero el texto se conservará.",
-            confirm = "Eliminar imagen",
+            title = stringResource(R.string.comments_delete_photo_title),
+            message = stringResource(R.string.comments_delete_photo_message),
+            confirm = stringResource(R.string.comments_delete_photo_action),
             onDismiss = { photoToDelete = null },
             onConfirm = {
                 photoToDelete = null
@@ -481,7 +473,7 @@ private fun CommentsSheet(
                     val ok = deletePlaceCommentPhoto(placeKey, c.id)
                     Toast.makeText(
                         context,
-                        if (ok) "Imagen eliminada" else "No se pudo eliminar la imagen",
+                        context.getString(if (ok) R.string.comments_photo_deleted_toast else R.string.comments_error_delete_photo),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -514,15 +506,15 @@ private fun CommentThread(
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onToggleReplies),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(Modifier.width(24.dp).height(1.dp).background(CommentHint))
+                Box(Modifier.width(24.dp).height(1.dp).background(app_colors.commentHint))
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = when {
-                        expanded -> "Ocultar respuestas"
-                        comment.replyCount == 1 -> "Ver 1 respuesta"
-                        else -> "Ver ${comment.replyCount} respuestas"
+                        expanded -> stringResource(R.string.comments_hide_replies)
+                        comment.replyCount == 1 -> stringResource(R.string.comments_view_one_reply)
+                        else -> stringResource(R.string.comments_view_replies_plural, comment.replyCount)
                     },
-                    style = jakartaText(12.sp, 16.sp, CommentHint, FontWeight.SemiBold)
+                    style = jakartaText(12.sp, 16.sp, app_colors.commentHint, FontWeight.SemiBold)
                 )
             }
         }
@@ -538,8 +530,8 @@ private fun CommentThread(
                 }
                 if (replies.size >= limit && comment.replyCount > limit) {
                     Text(
-                        text = "Ver más respuestas",
-                        style = jakartaText(12.sp, 16.sp, CommentHint, FontWeight.SemiBold),
+                        text = stringResource(R.string.comments_view_more_replies),
+                        style = jakartaText(12.sp, 16.sp, app_colors.commentHint, FontWeight.SemiBold),
                         modifier = Modifier.clickable { limit += REPLIES_PAGE }
                     )
                 }
@@ -582,14 +574,14 @@ private fun CommentItem(
             )
             if (comment.text.isNotEmpty()) {
                 Spacer(Modifier.height(2.dp))
-                Text(text = comment.text, style = jakartaText(14.sp, 20.sp, CommentText))
+                Text(text = comment.text, style = jakartaText(14.sp, 20.sp, app_colors.commentBody))
             }
             if (photo != null) {
                 Spacer(Modifier.height(8.dp))
                 Box {
                     Image(
                         bitmap = photo,
-                        contentDescription = "Foto del comentario",
+                        contentDescription = stringResource(R.string.comments_photo_cd),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .widthIn(max = 220.dp)
@@ -604,11 +596,11 @@ private fun CommentItem(
                                 .padding(6.dp)
                                 .size(28.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xCC000000))
+                                .background(app_colors.scrimDark80)
                                 .clickable { onDeletePhoto(comment) },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Outlined.DeleteOutline, contentDescription = "Eliminar imagen", tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Outlined.DeleteOutline, contentDescription = stringResource(R.string.comments_delete_photo_action), tint = app_colors.white, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -616,16 +608,16 @@ private fun CommentItem(
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "Responder",
-                    style = jakartaText(12.sp, 16.sp, CommentHint, FontWeight.SemiBold),
+                    text = stringResource(R.string.comments_reply_action),
+                    style = jakartaText(12.sp, 16.sp, app_colors.commentHint, FontWeight.SemiBold),
                     modifier = Modifier
                         .clickable { onReply(comment) }
                         .padding(end = 12.dp, top = 4.dp, bottom = 4.dp)
                 )
                 if (isAuthor) {
                     Text(
-                        text = "Eliminar",
-                        style = jakartaText(12.sp, 16.sp, CommentHint, FontWeight.SemiBold),
+                        text = stringResource(R.string.comments_delete_action),
+                        style = jakartaText(12.sp, 16.sp, app_colors.commentHint, FontWeight.SemiBold),
                         modifier = Modifier
                             .clickable { onDelete(comment) }
                             .padding(end = 12.dp, top = 4.dp, bottom = 4.dp)
@@ -664,7 +656,7 @@ private fun LikeButton(placeKey: String, comment: PlaceComment) {
                 scope.launch {
                     val ok = setCommentLiked(placeKey, comment, target)
                     pending = null
-                    if (!ok) Toast.makeText(context, "No se pudo guardar tu reacción", Toast.LENGTH_SHORT).show()
+                    if (!ok) Toast.makeText(context, context.getString(R.string.comments_error_reaction), Toast.LENGTH_SHORT).show()
                 }
             }
             .padding(vertical = 2.dp),
@@ -672,12 +664,12 @@ private fun LikeButton(placeKey: String, comment: PlaceComment) {
     ) {
         Icon(
             imageVector = if (liked) Icons.Rounded.Favorite else Icons.Outlined.FavoriteBorder,
-            contentDescription = if (liked) "Quitar me gusta" else "Me gusta",
-            tint = if (liked) CommentLiked else CommentHint,
+            contentDescription = stringResource(if (liked) R.string.comments_like_remove_cd else R.string.comments_like_add_cd),
+            tint = if (liked) app_colors.commentLiked else app_colors.commentHint,
             modifier = Modifier.size(20.dp)
         )
         if (shown > 0) {
-            Text(text = "$shown", style = jakartaText(11.sp, 14.sp, CommentHint, FontWeight.SemiBold))
+            Text(text = "$shown", style = jakartaText(11.sp, 14.sp, app_colors.commentHint, FontWeight.SemiBold))
         }
     }
 }
@@ -702,117 +694,117 @@ private fun CommentComposer(
         if (uri != null) onPhoto(uri)
     }
     Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 10.dp)
-    ) {
-        if (replyTo != null) {
-            Row(Modifier.fillMaxWidth().padding(start = 6.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Respondiendo a ${replyTo.authorName}",
-                    style = jakartaText(12.sp, 16.sp, CommentHint, FontWeight.SemiBold),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    Icons.Rounded.Close,
-                    contentDescription = "Cancelar respuesta",
-                    tint = CommentHint,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .clickable(onClick = onCancelReply)
-                        .padding(4.dp)
-                )
-            }
-        }
-        photo?.let { uri ->
-            PendingPhoto(uri, onRemove = { onPhoto(null) })
-            Spacer(Modifier.height(10.dp))
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // Las respuestas son solo texto: el "+" de la foto es para comentarios
-            if (replyTo == null) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        Modifier
-                            .size(26.dp)
-                            .border(BorderStroke(2.dp, CommentTeal), RoundedCornerShape(6.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Rounded.Add, contentDescription = "Agregar foto", tint = CommentTeal, modifier = Modifier.size(20.dp))
-                    }
-                }
-                Spacer(Modifier.width(6.dp))
-            }
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 46.dp)
-                    .clip(RoundedCornerShape(23.dp))
-                    .background(CommentInput)
-                    .padding(start = 16.dp, end = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(Modifier.weight(1f).padding(vertical = 10.dp)) {
-                    if (input.text.isEmpty()) {
-                        Text(
-                            text = if (replyTo != null) "Escribe tu respuesta..." else "Comparte tu experiencia...",
-                            style = jakartaText(14.sp, 20.sp, CommentHint),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    BasicTextField(
-                        value = input,
-                        onValueChange = onInput,
-                        textStyle = jakartaText(14.sp, 20.sp, CommentText),
-                        cursorBrush = SolidColor(CommentTeal),
-                        maxLines = 4,
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+        ) {
+            if (replyTo != null) {
+                Row(Modifier.fillMaxWidth().padding(start = 6.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.comments_replying_to, replyTo.authorName),
+                        style = jakartaText(12.sp, 16.sp, app_colors.commentHint, FontWeight.SemiBold),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.comments_cancel_reply_cd),
+                        tint = app_colors.commentHint,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(focus)
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .clickable(onClick = onCancelReply)
+                            .padding(4.dp)
                     )
                 }
-                // Carita: cambia entre el teclado del sistema y el de emojis
-                Icon(
-                    imageVector = if (emojisOpen) Icons.Outlined.Keyboard else Icons.Outlined.SentimentSatisfied,
-                    contentDescription = if (emojisOpen) "Mostrar teclado" else "Mostrar emojis",
-                    tint = CommentTeal,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .clickable(onClick = onToggleEmojis)
-                        .padding(4.dp)
-                )
             }
-            Spacer(Modifier.width(8.dp))
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(CircleShape)
-                    .background(CommentTeal)
-                    .clickable(enabled = !sending, onClick = onSend),
-                contentAlignment = Alignment.Center
-            ) {
-                if (sending) {
-                    CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
-                } else {
-                    Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Enviar comentario", tint = Color.White, modifier = Modifier.size(22.dp))
+            photo?.let { uri ->
+                PendingPhoto(uri, onRemove = { onPhoto(null) })
+                Spacer(Modifier.height(10.dp))
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Las respuestas son solo texto: el "+" de la foto es para comentarios
+                if (replyTo == null) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            Modifier
+                                .size(26.dp)
+                                .border(BorderStroke(2.dp, app_colors.commentTeal), RoundedCornerShape(6.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.comments_add_photo_cd), tint = app_colors.commentTeal, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    Spacer(Modifier.width(6.dp))
+                }
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 46.dp)
+                        .clip(RoundedCornerShape(23.dp))
+                        .background(app_colors.commentInput)
+                        .padding(start = 16.dp, end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(Modifier.weight(1f).padding(vertical = 10.dp)) {
+                        if (input.text.isEmpty()) {
+                            Text(
+                                text = stringResource(if (replyTo != null) R.string.comments_reply_input_placeholder else R.string.comments_experience_input_placeholder),
+                                style = jakartaText(14.sp, 20.sp, app_colors.commentHint),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        BasicTextField(
+                            value = input,
+                            onValueChange = onInput,
+                            textStyle = jakartaText(14.sp, 20.sp, app_colors.commentBody),
+                            cursorBrush = SolidColor(app_colors.commentTeal),
+                            maxLines = 4,
+                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focus)
+                        )
+                    }
+                    // Carita: cambia entre el teclado del sistema y el de emojis
+                    Icon(
+                        imageVector = if (emojisOpen) Icons.Outlined.Keyboard else Icons.Outlined.SentimentSatisfied,
+                        contentDescription = stringResource(if (emojisOpen) R.string.comments_show_keyboard_cd else R.string.comments_show_emojis_cd),
+                        tint = app_colors.commentTeal,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .clickable(onClick = onToggleEmojis)
+                            .padding(4.dp)
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(CircleShape)
+                        .background(app_colors.commentTeal)
+                        .clickable(enabled = !sending, onClick = onSend),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (sending) {
+                        CircularProgressIndicator(color = app_colors.white, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                    } else {
+                        Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = stringResource(R.string.comments_send_cd), tint = app_colors.white, modifier = Modifier.size(22.dp))
+                    }
                 }
             }
         }
-    }
-    if (emojisOpen) EmojiKeyboard(onEmoji)
+        if (emojisOpen) EmojiKeyboard(onEmoji)
     }
 }
 
@@ -830,7 +822,7 @@ private fun EmojiKeyboard(onEmoji: (String) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(EMOJI_KEYBOARD_HEIGHT)
-            .background(Color.White)
+            .background(app_colors.white)
     )
 }
 
@@ -856,7 +848,7 @@ private fun CommentAuthorCard(comment: PlaceComment, onDismiss: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color.White)
+                .background(app_colors.white)
                 .padding(horizontal = 24.dp, vertical = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -864,17 +856,17 @@ private fun CommentAuthorCard(comment: PlaceComment, onDismiss: () -> Unit) {
             Spacer(Modifier.height(14.dp))
             Text(
                 text = author?.name ?: comment.authorName,
-                style = jakartaText(18.sp, 24.sp, CommentText, FontWeight.Bold, textAlign = TextAlign.Center)
+                style = jakartaText(18.sp, 24.sp, app_colors.commentBody, FontWeight.Bold, textAlign = TextAlign.Center)
             )
             author?.bio?.takeIf { it.isNotBlank() }?.let {
                 Spacer(Modifier.height(6.dp))
-                Text(text = it, style = jakartaText(14.sp, 20.sp, CommentHint, textAlign = TextAlign.Center))
+                Text(text = it, style = jakartaText(14.sp, 20.sp, app_colors.commentHint, textAlign = TextAlign.Center))
             }
             author?.commentCount?.let {
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = if (it == 1) "1 comentario" else "$it comentarios",
-                    style = jakartaText(13.sp, 18.sp, CommentName, FontWeight.SemiBold)
+                    text = if (it == 1) stringResource(R.string.comments_count_badge_singular) else stringResource(R.string.comments_count_badge_plural, it),
+                    style = jakartaText(13.sp, 18.sp, app_colors.commentName, FontWeight.SemiBold)
                 )
             }
         }
@@ -885,16 +877,16 @@ private fun CommentAuthorCard(comment: PlaceComment, onDismiss: () -> Unit) {
 private fun ConfirmDialog(title: String, message: String, confirm: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = title, style = jakartaText(18.sp, 24.sp, CommentText, FontWeight.Bold)) },
-        text = { Text(text = message, style = jakartaText(14.sp, 20.sp, CommentText.copy(alpha = 0.8f))) },
+        title = { Text(text = title, style = jakartaText(18.sp, 24.sp, app_colors.commentBody, FontWeight.Bold)) },
+        text = { Text(text = message, style = jakartaText(14.sp, 20.sp, app_colors.commentBody.copy(alpha = 0.8f))) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text(text = confirm, color = CommentLiked, fontWeight = FontWeight.Bold)
+                Text(text = confirm, color = app_colors.commentLiked, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(text = "Cancelar", color = CommentText.copy(alpha = 0.7f))
+                Text(text = stringResource(R.string.common_cancel), color = app_colors.commentBody.copy(alpha = 0.7f))
             }
         }
     )
@@ -905,13 +897,13 @@ private fun AuthorLine(comment: PlaceComment, modifier: Modifier = Modifier) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = comment.authorName,
-            style = jakartaText(13.sp, 18.sp, CommentName, FontWeight.Bold),
+            style = jakartaText(13.sp, 18.sp, app_colors.commentName, FontWeight.Bold),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
         val age = commentAgeLabel(comment.createdAt)
         if (age.isNotEmpty()) {
-            Text(text = "  ·  $age", style = jakartaText(12.sp, 18.sp, CommentHint), maxLines = 1)
+            Text(text = "  ·  $age", style = jakartaText(12.sp, 18.sp, app_colors.commentHint), maxLines = 1)
         }
     }
 }
@@ -954,7 +946,7 @@ private fun CommentAvatar(comment: PlaceComment, size: Dp) {
         Modifier
             .size(size)
             .clip(CircleShape)
-            .background(Color(0xFFD7F3ED)),
+            .background(app_colors.commentAvatarMint),
         contentAlignment = Alignment.Center
     ) {
         when {
@@ -968,7 +960,7 @@ private fun CommentAvatar(comment: PlaceComment, size: Dp) {
                     modifier = Modifier.size(size)
                 )
             else ->
-                Icon(Icons.Rounded.Person, contentDescription = null, tint = CommentName, modifier = Modifier.size(size * 0.56f))
+                Icon(Icons.Rounded.Person, contentDescription = null, tint = app_colors.commentName, modifier = Modifier.size(size * 0.56f))
         }
     }
 }
@@ -989,7 +981,7 @@ private fun PendingPhoto(uri: Uri, onRemove: () -> Unit) {
         if (bitmap != null) {
             Image(
                 bitmap = bitmap.asImageBitmap(),
-                contentDescription = "Foto para adjuntar",
+                contentDescription = stringResource(R.string.comments_pending_photo_cd),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(72.dp)
@@ -1002,11 +994,11 @@ private fun PendingPhoto(uri: Uri, onRemove: () -> Unit) {
                 .padding(4.dp)
                 .size(22.dp)
                 .clip(CircleShape)
-                .background(Color(0x99000000))
+                .background(app_colors.scrimDark60)
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onRemove),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Rounded.Close, contentDescription = "Quitar foto", tint = Color.White, modifier = Modifier.size(14.dp))
+            Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.comments_remove_photo_cd), tint = app_colors.white, modifier = Modifier.size(14.dp))
         }
     }
 }

@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +43,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.u_spot.R
 import data.HomeCategory
 import data.HomePlace
 import data.Place
@@ -142,7 +144,7 @@ private class FigmaCard(val card: SceneNode, val info: Place) {
 
     /** El título de la tarjeta (debajo de la foto) pasa a ser el nombre de la sede. */
     fun texts(): Map<String, String> =
-        card.descendants { it is SceneNode.Text && it.spans.firstOrNull()?.color == Color(0xFF1A2942) && it.spans.first().size >= 18f }
+        card.descendants { it is SceneNode.Text && it.spans.firstOrNull()?.color == app_colors.placeNavy && it.spans.first().size >= 18f }
             .associate { it.id to info.name }
 }
 
@@ -159,6 +161,8 @@ private fun articleCards(scene: Scene) =
  */
 @Composable
 private fun PricingRow(place: Place, row: SceneNode, card: SceneNode) {
+    val approxSuffix = stringResource(R.string.category_price_approx_suffix)
+    val schedulePrefix = stringResource(R.string.category_schedule_prefix)
     val bottom = minOf(row.y + row.h, card.y + card.h - 10f)
     if (bottom - row.y < 34f) {
         Row(
@@ -167,19 +171,19 @@ private fun PricingRow(place: Place, row: SceneNode, card: SceneNode) {
         ) {
             Text(
                 text = buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Color(0xFF1A2942))) { append(place.price) }
-                    append(if (place.priceVaries) "  aprox." else "")
+                    withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = app_colors.placeNavy)) { append(place.price) }
+                    append(if (place.priceVaries) approxSuffix else "")
                 },
-                style = jakartaText(11.sp, 18.sp, Color(0xFF475569), FontWeight.Medium),
+                style = jakartaText(11.sp, 18.sp, app_colors.placeSlate, FontWeight.Medium),
                 maxLines = 1
             )
             Spacer(Modifier.weight(1f))
             Text(
                 text = buildAnnotatedString {
-                    append("Horario: ")
-                    withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = Color(0xFF1A2942))) { append(place.hours) }
+                    append(schedulePrefix)
+                    withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = app_colors.placeNavy)) { append(place.hours) }
                 },
-                style = jakartaText(11.sp, 18.sp, Color(0xFF475569), FontWeight.Medium, textAlign = TextAlign.End),
+                style = jakartaText(11.sp, 18.sp, app_colors.placeSlate, FontWeight.Medium, textAlign = TextAlign.End),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1.4f, fill = false)
@@ -192,18 +196,18 @@ private fun PricingRow(place: Place, row: SceneNode, card: SceneNode) {
         verticalAlignment = Alignment.Bottom
     ) {
         Column(Modifier.weight(1f)) {
-            Text(place.price, style = jakartaText(15.sp, 18.sp, Color(0xFF1A2942), FontWeight.ExtraBold))
+            Text(place.price, style = jakartaText(15.sp, 18.sp, app_colors.placeNavy, FontWeight.ExtraBold))
             Text(
-                if (place.priceVaries) "Aprox. · según el evento" else "Rango de precios",
-                style = jakartaText(12.sp, 16.sp, Color(0xFF475569), FontWeight.Medium)
+                if (place.priceVaries) stringResource(R.string.category_price_varies_label) else stringResource(R.string.category_price_range_label),
+                style = jakartaText(12.sp, 16.sp, app_colors.placeSlate, FontWeight.Medium)
             )
         }
         Text(
             text = buildAnnotatedString {
-                append("Horario: ")
-                withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = Color(0xFF1A2942))) { append(place.hours) }
+                append(schedulePrefix)
+                withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = app_colors.placeNavy)) { append(place.hours) }
             },
-            style = jakartaText(11.sp, 15.sp, Color(0xFF475569), FontWeight.Medium, textAlign = TextAlign.End),
+            style = jakartaText(11.sp, 15.sp, app_colors.placeSlate, FontWeight.Medium, textAlign = TextAlign.End),
             maxLines = 2,
             modifier = Modifier.width(150.dp)
         )
@@ -241,10 +245,10 @@ private fun CategoryMenu(current: HomeCategory, top: Float, onSelect: (HomeCateg
     Column(
         modifier = Modifier
             .placeAt((412 - 16 - 224).dp, top.dp, 224.dp, (HomeCategory.entries.size * 52 + 16).dp)
-            .dropShadow(shape, Shadow(radius = 24.dp, color = Color(0x26000000), offset = DpOffset(0.dp, 8.dp)))
+            .dropShadow(shape, Shadow(radius = 24.dp, color = app_colors.shadowSoft15, offset = DpOffset(0.dp, 8.dp)))
             .clip(shape)
             .background(app_colors.white)
-            .border(1.dp, Color(0xFFF1F5F9), shape)
+            .border(1.dp, app_colors.profileCardBorder, shape)
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -263,7 +267,7 @@ private fun CategoryMenuRow(category: HomeCategory, selected: Boolean, onClick: 
             .fillMaxWidth()
             .height(48.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(if (selected) Color(0xFFF1F5F9) else Color.Transparent)
+            .background(if (selected) app_colors.profileCardBorder else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -273,8 +277,8 @@ private fun CategoryMenuRow(category: HomeCategory, selected: Boolean, onClick: 
         }
         Box(Modifier.width(12.dp))
         Text(
-            text = category.label,
-            style = jakartaText(15.sp, 20.sp, Color(0xFF1A2942), if (selected) FontWeight.ExtraBold else FontWeight.Bold)
+            text = stringResource(category.labelRes),
+            style = jakartaText(15.sp, 20.sp, app_colors.placeNavy, if (selected) FontWeight.ExtraBold else FontWeight.Bold)
         )
     }
 }

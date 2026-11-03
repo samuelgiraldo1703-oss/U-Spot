@@ -1,5 +1,6 @@
 package screens
 
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.u_spot.R
 import data.HomeCategory
 import data.HomePlace
 import data.Place
@@ -54,7 +55,7 @@ import decorations.FigmaScene
 import decorations.SceneImage
 import decorations.app_fonts
 import decorations.figmaText
-import decorations.singular
+import decorations.singularRes
 import decorations.FigmaSceneNode
 import decorations.FigmaWidthScale
 import decorations.HomeBottomBar
@@ -66,7 +67,6 @@ import decorations.app_colors
 import decorations.baseStyle
 import decorations.placeAt
 import decorations.rememberScene
-import decorations.statusBarHeight
 
 /** Diálogos del dashboard: Figma "Home App (Confirmacion Cierre de Sesion)" y "(Cierre de Sesion)". */
 private enum class HomeDialog { None, AskLogout, LoggedOut }
@@ -114,7 +114,7 @@ fun HomeScreen(
                     data.FavoriteStore.toggle(context, id)
                 } + featuredCards.associate { it.card to { onPlace(it.route) } }
             },
-            texts = { featuredTexts(places) },
+            texts = { featuredTexts(context, places) },
             images = { photos },
             hide = { scene ->
                 val ids = greetingNodes(scene).map { it.id }.toMutableSet()
@@ -209,7 +209,7 @@ private fun Greeting(scene: Scene, userName: String) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Hola, $userName",
+            text = stringResource(R.string.home_greeting_format, userName),
             style = hello.baseStyle(),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -265,15 +265,15 @@ private fun List<Place>.of(f: FeaturedCard): Place? =
 
 private fun featuredHidden(): Set<String> = featuredCards.flatMap { listOf(it.price, it.tags) }.toSet()
 
-private fun featuredTexts(places: List<Place>): Map<String, String> = buildMap {
+private fun featuredTexts(context: Context, places: List<Place>): Map<String, String> = buildMap {
     for (f in nearCards) {
         val place = places.of(f) ?: continue
         f.title?.let { put(it, place.name) }
-        put(f.distance, "A ${place.distance}")
+        put(f.distance, context.getString(R.string.home_distance_prefix, place.distance))
     }
     places.of(recommended)?.let { place ->
         recommended.title?.let { put(it, place.name) }
-        put(RECOMMENDED_TEXT, "Horario: ${place.hours}\n${place.address}")
+        put(RECOMMENDED_TEXT, context.getString(R.string.home_recommended_schedule_address, place.hours, place.address))
     }
 }
 
@@ -281,16 +281,16 @@ private fun featuredTexts(places: List<Place>): Map<String, String> = buildMap {
 private class HomeTag(val bg: Color, val border: Color?, val text: Color)
 
 private val nearTags = listOf(
-    HomeTag(Color(0xFFF0FDFA), Color(0x80CCFBF1), Color(0xFF0F766E)),
-    HomeTag(Color(0xFFEFF6FF), Color(0x80DBEAFE), Color(0xFF1D4ED8))
+    HomeTag(app_colors.homeNearTagTealBg, app_colors.homeNearTagTealBorder, app_colors.homeNearTagTealText),
+    HomeTag(app_colors.homeNearTagBlueBg, app_colors.homeNearTagBlueBorder, app_colors.homeNearTagBlueText)
 )
 private val recommendedTags = listOf(
-    HomeTag(Color(0xFFF0FDFA), null, Color(0xFF0F766E)),
-    HomeTag(Color(0xFFEEF2FF), null, Color(0xFF4338CA)),
-    HomeTag(Color(0xFFFFF2CD), null, Color(0xFF78350F))
+    HomeTag(app_colors.homeNearTagTealBg, null, app_colors.homeNearTagTealText),
+    HomeTag(app_colors.homeRecTagIndigoBg, null, app_colors.homeRecTagIndigoText),
+    HomeTag(app_colors.homeRecTagAmberBg, null, app_colors.homeRecTagAmberText)
 )
 
-private val Muted = Color(0xFF64748B)
+private val Muted = app_colors.homeSubtitle
 
 private fun interText(size: Float, line: Float, color: Color, weight: FontWeight = FontWeight.Medium) =
     figmaText(app_fonts.inter, size.sp, line.sp, color, weight)
@@ -298,6 +298,7 @@ private fun interText(size: Float, line: Float, color: Color, weight: FontWeight
 /** Datos reales sobre las tarjetas: precio, Nequi, horario y etiquetas (en el lugar de los de Figma). */
 @Composable
 private fun FeaturedInfo(scene: Scene, places: List<Place>) {
+    val nequiSuffix = stringResource(R.string.home_accepts_nequi_suffix)
     for (f in nearCards) {
         val place = places.of(f) ?: continue
         val price = scene.find(f.price) ?: continue
@@ -306,8 +307,8 @@ private fun FeaturedInfo(scene: Scene, places: List<Place>) {
         Column(Modifier.placeAt(x.dp, price.y.dp, 183.dp, 36.dp)) {
             Text(
                 buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = Color(0xFF334155))) { append(place.price) }
-                    if (place.nequi) append("  ·  Acepta Nequi")
+                    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = app_colors.homePriceDark)) { append(place.price) }
+                    if (place.nequi) append(nequiSuffix)
                 },
                 style = interText(11f, 16.5f, Muted),
                 maxLines = 1,
@@ -320,7 +321,10 @@ private fun FeaturedInfo(scene: Scene, places: List<Place>) {
             }
         }
         if (tags != null) {
-            val labels = listOf(place.category.singular, if (place.quiet) "Ambiente tranquilo" else "Ideal para grupos")
+            val labels = listOf(
+                stringResource(place.category.singularRes),
+                if (place.quiet) stringResource(R.string.home_tag_quiet) else stringResource(R.string.home_tag_groups)
+            )
             Row(
                 Modifier.placeAt(x.dp, (tags.y + tags.h - 21f).dp, 190.dp, 21.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -337,13 +341,13 @@ private fun FeaturedInfo(scene: Scene, places: List<Place>) {
         Text("•  ${place.price}  •  ", style = interText(11f, 16.5f, Muted, FontWeight.Normal), maxLines = 1)
         if (pin != null) SceneImage(pin.src, Modifier.size(10.dp))
         Spacer(Modifier.width(2.dp))
-        Text(place.distance, style = interText(11f, 16.5f, Color(0xFF0D9488), FontWeight.SemiBold), maxLines = 1)
+        Text(place.distance, style = interText(11f, 16.5f, app_colors.homeTeal, FontWeight.SemiBold), maxLines = 1)
     }
     scene.find(recommended.tags)?.let { tags ->
         val labels = listOf(
-            place.category.singular,
-            if (place.study) "Apto para estudiar" else if (place.group) "Grupos" else "Persona sola",
-            if (place.quiet) "Ambiente tranquilo" else "Ambiente animado"
+            stringResource(place.category.singularRes),
+            if (place.study) stringResource(R.string.home_tag_study) else if (place.group) stringResource(R.string.home_tag_groups_short) else stringResource(R.string.home_tag_solo),
+            if (place.quiet) stringResource(R.string.home_tag_quiet) else stringResource(R.string.home_tag_lively)
         )
         Column(Modifier.placeAt(tags.x.dp, (tags.y + 6.5f).dp, tags.w.dp, 44.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -473,7 +477,7 @@ private fun LogoutDialog(sceneKey: String, onClick: Map<String, () -> Unit>) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(Color.White.copy(alpha = 0.7f))
+            .background(app_colors.whiteAlpha70)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
     ) {
         if (scene == null) return@Box
