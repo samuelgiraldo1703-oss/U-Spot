@@ -36,15 +36,71 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // El update solo cambia [field] y en exactamente una unidad (los comentarios antiguos no lo tienen: cuenta como 0).
+    function isCounterStep(field) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([field])
+        && request.resource.data[field] is int
+        && math.abs(request.resource.data[field] - resource.data.get(field, 0)) == 1;
+    }
+
+    // Nadie puede escribir los contadores directamente junto con su propio contenido.
+    function keepsCounters() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid', 'likeCount', 'replyCount']);
+    }
+
     // Comentarios de los lugares del Home: cualquiera los lee; solo usuarios con sesión publican
-    // a su nombre (uid propio) y cada autor puede editar o borrar los suyos.
+    // a su nombre (uid propio) y cada autor puede editar o borrar los suyos. El contador de "me gusta"
+    // solo cambia junto con el documento likes/{uid} de quien reacciona; el de respuestas, de uno en uno.
     match /places/{placeId}/comments/{commentId} {
+      function likeDoc() {
+        return /databases/$(database)/documents/places/$(placeId)/comments/$(commentId)/likes/$(request.auth.uid);
+      }
+
       allow read: if true;
       allow create: if request.auth != null
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.text is string
         && request.resource.data.text.size() <= 500;
-      allow update, delete: if request.auth != null && (resource.data.uid == request.auth.uid || resource.data.uid == "");
+      allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || resource.data.uid == "");
+      allow update: if request.auth != null && (
+        ((resource.data.uid == request.auth.uid || resource.data.uid == "") && keepsCounters())
+        || (isCounterStep('likeCount') && existsAfter(likeDoc()) != exists(likeDoc()))
+        || isCounterStep('replyCount')
+      );
+
+      // Cada persona solo crea o borra su propio "me gusta".
+      match /likes/{likeId} {
+        allow read: if true;
+        allow create, delete: if request.auth != null && request.auth.uid == likeId;
+      }
+
+      // Respuestas: cada autor publica a su nombre y borra las suyas.
+      match /replies/{replyId} {
+        function replyLikeDoc() {
+          return /databases/$(database)/documents/places/$(placeId)/comments/$(commentId)/replies/$(replyId)/likes/$(request.auth.uid);
+        }
+
+        allow read: if true;
+        allow create: if request.auth != null
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500;
+        allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+        allow update: if request.auth != null
+          && isCounterStep('likeCount')
+          && existsAfter(replyLikeDoc()) != exists(replyLikeDoc());
+
+        match /likes/{likeId} {
+          allow read: if true;
+          allow create, delete: if request.auth != null && request.auth.uid == likeId;
+        }
+      }
+    }
+
+    // Total de comentarios de una persona en todos los lugares (tarjeta de perfil).
+    match /{path=**}/comments/{commentId} {
+      allow read: if true;
     }
   }
 }
