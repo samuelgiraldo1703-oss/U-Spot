@@ -1,5 +1,8 @@
 package data
 
+import androidx.annotation.StringRes
+import com.example.u_spot.R
+
 /**
  * Lugares del módulo Home tal como están en Figma. Cada uno tiene su pantalla de detalle
  * ("Home App (Restaurantes)", "Home App (Cafeterias)", ...) en assets/figma/place_<key>.json.
@@ -35,15 +38,21 @@ enum class HomePlace(val key: String, val title: String, val backX: Float, val b
  * Categorías del Home ("Home App (Pantalla Principal)" en Figma). [places] va en el orden de las
  * tarjetas de arriba hacia abajo. [badgeId] es el icono de la categoría junto al título (nodo de Figma).
  */
-enum class HomeCategory(val key: String, val label: String, val places: List<HomePlace>, val badgeId: String) {
-    RESTAURANTES("restaurantes", "Restaurantes", listOf(HomePlace.WOK, HomePlace.CREPES), "442:1694"),
-    CAFES("cafes", "Cafés", listOf(HomePlace.JUAN_VALDEZ, HomePlace.STARBUCKS), "442:2037"),
-    BARES("bares", "Bares", listOf(HomePlace.BBC, HomePlace.BEER_BAR), "445:2427"),
-    TEATROS("teatros", "Teatros", listOf(HomePlace.CINE_COLOMBIA, HomePlace.CINEMATECA), "445:3100"),
-    OCIO("ocio", "Ocio", listOf(HomePlace.BILLAR, HomePlace.TEJO), "447:3637"),
-    MUSEOS("museos", "Museos", listOf(HomePlace.MUSEO_NACIONAL, HomePlace.MUSEO_ORO), "449:4295"),
-    DISCOTECAS("discotecas", "Discotecas", listOf(HomePlace.CAMPUS, HomePlace.DISCOTECA_CENTRAL), "449:4780"),
-    LIBRERIAS("librerias", "Librerías", listOf(HomePlace.PANAMERICANA, HomePlace.LERNER), "451:5467");
+enum class HomeCategory(
+    val key: String,
+    val label: String,
+    @StringRes val labelRes: Int,
+    val places: List<HomePlace>,
+    val badgeId: String
+) {
+    RESTAURANTES("restaurantes", "Restaurantes", R.string.cat_restaurants, listOf(HomePlace.WOK, HomePlace.CREPES), "442:1694"),
+    CAFES("cafes", "Cafés", R.string.cat_cafes, listOf(HomePlace.JUAN_VALDEZ, HomePlace.STARBUCKS), "442:2037"),
+    BARES("bares", "Bares", R.string.cat_bars, listOf(HomePlace.BBC, HomePlace.BEER_BAR), "445:2427"),
+    TEATROS("teatros", "Teatros", R.string.cat_theaters, listOf(HomePlace.CINE_COLOMBIA, HomePlace.CINEMATECA), "445:3100"),
+    OCIO("ocio", "Ocio", R.string.cat_leisure, listOf(HomePlace.BILLAR, HomePlace.TEJO), "447:3637"),
+    MUSEOS("museos", "Museos", R.string.cat_museums, listOf(HomePlace.MUSEO_NACIONAL, HomePlace.MUSEO_ORO), "449:4295"),
+    DISCOTECAS("discotecas", "Discotecas", R.string.cat_clubs, listOf(HomePlace.CAMPUS, HomePlace.DISCOTECA_CENTRAL), "449:4780"),
+    LIBRERIAS("librerias", "Librerías", R.string.cat_bookstores, listOf(HomePlace.PANAMERICANA, HomePlace.LERNER), "451:5467");
 
     val sceneKey get() = "list_$key"
 

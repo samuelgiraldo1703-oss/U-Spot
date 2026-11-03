@@ -32,12 +32,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import com.example.u_spot.R
 import data.HomePlace
 import data.Place
 import data.UserProfile
@@ -55,16 +57,17 @@ import decorations.SceneNode
 import decorations.photo
 import decorations.placeCardTexts
 import decorations.rememberScene
-import decorations.singular
+import decorations.singularRes
 import decorations.statusBarHeight
 import decorations.SceneScreen
+import decorations.app_colors
 import decorations.firstNode
 import decorations.jakartaText
 import decorations.placeAt
 
 
 /** Fondo del encabezado (foto) de las pantallas de detalle, también detrás de la barra de estado. */
-private val HeroDark = Color(0xFF171717)
+private val HeroDark = app_colors.placeHeroDark
 
 /**
  * Detalle de un lugar: Figma "Home App (Restaurantes)", "(Cafeterias)", "(Bares)"... (17 pantallas).
@@ -95,7 +98,7 @@ fun HomePlaceScreen(
             if (info == null) emptySet()
             else (scene.featureNodes() + listOfNotNull(categoryBadge(scene))).map { it.id }.toSet()
         },
-        texts = { scene -> info?.let { scene.placeCardTexts(it) } ?: emptyMap() },
+        texts = { scene -> info?.let { scene.placeCardTexts(it, context) } ?: emptyMap() },
         overlay = { scene ->
             // Botón "Volver" dibujado sobre la foto
             Box(
@@ -118,13 +121,13 @@ fun HomePlaceScreen(
             ) {
                 if (isFav) {
                     Box(
-                        Modifier.size(42.dp).clip(CircleShape).background(Color(0xFFF8F7F6)),
+                        Modifier.size(42.dp).clip(CircleShape).background(app_colors.placeHeartCircleBg),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             Icons.Rounded.Favorite,
-                            contentDescription = "Quitar de favoritos",
-                            tint = Color(0xFFE11D48),
+                            contentDescription = stringResource(R.string.home_favorite_remove_cd),
+                            tint = app_colors.placeHeartActive,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -137,7 +140,7 @@ fun HomePlaceScreen(
                     PlaceFeatureRow(info, x = first.x, y = first.y, width = right - first.x, wifi = true, own = scene)
                 }
                 categoryBadge(scene)?.let { badge ->
-                    HeroCategoryBadge(info.category.singular, Modifier.placeAt(badge.x.dp, badge.y.dp, 200.dp, badge.h.dp))
+                    HeroCategoryBadge(stringResource(info.category.singularRes), Modifier.placeAt(badge.x.dp, badge.y.dp, 200.dp, badge.h.dp))
                 }
             }
             val share = shareButton(scene)
@@ -173,12 +176,13 @@ fun PlaceDetailScreen(
     val template = rememberScene(place.category.style.template)
     val nav = rememberScene("place_wok")?.firstNode { it.name == "Top Action Navigation Bar" } as? SceneNode.Picture
     val badge = rememberScene(place.category.sceneKey)?.find(place.category.badgeId) as? SceneNode.Picture
+    val singularName = stringResource(place.category.singularRes)
 
     val statusBar = statusBarHeight()
     Column(
         Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(app_colors.white)
             .imePadding()
             .verticalScroll(rememberScrollState())
     ) {
@@ -192,7 +196,7 @@ fun PlaceDetailScreen(
                     SceneImage(place.photo, Modifier.fillMaxSize(), crop = true)
                     Box(
                         Modifier.fillMaxSize().background(
-                            Brush.verticalGradient(0f to Color(0x80000000), 0.5f to Color(0x00000000), 1f to Color(0x4D000000))
+                            Brush.verticalGradient(0f to app_colors.scrimDark50, 0.5f to Color.Transparent, 1f to app_colors.shadowSoft20)
                         )
                     )
                 }
@@ -217,26 +221,26 @@ fun PlaceDetailScreen(
                 ) {
                     if (isPlaceFav) {
                         Box(
-                            Modifier.size(42.dp).clip(CircleShape).background(Color(0xFFF8F7F6)),
+                            Modifier.size(42.dp).clip(CircleShape).background(app_colors.placeHeartCircleBg),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Rounded.Favorite,
-                                contentDescription = "Quitar de favoritos",
-                                tint = Color(0xFFE11D48),
+                                contentDescription = stringResource(R.string.home_favorite_remove_cd),
+                                tint = app_colors.placeHeartActive,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
                     }
                 }
-                HeroCategoryBadge(place.category.singular, Modifier.placeAt(16.dp, 160.dp, 200.dp, 30.dp))
+                HeroCategoryBadge(singularName, Modifier.placeAt(16.dp, 160.dp, 200.dp, 30.dp))
 
                 Column(
                     Modifier
                         .padding(top = 198.dp)
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp))
-                        .background(Color.White)
+                        .background(app_colors.white)
                         .padding(horizontal = 13.dp)
                 ) {
                     Spacer(Modifier.height(16.dp))
@@ -251,14 +255,14 @@ fun PlaceDetailScreen(
                         Column(Modifier.weight(1f)) {
                             Text(
                                 place.name,
-                                style = jakartaText(20.sp, 25.sp, Color(0xFF0F172A), FontWeight.Bold, letterSpacing = (-0.5).sp),
+                                style = jakartaText(20.sp, 25.sp, app_colors.homeTitle, FontWeight.Bold, letterSpacing = (-0.5).sp),
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
                             Spacer(Modifier.height(2.dp))
                             Text(
-                                "${place.category.singular} • ${place.address}",
-                                style = jakartaText(12.sp, 16.sp, Color(0xFF64748B), FontWeight.Medium)
+                                "$singularName • ${place.address}",
+                                style = jakartaText(12.sp, 16.sp, app_colors.placeSlateLight, FontWeight.Medium)
                             )
                         }
                     }
@@ -268,7 +272,7 @@ fun PlaceDetailScreen(
                     }
                     Spacer(Modifier.height(14.dp))
                     if (template != null) {
-                        val texts = template.placeCardTexts(place)
+                        val texts = template.placeCardTexts(place, context)
                         Box(Modifier.fillMaxWidth().height(86.dp)) {
                             template.firstNode { it.name == "Distance Card" }?.let {
                                 FigmaSceneNode(template, it, dx = -it.x, dy = -it.y, texts = texts)
@@ -305,7 +309,7 @@ private fun accentColor(scene: Scene?): Color? = (shareButton(scene) as? SceneNo
 
 /** Color de las tarjetas "Distancia" / "Ambiente" de la pantalla (para el bloque "Información"). */
 private fun cardColor(scene: Scene?): Color =
-    (scene?.firstNode { it.name == "Distance Card" } as? SceneNode.Frame)?.fills?.firstOrNull() ?: Color(0xFFEDF7F9)
+    (scene?.firstNode { it.name == "Distance Card" } as? SceneNode.Frame)?.fills?.firstOrNull() ?: app_colors.placeDefaultCardBg
 
 /** Etiqueta de categoría sobre la foto ("Cafetería Category Badge", "Museo Category Badge"...). */
 private fun categoryBadge(scene: Scene) =
@@ -314,9 +318,9 @@ private fun categoryBadge(scene: Scene) =
 private fun sharePlace(context: android.content.Context, name: String) {
     val send = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, "Mira $name en U-Spot: descubre, disfruta y conecta.")
+        putExtra(Intent.EXTRA_TEXT, context.getString(R.string.place_share_message, name))
     }
-    context.startActivity(Intent.createChooser(send, "Compartir"))
+    context.startActivity(Intent.createChooser(send, context.getString(R.string.place_share_chooser_title)))
 }
 
 /** La foto del encabezado es oscura: íconos claros en la barra de estado mientras se ve esta pantalla. */

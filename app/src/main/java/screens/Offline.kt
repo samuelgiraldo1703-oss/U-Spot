@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -72,7 +73,7 @@ fun OfflineScreen(onRetry: () -> Unit = {}) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "¡Oops te has quedado sin conexión, conectate nuevamente!",
+                    text = stringResource(R.string.offline_message),
                     style = figmaText(app_fonts.poppins, 18.sp, 20.sp, app_colors.black, textAlign = TextAlign.Center)
                 )
             }
@@ -95,7 +96,7 @@ fun OfflineScreen(onRetry: () -> Unit = {}) {
             )
             Image(
                 painter = painterResource(R.drawable.ic_wifi_off),
-                contentDescription = "Sin conexión",
+                contentDescription = stringResource(R.string.offline_title),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.figmaPosition(left = 141.dp, top = 150.dp, width = 101.dp, height = 101.dp)
             )
@@ -108,7 +109,7 @@ fun OfflineScreen(onRetry: () -> Unit = {}) {
             )
             Image(
                 painter = painterResource(R.drawable.ic_refresh),
-                contentDescription = "Reintentar",
+                contentDescription = stringResource(R.string.common_retry),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.figmaPosition(left = 173.dp, top = 375.dp, width = 30.dp, height = 29.dp)
             )

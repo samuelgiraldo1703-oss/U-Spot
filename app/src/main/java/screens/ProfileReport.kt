@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -42,14 +41,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
@@ -101,8 +99,6 @@ private enum class ReportDialog {
     NoMediaAttached
 }
 
-private val reportOptions = listOf("Fallo de inicio de sesión", "Enlace roto ", "Actividad mal vinculada", "Otro")
-
 /** Figma: los 19 frames "Reporte de Problemas", "Validacion de Imagen", "Cancelacion de Proceso" y "Reporte Enviado". */
 @Composable
 fun ReportProblemScreen(onExit: () -> Unit = {}) {
@@ -134,7 +130,7 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
         try {
             takePicture.launch(uri)
         } catch (_: ActivityNotFoundException) {
-            Toast.makeText(context, "No se encontró una app de cámara", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.profile_photo_no_camera_app), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -150,7 +146,7 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
     }
     val requestPhotos = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         if (result.values.any { it }) openGallery()
-        else Toast.makeText(context, "Para elegir una foto, permite que U-Spot acceda a tus fotos", Toast.LENGTH_LONG).show()
+        else Toast.makeText(context, context.getString(R.string.profile_photo_permission_toast), Toast.LENGTH_LONG).show()
     }
     val chooseFromGallery = {
         if (ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(context)) {
@@ -182,20 +178,22 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
             ProfileCorner(app_colors.profileCorner)
             Image(
                 painter = painterResource(R.drawable.report_home),
-                contentDescription = "Inicio",
+                contentDescription = stringResource(R.string.nav_tab_home),
                 modifier = Modifier
                     .figmaPosition(right = 22.dp, top = 25.dp, width = 49.dp, height = 49.dp)
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onHome)
             )
             BoxedText(
-                text = "Reporta un problema",
+                text = stringResource(R.string.report_title),
                 style = jakartaText(25.sp, 37.5.sp, app_colors.cfgTitle, FontWeight.ExtraBold, letterSpacing = (-0.62).sp),
                 modifier = Modifier.figmaPosition(left = 33.dp, top = 40.dp, width = 247.dp, height = 38.dp)
             )
+            val introQuestion = stringResource(R.string.report_intro_question)
+            val introFollowSteps = stringResource(R.string.report_intro_follow_steps)
             Text(
                 text = buildAnnotatedString {
-                    append("¿Tienes algún problema con nuestra página?\n\n")
-                    withStyle(SpanStyle(color = app_colors.profileYellow, fontSize = 24.sp)) { append("¡Sigue estos pasos!") }
+                    append(introQuestion)
+                    withStyle(SpanStyle(color = app_colors.profileYellow, fontSize = 24.sp)) { append(introFollowSteps) }
                 },
                 style = jakartaText(17.sp, 25.5.sp, app_colors.cfgHeading, FontWeight.Bold),
                 modifier = Modifier.figmaPosition(left = 16.dp, top = 132.dp)
@@ -241,7 +239,7 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
                     }
                 )
                 ReportStep.PreviewImage -> EvidenceStep(
-                    question = "¿Deseas usar esta imágen?",
+                    question = stringResource(R.string.report_preview_use_image),
                     mediaUri = mediaUri,
                     mediaRes = if (mediaUri == null) R.drawable.report_image_sample else null,
                     onBack = { step = ReportStep.Details },
@@ -252,7 +250,7 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
                     onFinish = { dialog = ReportDialog.Sent }
                 )
                 ReportStep.PreviewVideo -> EvidenceStep(
-                    question = "¿Deseas usar este video?",
+                    question = stringResource(R.string.report_preview_use_video),
                     mediaUri = mediaUri,
                     mediaRes = if (mediaUri == null) R.drawable.report_video_sample else null,
                     onBack = { step = ReportStep.Details },
@@ -273,8 +271,11 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
 
         when (dialog) {
             ReportDialog.LeaveReport -> ProfileLeaveDialog(
-                question = "¿Estás seguro que deseas salir?\n", warning = "Perderás todos tus cambios",
-                action = "Salir", actionX = 164.dp, actionWidth = 39.dp,
+                question = stringResource(R.string.report_leave_question),
+                warning = stringResource(R.string.report_leave_warning_changes),
+                action = stringResource(R.string.report_leave_action),
+                actionX = 164.dp,
+                actionWidth = 39.dp,
                 onBack = { dialog = ReportDialog.None },
                 onAction = {
                     email = ""
@@ -287,9 +288,11 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
                 }
             )
             ReportDialog.LeaveImage, ReportDialog.LeaveVideo -> ProfileLeaveDialog(
-                question = "¿Estás seguro que deseas salir?\n",
-                warning = if (dialog == ReportDialog.LeaveImage) "No confirmaste la imágen elegiida" else "No confirmaste el video elegiido",
-                action = "Salir", actionX = 164.dp, actionWidth = 39.dp,
+                question = stringResource(R.string.report_leave_question),
+                warning = if (dialog == ReportDialog.LeaveImage) stringResource(R.string.report_leave_warning_image) else stringResource(R.string.report_leave_warning_video),
+                action = stringResource(R.string.report_leave_action),
+                actionX = 164.dp,
+                actionWidth = 39.dp,
                 onBack = { dialog = ReportDialog.None },
                 onAction = { dialog = ReportDialog.None; mediaUriString = null; step = ReportStep.Hub }
             )
@@ -311,11 +314,11 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
                 step = ReportStep.Hub
             })
             ReportDialog.NoFieldSelected -> WarningDialog(
-                message = "Ningún campo seleccionado",
+                message = stringResource(R.string.report_error_no_field_selected),
                 onContinue = { dialog = ReportDialog.None }
             )
             ReportDialog.NoMediaAttached -> WarningDialog(
-                message = "No se ha adjuntado ningún vídeo o imagen",
+                message = stringResource(R.string.report_error_no_media_attached),
                 onContinue = { dialog = ReportDialog.None }
             )
             ReportDialog.None -> Unit
@@ -323,7 +326,7 @@ fun ReportProblemScreen(onExit: () -> Unit = {}) {
     }
 }
 
-private val sectionTitle = jakartaText(18.sp, 28.sp, Color(0xFF0F2548), FontWeight.Bold, letterSpacing = (-0.5).sp)
+private val sectionTitle = jakartaText(18.sp, 28.sp, app_colors.profileNavy, FontWeight.Bold, letterSpacing = (-0.5).sp)
 
 /** Fila de sección del reporte (101 dp de alto) con su título y, opcional, la flecha hacia abajo. */
 @Composable
@@ -368,7 +371,7 @@ private fun BoxScope.StepCard(height: Dp, content: @Composable BoxScope.() -> Un
 private fun BoxScope.TermsFooter() {
     ProfileRowCard(Modifier.figmaPosition(left = 9.dp, right = 9.dp, top = 717.dp, height = 69.dp)) {
         BoxedText(
-            text = "Terminos de uso\nTodos los derechos reservados por U-Spot App\n 2026 ",
+            text = stringResource(R.string.report_terms_footer),
             style = jakartaText(14.5.sp, 21.75.sp, app_colors.cfgHeading, FontWeight.Bold),
             modifier = Modifier.fillMaxSize()
         )
@@ -382,10 +385,10 @@ private fun BoxScope.HubStep(onOpen: (ReportStep) -> Unit) {
         contentDescription = null,
         modifier = Modifier.figmaPosition(left = 187.dp, top = 791.dp, width = 36.dp, height = 36.dp)
     )
-    SectionRow(235.dp, "Identifícate para poder ayudarte") { onOpen(ReportStep.Identify) }
-    SectionRow(336.dp, "Clasificación del problema") { onOpen(ReportStep.Classify) }
-    SectionRow(437.dp, "Detalles del incidente") { onOpen(ReportStep.Details) }
-    SectionRow(538.dp, "Evidencias o pruebas visuales") { onOpen(ReportStep.Evidence) }
+    SectionRow(235.dp, stringResource(R.string.report_section_identify)) { onOpen(ReportStep.Identify) }
+    SectionRow(336.dp, stringResource(R.string.report_section_classify)) { onOpen(ReportStep.Classify) }
+    SectionRow(437.dp, stringResource(R.string.report_section_details)) { onOpen(ReportStep.Details) }
+    SectionRow(538.dp, stringResource(R.string.report_section_evidence)) { onOpen(ReportStep.Evidence) }
     TermsFooter()
 }
 
@@ -413,7 +416,7 @@ private fun BoxScope.ReportButton(text: String, left: Dp, top: Dp, arrow: Boolea
 private fun BoxScope.BackChevron(left: Dp, top: Dp, onClick: () -> Unit) {
     Image(
         painter = painterResource(R.drawable.ic_report_back),
-        contentDescription = "Paso anterior",
+        contentDescription = stringResource(R.string.report_prev_step_cd),
         modifier = Modifier
             .figmaPosition(left = left, top = top, width = 9.83.dp, height = 17.83.dp)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
@@ -501,21 +504,21 @@ private fun BoxScope.IdentifyStep(
         contentDescription = null,
         modifier = Modifier.figmaPosition(left = 187.dp, top = 791.dp, width = 36.dp, height = 36.dp)
     )
-    SectionRow(235.dp, "Identifícate para poder ayudarte")
+    SectionRow(235.dp, stringResource(R.string.report_section_identify))
     StepCard(height = 368.dp) {
         Text(
-            text = "Brindanos tus datos personales para una ayuda personalizada y al detalle",
+            text = stringResource(R.string.report_identify_heading),
             style = sectionTitle,
             modifier = Modifier.offset(25.dp, 28.dp).padding(end = 25.dp)
         )
         Text(
-            text = "Reecuerda que U-Spot nunca te pedira contraseñas ",
+            text = stringResource(R.string.report_identify_password_notice),
             style = jakartaText(12.sp, 28.sp, app_colors.profileCorner, FontWeight.Bold, letterSpacing = (-0.5).sp),
             modifier = Modifier.offset(23.dp, 77.dp)
         )
         ReportInput(
             modifier = Modifier.offset(23.dp, 132.dp).size(348.dp, 45.dp),
-            placeholder = "Correo electrónico",
+            placeholder = stringResource(R.string.report_identify_email_placeholder),
             value = email,
             onValueChange = {
                 onEmailChange(it)
@@ -533,14 +536,14 @@ private fun BoxScope.IdentifyStep(
         )
         if (emailError) {
             Text(
-                text = "Ningún correo ingresado, verifique nuevamente",
+                text = stringResource(R.string.report_identify_email_error),
                 style = jakartaText(12.sp, 16.sp, app_colors.formError, FontWeight.SemiBold),
                 modifier = Modifier.offset(25.dp, 180.dp)
             )
         }
         ReportInput(
             modifier = Modifier.offset(23.dp, if (emailError) 205.dp else 195.dp).size(348.dp, 45.dp),
-            placeholder = "Usuario",
+            placeholder = stringResource(R.string.report_identify_user_placeholder),
             value = username,
             onValueChange = {
                 onUsernameChange(it)
@@ -558,16 +561,16 @@ private fun BoxScope.IdentifyStep(
         )
         if (userError) {
             Text(
-                text = "Ningún usuario ingresado, verifique nuevamente",
+                text = stringResource(R.string.report_identify_user_error),
                 style = jakartaText(12.sp, 16.sp, app_colors.formError, FontWeight.SemiBold),
                 modifier = Modifier.offset(25.dp, if (emailError) 253.dp else 243.dp)
             )
         }
     }
-    ReportButton("Siguiente paso", left = 75.dp, top = 618.dp, arrow = true, onClick = ::validateAndProceed)
+    ReportButton(stringResource(R.string.report_next_step), left = 75.dp, top = 618.dp, arrow = true, onClick = ::validateAndProceed)
     // En Figma las secciones siguientes quedan debajo, tapadas por "Terminos de uso"
-    SectionRow(704.dp, "Clasificación del problema", chevron = false)
-    SectionRow(805.dp, "Clasificación del problema ", chevron = false)
+    SectionRow(704.dp, stringResource(R.string.report_section_classify), chevron = false)
+    SectionRow(805.dp, stringResource(R.string.report_section_classify), chevron = false)
     TermsFooter()
 }
 
@@ -580,6 +583,12 @@ private fun BoxScope.ClassifyStep(
     onValidationError: () -> Unit
 ) {
     var showError by rememberSaveable { mutableStateOf(false) }
+    val reportOptions = listOf(
+        stringResource(R.string.report_option_login_fail),
+        stringResource(R.string.report_option_broken_link),
+        stringResource(R.string.report_option_wrong_activity),
+        stringResource(R.string.report_option_other)
+    )
 
     fun validateAndProceed() {
         if (selected < 0) {
@@ -591,7 +600,7 @@ private fun BoxScope.ClassifyStep(
         }
     }
 
-    SectionRow(235.dp, "Clasificación del problema")
+    SectionRow(235.dp, stringResource(R.string.report_section_classify))
     StepCard(height = 541.dp) {
         val tops = listOf(16.dp, 116.dp, 216.dp, 326.dp)
         val lefts = listOf(10.dp, 10.dp, 12.dp, 10.dp)
@@ -612,7 +621,7 @@ private fun BoxScope.ClassifyStep(
                     .offset(if (index == 3) 298.dp else 300.dp, if (index == 2) 23.dp else 20.dp)
                     .size(42.dp)
                 if (index == selected) {
-                    Image(painterResource(R.drawable.ic_report_option_on), contentDescription = "Seleccionado", modifier = radio)
+                    Image(painterResource(R.drawable.ic_report_option_on), contentDescription = stringResource(R.string.preferences_selected_cd), modifier = radio)
                 } else {
                     Box(
                         radio
@@ -624,14 +633,14 @@ private fun BoxScope.ClassifyStep(
         }
         if (showError && selected < 0) {
             Text(
-                text = "Ningún campo seleccionado, marque uno",
+                text = stringResource(R.string.report_classify_error),
                 style = jakartaText(13.sp, 18.sp, app_colors.formError, FontWeight.SemiBold),
                 modifier = Modifier.offset(20.dp, 435.dp)
             )
         }
     }
     BackChevron(left = 36.09.dp, top = 819.09.dp, onClick = onBack)
-    ReportButton("Siguiente paso", left = 69.dp, top = 800.dp, arrow = true, onClick = ::validateAndProceed)
+    ReportButton(stringResource(R.string.report_next_step), left = 69.dp, top = 800.dp, arrow = true, onClick = ::validateAndProceed)
 }
 
 @Composable
@@ -656,12 +665,12 @@ private fun BoxScope.DetailsStep(
         }
     }
 
-    SectionRow(235.dp, "Detalles del incidente")
+    SectionRow(235.dp, stringResource(R.string.report_section_details))
     StepCard(height = 540.dp) {
-        Text("Título", style = sectionTitle, modifier = Modifier.offset(25.dp, 11.dp))
+        Text(stringResource(R.string.report_details_title_label), style = sectionTitle, modifier = Modifier.offset(25.dp, 11.dp))
         ReportInput(
             modifier = Modifier.offset(23.dp, 44.dp).size(348.dp, 45.dp),
-            placeholder = "Resumen del problema",
+            placeholder = stringResource(R.string.report_details_title_placeholder),
             value = title,
             onValueChange = {
                 onTitleChange(it)
@@ -679,19 +688,19 @@ private fun BoxScope.DetailsStep(
         )
         if (titleError) {
             Text(
-                text = "Ningún título ingresado, verifique nuevamente",
+                text = stringResource(R.string.report_details_title_error),
                 style = jakartaText(12.sp, 16.sp, app_colors.formError, FontWeight.SemiBold),
                 modifier = Modifier.offset(25.dp, 93.dp)
             )
         }
 
         Text(
-            text = "Descripción detallada",
+            text = stringResource(R.string.report_details_desc_label),
             style = sectionTitle,
             modifier = Modifier.offset(26.dp, if (titleError) 118.dp else 100.dp)
         )
         Text(
-            text = "Mín 0 - Máx 500",
+            text = stringResource(R.string.report_details_desc_range),
             style = figmaText(app_fonts.poppins, 14.sp, 21.sp, app_colors.loginPlaceholder),
             modifier = Modifier.offset(26.dp, if (titleError) 146.dp else 128.dp)
         )
@@ -699,7 +708,7 @@ private fun BoxScope.DetailsStep(
             modifier = Modifier
                 .offset(24.dp, if (titleError) 172.dp else 154.dp)
                 .size(348.dp, 210.dp),
-            placeholder = "Indíquenos la descripción detallada",
+            placeholder = stringResource(R.string.report_details_desc_placeholder),
             value = description,
             onValueChange = {
                 onDescriptionChange(it)
@@ -720,14 +729,14 @@ private fun BoxScope.DetailsStep(
         )
         if (descError) {
             Text(
-                text = "Ninguna descripción ingresada, verifique nuevamente",
+                text = stringResource(R.string.report_details_desc_error),
                 style = jakartaText(12.sp, 16.sp, app_colors.formError, FontWeight.SemiBold),
                 modifier = Modifier.offset(25.dp, if (titleError) 386.dp else 368.dp)
             )
         }
     }
     BackChevron(left = 37.09.dp, top = 815.09.dp, onClick = onBack)
-    ReportButton("Siguiente paso", left = 72.dp, top = 800.dp, arrow = true, onClick = ::validateAndProceed)
+    ReportButton(stringResource(R.string.report_next_step), left = 72.dp, top = 800.dp, arrow = true, onClick = ::validateAndProceed)
 }
 
 /** Paso "Evidencias o pruebas visuales" (317:1111) y sus vistas previas (322:1278, 323:1535). */
@@ -743,10 +752,10 @@ private fun BoxScope.EvidenceStep(
     onDiscard: () -> Unit = {},
     onFinish: () -> Unit = {}
 ) {
-    SectionRow(235.dp, "Evidencias o pruebas visuales")
+    SectionRow(235.dp, stringResource(R.string.report_section_evidence))
     StepCard(height = 535.dp) {
         Text(
-            text = question ?: "Adjunta una imágen o video aquí ",
+            text = question ?: stringResource(R.string.report_evidence_attach_prompt),
             style = sectionTitle,
             modifier = Modifier.offset(25.dp, 28.dp)
         )
@@ -768,19 +777,19 @@ private fun BoxScope.EvidenceStep(
             )
             Image(
                 painter = painterResource(R.drawable.report_confirm),
-                contentDescription = "Usar",
+                contentDescription = stringResource(R.string.report_evidence_use_cd),
                 modifier = Modifier.offset(260.dp, 363.dp).size(55.dp).clickable(onClick = onConfirm)
             )
             Image(
                 painter = painterResource(R.drawable.ic_report_trash),
-                contentDescription = "Descartar",
+                contentDescription = stringResource(R.string.report_evidence_discard_cd),
                 modifier = Modifier.offset(322.dp, 366.dp).size(49.dp, 56.dp).clickable(onClick = onDiscard)
             )
         }
         AttachButtons(onOpenCamera = onAddCamera, onOpenGallery = onAddGallery)
     }
     BackChevron(left = 40.09.dp, top = 816.09.dp, onClick = onBack)
-    ReportButton("Terminar reporte", left = 75.dp, top = 795.dp, arrow = false, onClick = onFinish)
+    ReportButton(stringResource(R.string.report_finish_button), left = 75.dp, top = 795.dp, arrow = false, onClick = onFinish)
 }
 
 /** Botones para adjuntar evidencia: "Ganchito" (cámara) y "Play" (galería de fotos). */
@@ -788,7 +797,7 @@ private fun BoxScope.EvidenceStep(
 private fun BoxScope.AttachButtons(onOpenCamera: () -> Unit, onOpenGallery: () -> Unit) {
     Image(
         painter = painterResource(R.drawable.report_add_image),
-        contentDescription = "Abrir cámara",
+        contentDescription = stringResource(R.string.report_evidence_open_camera_cd),
         modifier = Modifier
             .offset(25.dp, 367.dp)
             .size(50.dp)
@@ -796,7 +805,7 @@ private fun BoxScope.AttachButtons(onOpenCamera: () -> Unit, onOpenGallery: () -
     )
     Image(
         painter = painterResource(R.drawable.report_add_video),
-        contentDescription = "Abrir galería",
+        contentDescription = stringResource(R.string.report_evidence_open_gallery_cd),
         modifier = Modifier
             .offset(79.dp, 365.dp)
             .size(52.dp)
@@ -828,7 +837,7 @@ private fun MediaBox(
     if (bitmap != null) {
         Image(
             bitmap = bitmap,
-            contentDescription = "Evidencia",
+            contentDescription = stringResource(R.string.report_evidence_image_cd),
             contentScale = ContentScale.Crop,
             modifier = modifier
                 .size(348.dp, 274.dp)
@@ -856,7 +865,7 @@ private fun BoxScope.FinalStep(
     onBack: () -> Unit,
     onFinish: () -> Unit
 ) {
-    SectionRow(235.dp, "Evidencias o pruebas visuales")
+    SectionRow(235.dp, stringResource(R.string.report_section_evidence))
     StepCard(height = 535.dp) {
         // Debajo asoma el recuadro gris de la vista previa, como en Figma
         Image(
@@ -892,7 +901,7 @@ private fun BoxScope.FinalStep(
         )
     }
     BackChevron(left = 40.09.dp, top = 816.09.dp, onClick = onBack)
-    ReportButton("Terminar reporte", left = 75.dp, top = 795.dp, arrow = false, onClick = onFinish)
+    ReportButton(stringResource(R.string.report_finish_button), left = 75.dp, top = 795.dp, arrow = false, onClick = onFinish)
 }
 
 /** Permiso de fotos según la versión de Android (13+ usa READ_MEDIA_IMAGES; 14+ admite acceso parcial). */
@@ -908,7 +917,7 @@ private fun galleryPermissions(): Array<String> = when {
 /** Figma: "Validacion de Imagen" (323:1534 imagen, 323:1592 video). */
 @Composable
 private fun AttachedDialog(video: Boolean, onContinue: () -> Unit) {
-    ProfileOverlay(scrim = Color(0xB3000000)) {
+    ProfileOverlay(scrim = app_colors.scrimDark70) {
         ProfileDialogCard(top = 198.dp, background = app_colors.dialogCard) {
             ProfileCardImage(R.drawable.shape_report_teal, (-96.85).dp, 435.23.dp, 178.44.dp, 179.93.dp)
             ProfileCardImage(R.drawable.shape_report_blue, 273.48.dp, (-98.05).dp, 155.35.dp, 179.44.dp)
@@ -923,12 +932,12 @@ private fun AttachedDialog(video: Boolean, onContinue: () -> Unit) {
                 modifier = Modifier.offset(20.dp, 253.dp).size(38.dp, 32.dp)
             )
             BoxedText(
-                text = if (video) "¡Video adjuntado con éxito!" else "¡Imágen adjuntada con éxito!",
+                text = if (video) stringResource(R.string.report_attached_video_success) else stringResource(R.string.report_attached_image_success),
                 style = figmaText(app_fonts.poppins, 18.sp, 20.sp, app_colors.black),
                 modifier = Modifier.offset(55.dp, 231.dp).size(285.dp, 85.dp)
             )
             ProfileDialogButton(
-                text = "Continuar", color = app_colors.formBlue, textColor = app_colors.white,
+                text = stringResource(R.string.common_continue), color = app_colors.formBlue, textColor = app_colors.white,
                 onClick = onContinue, modifier = Modifier.offset(45.dp, 350.dp), width = 272.dp, height = 52.dp
             )
         }
@@ -938,12 +947,12 @@ private fun AttachedDialog(video: Boolean, onContinue: () -> Unit) {
 /** Figma: "Reporte Enviado" (334:78). */
 @Composable
 private fun SentDialog(onFinish: () -> Unit) {
-    ProfileOverlay(scrim = Color(0xB3000000)) {
+    ProfileOverlay(scrim = app_colors.scrimDark70) {
         ProfileDialogCard(top = 180.dp, background = app_colors.dialogCard) {
             ProfileCardImage(R.drawable.shape_sent_teal, (-96.85).dp, 435.23.dp, 178.44.dp, 179.93.dp)
             ProfileCardImage(R.drawable.shape_sent_blue, 273.48.dp, (-98.05).dp, 155.35.dp, 179.44.dp)
             BoxedText(
-                text = "Reporte realizado con éxito",
+                text = stringResource(R.string.report_sent_success),
                 style = figmaText(app_fonts.poppins, 20.sp, 20.sp, app_colors.black),
                 modifier = Modifier.offset(20.dp, 151.dp).size(356.dp, 85.dp)
             )
@@ -958,7 +967,7 @@ private fun SentDialog(onFinish: () -> Unit) {
                 modifier = Modifier.offset(79.dp, 210.dp).size(208.dp, 139.dp)
             )
             ProfileDialogButton(
-                text = "Finalizar", color = app_colors.formBlue, textColor = app_colors.white,
+                text = stringResource(R.string.report_sent_finish), color = app_colors.formBlue, textColor = app_colors.white,
                 onClick = onFinish, modifier = Modifier.offset(48.dp, 358.dp), width = 272.dp, height = 52.dp
             )
         }
@@ -968,7 +977,7 @@ private fun SentDialog(onFinish: () -> Unit) {
 /** Modales de advertencia ("Ningún campo seleccionado", "No se ha adjuntado ningún vídeo o imagen"). */
 @Composable
 private fun WarningDialog(message: String, onContinue: () -> Unit) {
-    ProfileOverlay(scrim = Color(0xB3000000)) {
+    ProfileOverlay(scrim = app_colors.scrimDark70) {
         ProfileDialogCard(top = 198.dp, background = app_colors.dialogCard) {
             ProfileCardImage(R.drawable.shape_report_teal, (-96.85).dp, 435.23.dp, 178.44.dp, 179.93.dp)
             ProfileCardImage(R.drawable.shape_report_blue, 273.48.dp, (-98.05).dp, 155.35.dp, 179.44.dp)
@@ -999,7 +1008,7 @@ private fun WarningDialog(message: String, onContinue: () -> Unit) {
                 )
             }
             ProfileDialogButton(
-                text = "Continuar",
+                text = stringResource(R.string.common_continue),
                 color = app_colors.formBlue,
                 textColor = app_colors.white,
                 onClick = onContinue,
@@ -1016,4 +1025,3 @@ private fun WarningDialog(message: String, onContinue: () -> Unit) {
 private fun ReportProblemPreview() {
     ReportProblemScreen()
 }
-

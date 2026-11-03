@@ -1,5 +1,7 @@
 package decorations
 
+import android.content.Context
+import androidx.annotation.StringRes
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,7 +33,6 @@ import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +48,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -56,6 +59,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.u_spot.R
 import data.HomeCategory
 import data.Place
 
@@ -65,11 +69,6 @@ import data.Place
  * (Restaurantes)"); lo que no tiene equivalente en Figma (información y "Más info") sigue el estilo
  * de las tarjetas "Distancia" / "Ambiente".
  */
-
-private val Navy = Color(0xFF1A2942)
-private val Slate = Color(0xFF475569)
-private val SlateLight = Color(0xFF64748B)
-private val Ink = Color(0xFF1E293B)
 
 /**
  * Colores de cada categoría, tomados de sus pantallas de Figma: etiquetas de las tarjetas de la
@@ -92,14 +91,14 @@ class CategoryStyle(
 
 val HomeCategory.style: CategoryStyle
     get() = when (this) {
-        HomeCategory.RESTAURANTES -> CategoryStyle("place_wok", Color(0xFFD7F3ED), Color(0xFF136657), FontWeight.SemiBold, Navy, Color(0xFFD8F0F7), Color(0xFF0F766E), Color(0xFF0F766E))
-        HomeCategory.CAFES -> CategoryStyle("place_juanvaldez", Color(0xFFECEBF9), Color(0xFF4B439C), FontWeight.SemiBold, Navy, Color(0xFFCFCBFF), Color(0xFF4B439C), Color(0xFF4B439C))
-        HomeCategory.BARES -> CategoryStyle("place_bbc", Color(0xFFFFF2D9), Color(0xFFE5A016), FontWeight.SemiBold, Navy, Color(0xFFFACB53), Color(0xFF1F1A10), Color(0xFFB7791F))
-        HomeCategory.TEATROS -> CategoryStyle("place_cinecolombia", Color(0xFFE0E7FF), Color(0xFF1E40AF), FontWeight.SemiBold, Navy, Color(0xFF7286C6), Color(0xFFFFFFFF), Color(0xFF1E40AF))
-        HomeCategory.OCIO -> CategoryStyle("place_billar", Color(0xFFFCE7F3), Color(0xFF9D174D), FontWeight.SemiBold, Color(0xFF172B4D), Color(0xFFFFD7E8), Color(0xFFDB2777), Color(0xFF9D174D))
-        HomeCategory.MUSEOS -> CategoryStyle("place_museonacional", Color(0x1A475569), Color(0xFF334155), FontWeight.Normal, Color(0xFF172B4D), Color(0xFFE1E3E3), Color(0xFF334155), Color(0xFF334155))
-        HomeCategory.DISCOTECAS -> CategoryStyle("place_campus", Color(0xFFFFEDD5), Color(0xFFC2410C), FontWeight.Normal, Color(0xFF172B4D), Color(0xFFFFEDD5), Color(0xFFF5883C), Color(0xFFC2410C))
-        HomeCategory.LIBRERIAS -> CategoryStyle("place_lerner", Color(0xFFF5EBE6), Color(0xFF78350F), FontWeight.Normal, Color(0xFF172B4D), Color(0xFF895A2C), Color(0xFFFFFFFF), Color(0xFF78350F))
+        HomeCategory.RESTAURANTES -> CategoryStyle("place_wok", app_colors.styleRestChipBg, app_colors.styleRestChipText, FontWeight.SemiBold, app_colors.placeNavy, app_colors.styleRestIconLight, app_colors.styleRestAccent, app_colors.styleRestAccent)
+        HomeCategory.CAFES -> CategoryStyle("place_juanvaldez", app_colors.styleCafeChipBg, app_colors.styleCafeAccent, FontWeight.SemiBold, app_colors.placeNavy, app_colors.styleCafeIconLight, app_colors.styleCafeAccent, app_colors.styleCafeAccent)
+        HomeCategory.BARES -> CategoryStyle("place_bbc", app_colors.styleBarChipBg, app_colors.styleBarChipText, FontWeight.SemiBold, app_colors.placeNavy, app_colors.styleBarIconLight, app_colors.styleBarIconDark, app_colors.styleBarAccent)
+        HomeCategory.TEATROS -> CategoryStyle("place_cinecolombia", app_colors.styleTheaterChipBg, app_colors.styleTheaterAccent, FontWeight.SemiBold, app_colors.placeNavy, app_colors.styleTheaterIconLight, app_colors.white, app_colors.styleTheaterAccent)
+        HomeCategory.OCIO -> CategoryStyle("place_billar", app_colors.styleOcioChipBg, app_colors.styleOcioAccent, FontWeight.SemiBold, app_colors.photoTitle, app_colors.styleOcioIconLight, app_colors.styleOcioIconDark, app_colors.styleOcioAccent)
+        HomeCategory.MUSEOS -> CategoryStyle("place_museonacional", app_colors.styleMuseumChipBg, app_colors.styleMuseumAccent, FontWeight.Normal, app_colors.photoTitle, app_colors.styleMuseumIconLight, app_colors.styleMuseumAccent, app_colors.styleMuseumAccent)
+        HomeCategory.DISCOTECAS -> CategoryStyle("place_campus", app_colors.styleClubChipBg, app_colors.styleClubAccent, FontWeight.Normal, app_colors.photoTitle, app_colors.styleClubChipBg, app_colors.styleClubIconDark, app_colors.styleClubAccent)
+        HomeCategory.LIBRERIAS -> CategoryStyle("place_lerner", app_colors.styleBookChipBg, app_colors.styleBookAccent, FontWeight.Normal, app_colors.photoTitle, app_colors.styleBookIconLight, app_colors.white, app_colors.styleBookAccent)
     }
 
 /** Foto de la categoría (una foto real de un local de la zona) en assets/figma/img. */
@@ -107,6 +106,20 @@ val HomeCategory.photo: String get() = "cat_$key.jpg"
 
 /** Foto del lugar: la suya (assets/figma/img/place_<id>.jpg) o, si no tiene, la de su categoría. */
 val Place.photo: String get() = photoFile ?: category.photo
+
+/** Recurso de string del nombre de la categoría en singular ("Restaurante", "Café"...). */
+@get:StringRes
+val HomeCategory.singularRes: Int
+    get() = when (this) {
+        HomeCategory.RESTAURANTES -> R.string.cat_singular_restaurant
+        HomeCategory.CAFES -> R.string.cat_singular_cafe
+        HomeCategory.BARES -> R.string.cat_singular_bar
+        HomeCategory.TEATROS -> R.string.cat_singular_theater
+        HomeCategory.OCIO -> R.string.cat_singular_leisure
+        HomeCategory.MUSEOS -> R.string.cat_singular_museum
+        HomeCategory.DISCOTECAS -> R.string.cat_singular_club
+        HomeCategory.LIBRERIAS -> R.string.cat_singular_bookstore
+    }
 
 /** Nombre de la categoría en singular, para la etiqueta sobre la foto ("Restaurante"). */
 val HomeCategory.singular: String
@@ -119,6 +132,19 @@ val HomeCategory.singular: String
         HomeCategory.MUSEOS -> "Museo"
         HomeCategory.DISCOTECAS -> "Discoteca"
         HomeCategory.LIBRERIAS -> "Librería"
+    }
+
+/** Textos de la tarjeta "Distancia" (dos líneas, como en Figma) usando recursos de strings. */
+fun Place.distanceLines(context: Context): Pair<String, String> =
+    context.getString(R.string.place_distance_card_line_1, distance) to
+        context.getString(R.string.place_distance_card_line_2, walkMin)
+
+/** Textos de la tarjeta "Ambiente" usando recursos de strings. */
+fun Place.atmosphereLines(context: Context): Pair<String, String> =
+    if (quiet) {
+        context.getString(R.string.place_atmosphere_quiet_line_1) to context.getString(R.string.place_atmosphere_quiet_line_2)
+    } else {
+        context.getString(R.string.place_atmosphere_lively_line_1) to context.getString(R.string.place_atmosphere_lively_line_2)
     }
 
 /** Textos de la tarjeta "Distancia" (dos líneas, como en Figma). */
@@ -213,10 +239,10 @@ fun Scene.cardTexts(cardName: String): List<SceneNode.Text> {
 }
 
 /** Textos de las tarjetas "Distancia" y "Ambiente" de [scene] con los datos de [place]. */
-fun Scene.placeCardTexts(place: Place): Map<String, String> {
+fun Scene.placeCardTexts(place: Place, context: Context? = null): Map<String, String> {
     val out = HashMap<String, String>()
-    val (distance, walk) = place.distanceLines
-    val (mood, ideal) = place.atmosphereLines
+    val (distance, walk) = if (context != null) place.distanceLines(context) else place.distanceLines
+    val (mood, ideal) = if (context != null) place.atmosphereLines(context) else place.atmosphereLines
     cardTexts("Distance Card").let { t ->
         t.getOrNull(0)?.let { out[it.id] = distance }
         t.getOrNull(1)?.let { out[it.id] = walk }
@@ -239,16 +265,16 @@ fun HeroCategoryBadge(text: String, modifier: Modifier = Modifier) {
         modifier = modifier
             .wrapContentWidth(Alignment.Start)
             .height(30.dp)
-            .dropShadow(shape, Shadow(radius = 2.dp, color = Color(0x0D000000), offset = DpOffset(0.dp, 1.dp)))
+            .dropShadow(shape, Shadow(radius = 2.dp, color = app_colors.shadowSoft05, offset = DpOffset(0.dp, 1.dp)))
             .clip(shape)
-            .background(Color(0x99000000))
-            .border(1.dp, Color(0x1AFFFFFF), shape)
+            .background(app_colors.scrimDark60)
+            .border(1.dp, app_colors.whiteAlpha10, shape)
             .padding(start = 13.dp, end = 13.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+        Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = app_colors.white, modifier = Modifier.size(14.dp))
         Spacer(Modifier.width(6.dp))
-        Text(text, style = jakartaText(12.sp, 16.sp, Color.White, FontWeight.Medium))
+        Text(text, style = jakartaText(12.sp, 16.sp, app_colors.white, FontWeight.Medium))
     }
 }
 
@@ -266,8 +292,8 @@ fun PlaceInfoSection(place: Place, showName: Boolean, cardColor: Color, modifier
     var open by rememberSaveable(place.id) { mutableStateOf(false) }
     Column(modifier) {
         Text(
-            text = "Información",
-            style = jakartaText(20.sp, 28.sp, Ink, FontWeight.Bold, letterSpacing = (-0.3).sp)
+            text = stringResource(R.string.place_info_sheet_title),
+            style = jakartaText(20.sp, 28.sp, app_colors.placeInk, FontWeight.Bold, letterSpacing = (-0.3).sp)
         )
         Spacer(Modifier.height(12.dp))
         Column(
@@ -278,18 +304,18 @@ fun PlaceInfoSection(place: Place, showName: Boolean, cardColor: Color, modifier
                 .animateContentSize()
                 .padding(horizontal = 14.dp, vertical = 6.dp)
         ) {
-            if (showName) InfoRow(style, Icons.Outlined.Storefront, "Sede", place.name)
-            InfoRow(style, Icons.Outlined.LocationOn, "Dirección", place.address)
+            if (showName) InfoRow(style, Icons.Outlined.Storefront, stringResource(R.string.place_info_label_branch), place.name)
+            InfoRow(style, Icons.Outlined.LocationOn, stringResource(R.string.place_info_label_address), place.address)
             InfoRow(
-                style, Icons.Outlined.Schedule, "Horario", place.hours,
-                hint = if (place.hoursVaries) "Varía según la programación · horario habitual" else null
+                style, Icons.Outlined.Schedule, stringResource(R.string.place_info_label_hours), place.hours,
+                hint = if (place.hoursVaries) stringResource(R.string.place_info_hint_hours_varies) else null
             )
             InfoRow(
-                style, Icons.Outlined.Payments, "Precio", place.price,
-                hint = if (place.priceVaries) "Depende del evento · rango promedio aproximado" else null
+                style, Icons.Outlined.Payments, stringResource(R.string.place_info_label_price), place.price,
+                hint = if (place.priceVaries) stringResource(R.string.place_info_hint_price_varies) else null
             )
             if (place.hasMoreInfo) {
-                Box(Modifier.fillMaxWidth().padding(vertical = 4.dp).height(1.dp).background(Color(0x14000000)))
+                Box(Modifier.fillMaxWidth().padding(vertical = 4.dp).height(1.dp).background(app_colors.dividerBlack08))
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -298,10 +324,10 @@ fun PlaceInfoSection(place: Place, showName: Boolean, cardColor: Color, modifier
                         .padding(vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Más info", style = jakartaText(12.sp, 16.sp, style.accent, FontWeight.Bold), modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.place_info_label_more), style = jakartaText(12.sp, 16.sp, style.accent, FontWeight.Bold), modifier = Modifier.weight(1f))
                     Icon(
                         Icons.Rounded.KeyboardArrowDown,
-                        contentDescription = if (open) "Ocultar" else "Ver más",
+                        contentDescription = stringResource(if (open) R.string.place_info_hide_cd else R.string.place_info_show_more_cd),
                         tint = style.accent,
                         modifier = Modifier.size(20.dp).rotate(if (open) 180f else 0f)
                     )
@@ -318,9 +344,9 @@ private fun InfoRow(style: CategoryStyle, icon: ImageVector, label: String, valu
         InfoIcon(style, icon)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(label, style = jakartaText(10.sp, 15.sp, SlateLight, FontWeight.Medium))
-            Text(value, style = jakartaText(12.sp, 16.sp, Ink, FontWeight.Bold))
-            if (hint != null) Text(hint, style = jakartaText(10.sp, 15.sp, SlateLight, FontWeight.Medium))
+            Text(label, style = jakartaText(10.sp, 15.sp, app_colors.placeSlateLight, FontWeight.Medium))
+            Text(value, style = jakartaText(12.sp, 16.sp, app_colors.placeInk, FontWeight.Bold))
+            if (hint != null) Text(hint, style = jakartaText(10.sp, 15.sp, app_colors.placeSlateLight, FontWeight.Medium))
         }
     }
 }
@@ -330,7 +356,7 @@ private fun InfoRow(style: CategoryStyle, icon: ImageVector, label: String, valu
 private fun InfoIcon(style: CategoryStyle, icon: ImageVector) {
     // Mismo círculo y trazo que los iconos de rasgos de la categoría (en Discotecas el círculo es del
     // color de la tarjeta: va blanco para que se vea)
-    val circle = if (style.iconLight == style.chipBg) Color.White else style.iconLight
+    val circle = if (style.iconLight == style.chipBg) app_colors.white else style.iconLight
     Box(
         Modifier.size(32.dp).clip(CircleShape).background(circle),
         contentAlignment = Alignment.Center
@@ -345,23 +371,23 @@ private fun MoreInfo(place: Place, style: CategoryStyle) {
         if (place.description.isNotBlank()) {
             Text(
                 place.description,
-                style = jakartaText(11.sp, 16.5.sp, Ink, FontWeight.Medium),
+                style = jakartaText(11.sp, 16.5.sp, app_colors.placeInk, FontWeight.Medium),
                 modifier = Modifier.fillMaxWidth().padding(bottom = if (place.schedule.isNotEmpty() || place.notes.isNotEmpty()) 10.dp else 0.dp)
             )
         }
         if (place.schedule.isNotEmpty()) {
-            Text("Horario por día", style = jakartaText(11.sp, 16.sp, SlateLight, FontWeight.SemiBold))
+            Text(stringResource(R.string.place_schedule_sheet_title), style = jakartaText(11.sp, 16.sp, app_colors.placeSlateLight, FontWeight.SemiBold))
             Spacer(Modifier.height(6.dp))
             Column(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color.White).padding(horizontal = 12.dp, vertical = 4.dp)
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(app_colors.white).padding(horizontal = 12.dp, vertical = 4.dp)
             ) {
                 place.schedule.forEachIndexed { i, s ->
-                    if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFF1F5F9)))
+                    if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(app_colors.profileCardBorder))
                     Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(s.days, style = jakartaText(11.sp, 16.sp, Color(0xFF334155), FontWeight.SemiBold), modifier = Modifier.width(96.dp))
+                        Text(s.days, style = jakartaText(11.sp, 16.sp, app_colors.helpBody, FontWeight.SemiBold), modifier = Modifier.width(96.dp))
                         Text(
                             s.hours.replaceFirstChar { it.uppercase() },
-                            style = jakartaText(11.sp, 16.sp, if (s.hours == "cerrado") SlateLight else Ink, FontWeight.Medium, textAlign = TextAlign.End),
+                            style = jakartaText(11.sp, 16.sp, if (s.hours == "cerrado") app_colors.placeSlateLight else app_colors.placeInk, FontWeight.Medium, textAlign = TextAlign.End),
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -375,7 +401,7 @@ private fun MoreInfo(place: Place, style: CategoryStyle) {
                     Row(verticalAlignment = Alignment.Top) {
                         Icon(Icons.Outlined.Info, contentDescription = null, tint = style.accent, modifier = Modifier.padding(top = 1.dp).size(14.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text(note, style = jakartaText(11.sp, 16.sp, Slate, FontWeight.Medium))
+                        Text(note, style = jakartaText(11.sp, 16.sp, app_colors.placeSlate, FontWeight.Medium))
                     }
                 }
             }
@@ -388,11 +414,12 @@ private fun MoreInfo(place: Place, style: CategoryStyle) {
 // ---------------------------------------------------------------------------------------------
 
 /** Etiquetas de la tarjeta según los datos del lugar. */
+@Composable
 private fun Place.cardBadges(): List<String> = buildList {
-    if (distanceM <= 600) add("Cerca de la U")
-    add(if (study) "Apto para estudiar" else "Ambiente animado")
-    if (solo) add("Ideal para persona sola")
-    if (group) add("Apto para grupo")
+    if (distanceM <= 600) add(stringResource(R.string.place_badge_near_u))
+    add(stringResource(if (study) R.string.place_badge_study else R.string.place_badge_lively))
+    if (solo) add(stringResource(R.string.place_badge_solo))
+    if (group) add(stringResource(R.string.place_badge_group))
 }
 
 /** Tarjeta de 358 dp de ancho (medidas de Figma) para los lugares sin pantalla propia en Figma. */
@@ -404,21 +431,21 @@ fun PlaceCard(place: Place, onClick: () -> Unit, modifier: Modifier = Modifier) 
     Column(
         modifier
             .width(358.dp)
-            .dropShadow(shape, Shadow(radius = 16.dp, color = Color(0x0F000000), offset = DpOffset(0.dp, 4.dp)))
+            .dropShadow(shape, Shadow(radius = 16.dp, color = app_colors.shadowSoft06, offset = DpOffset(0.dp, 4.dp)))
             .clip(shape)
-            .background(Color.White)
-            .border(1.dp, Color(0xFFF1F5F9), shape)
+            .background(app_colors.white)
+            .border(1.dp, app_colors.profileCardBorder, shape)
             .clickable(onClick = onClick)
     ) {
         // Foto con el nombre encima
-        Box(Modifier.fillMaxWidth().height(176.dp).background(Color(0xFF0F172A))) {
+        Box(Modifier.fillMaxWidth().height(176.dp).background(app_colors.homeTitle)) {
             SceneImage(place.photo, Modifier.fillMaxSize(), crop = true)
             Box(
                 Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(0f to Color(0x1A000000), 0.45f to Color(0x33000000), 1f to Color(0xCC000000))
+                    Brush.verticalGradient(0f to app_colors.shadowSoft10, 0.45f to app_colors.shadowSoft20, 1f to app_colors.scrimDark80)
                 )
             )
-            HeroCategoryBadge(place.category.singular, Modifier.align(Alignment.TopStart).padding(12.dp))
+            HeroCategoryBadge(stringResource(place.category.singularRes), Modifier.align(Alignment.TopStart).padding(12.dp))
             val context = LocalContext.current
             val favorites = data.rememberFavorites()
             val isFav = place.id in favorites
@@ -428,28 +455,28 @@ fun PlaceCard(place: Place, onClick: () -> Unit, modifier: Modifier = Modifier) 
                     .padding(12.dp)
                     .size(34.dp)
                     .clip(CircleShape)
-                    .background(Color(0x99000000))
+                    .background(app_colors.scrimDark60)
                     .clickable { data.FavoriteStore.toggle(context, place.id) },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = if (isFav) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                    contentDescription = if (isFav) "Quitar de favoritos" else "Guardar en favoritos",
-                    tint = if (isFav) Color(0xFFE11D48) else Color.White,
+                    contentDescription = stringResource(if (isFav) R.string.home_favorite_remove_cd else R.string.home_favorite_add_cd),
+                    tint = if (isFav) app_colors.placeHeartActive else app_colors.white,
                     modifier = Modifier.size(20.dp)
                 )
             }
             Column(Modifier.align(Alignment.BottomStart).padding(start = 16.dp, end = 16.dp, bottom = 14.dp)) {
                 Text(
                     place.name,
-                    style = jakartaText(18.sp, 22.5.sp, Color.White, FontWeight.ExtraBold),
+                    style = jakartaText(18.sp, 22.5.sp, app_colors.white, FontWeight.ExtraBold),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(place.address, style = jakartaText(11.sp, 15.13.sp, Color(0xFFE2E8F0), FontWeight.Medium), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(place.address, style = jakartaText(11.sp, 15.13.sp, app_colors.formBorder, FontWeight.Medium), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    "A ${place.distance} · ${place.walkMin} min caminando",
-                    style = jakartaText(11.sp, 15.13.sp, Color(0xFFE2E8F0), FontWeight.Medium)
+                    stringResource(R.string.place_card_distance_walk, place.distance, place.walkMin),
+                    style = jakartaText(11.sp, 15.13.sp, app_colors.formBorder, FontWeight.Medium)
                 )
             }
         }
@@ -459,23 +486,24 @@ fun PlaceCard(place: Place, onClick: () -> Unit, modifier: Modifier = Modifier) 
                 for (t in place.cardBadges()) Chip(t, style)
                 if (place.nequi) NequiChip(style)
             }
-            Box(Modifier.padding(vertical = 12.dp).fillMaxWidth().height(1.dp).background(Color(0xFFF1F5F9)))
+            Box(Modifier.padding(vertical = 12.dp).fillMaxWidth().height(1.dp).background(app_colors.profileCardBorder))
+            val priceSuffix = stringResource(if (place.priceVaries) R.string.place_card_price_varies_suffix else R.string.place_card_price_range_suffix)
             Text(
                 buildAnnotatedString {
                     withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = style.title)) { append(place.price) }
-                    withStyle(SpanStyle(fontWeight = FontWeight.Medium, fontSize = 12.sp, color = Slate)) {
-                        append(if (place.priceVaries) "  / Aprox. · según el evento" else "  / Rango de precios")
+                    withStyle(SpanStyle(fontWeight = FontWeight.Medium, fontSize = 12.sp, color = app_colors.placeSlate)) {
+                        append(priceSuffix)
                     }
                 },
-                style = jakartaText(15.sp, 20.sp, Navy)
+                style = jakartaText(15.sp, 20.sp, app_colors.placeNavy)
             )
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Schedule, contentDescription = null, tint = Slate, modifier = Modifier.size(14.dp))
+                Icon(Icons.Outlined.Schedule, contentDescription = null, tint = app_colors.placeSlate, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    if (place.hoursVaries) "${place.hours} · varía según la programación" else place.hours,
-                    style = jakartaText(12.sp, 16.sp, Slate, FontWeight.Medium),
+                    if (place.hoursVaries) stringResource(R.string.place_card_hours_varies_format, place.hours) else place.hours,
+                    style = jakartaText(12.sp, 16.sp, app_colors.placeSlate, FontWeight.Medium),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -505,6 +533,6 @@ private fun NequiChip(style: CategoryStyle) {
     ) {
         if (icon != null) SceneImage(icon.src, Modifier.size(15.dp))
         Spacer(Modifier.width(5.dp))
-        Text("Acepta Nequi", style = jakartaText(11.sp, 16.5.sp, style.chipText, style.chipWeight))
+        Text(stringResource(R.string.place_nequi_chip), style = jakartaText(11.sp, 16.5.sp, style.chipText, style.chipWeight))
     }
 }

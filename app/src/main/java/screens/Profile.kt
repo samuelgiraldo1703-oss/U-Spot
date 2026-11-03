@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,7 +60,7 @@ import data.spotty.SpottyBudget
 import data.spotty.SpottyGeo
 import decorations.SceneImage
 import decorations.rememberPlacePhoto
-import decorations.singular
+import decorations.singularRes
 import androidx.compose.runtime.key
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
@@ -157,19 +158,19 @@ fun ProfileScreen(
     val menu = listOf(
         ProfileMenuSpec(
             R.drawable.ic_profile_menu_heart, app_colors.profileMenuFavoritesBg,
-            "Mis lugares favoritos", "Todos los que has guardado", onFavorites
+            stringResource(R.string.profile_menu_favorites_title), stringResource(R.string.profile_menu_favorites_subtitle), onFavorites
         ),
         ProfileMenuSpec(
             R.drawable.ic_profile_menu_settings, app_colors.profileMenuSettingsBg,
-            "Configuración de la cuenta", "Correo, contraseña y más", onAccountSettings
+            stringResource(R.string.profile_menu_settings_title), stringResource(R.string.profile_menu_settings_subtitle), onAccountSettings
         ),
         ProfileMenuSpec(
             R.drawable.ic_profile_menu_preferences, app_colors.profileMenuPreferencesBg,
-            "Preferencias", "Intereses y estilo de vida", onPreferences
+            stringResource(R.string.profile_menu_preferences_title), stringResource(R.string.profile_menu_preferences_subtitle), onPreferences
         ),
         ProfileMenuSpec(
             R.drawable.ic_profile_menu_help, app_colors.profileMenuHelpBg,
-            "Ayuda y soporte", "Preguntas frecuentes y contacto", onHelp
+            stringResource(R.string.profile_menu_help_title), stringResource(R.string.profile_menu_help_subtitle), onHelp
         )
     )
     // Se calcula al entrar (con los favoritos de ese momento): si el usuario guarda una tarjeta,
@@ -192,7 +193,7 @@ fun ProfileScreen(
         ) {
             Image(
                 painter = painterResource(R.drawable.logo_login),
-                contentDescription = "U-Spot",
+                contentDescription = stringResource(R.string.app_name),
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier
                     .wrapContentSize(Alignment.TopStart, unbounded = true)
@@ -235,7 +236,7 @@ fun ProfileScreen(
                     ) {
                         Image(
                             painter = painterResource(R.drawable.ic_profile_check),
-                            contentDescription = "Verificado",
+                            contentDescription = stringResource(R.string.common_verified_cd),
                             modifier = Modifier.size(10.dp)
                         )
                     }
@@ -253,7 +254,6 @@ fun ProfileScreen(
         }
 
         // Tarjeta resumen de 4 columnas. Los anchos de Figma (80.81 / 91.56) y la separación
-        val favorites = data.rememberFavorites()
         Row(
             modifier = Modifier
                 .figmaPosition(left = 20.dp, right = 20.dp, top = 214.75.dp)
@@ -261,14 +261,14 @@ fun ProfileScreen(
                 .padding(horizontal = 8.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            StatColumn(R.drawable.ic_profile_stat_pin, "${favorites.size}", "Lugares\nguardados")
+            StatColumn(R.drawable.ic_profile_stat_pin, "${favorites.size}", stringResource(R.string.profile_stat_saved_label))
             Spacer(Modifier.weight(7.33f))
-            StatColumn(R.drawable.ic_profile_stat_star, "4.8", "Calificación\npromedio")
+            StatColumn(R.drawable.ic_profile_stat_star, stringResource(R.string.profile_stat_rating_value), stringResource(R.string.profile_stat_rating_label))
             Spacer(Modifier.weight(7.33f))
-            StatColumn(R.drawable.ic_profile_stat_plans, "6", "Planes\nrealizados")
+            StatColumn(R.drawable.ic_profile_stat_plans, stringResource(R.string.profile_stat_plans_value), stringResource(R.string.profile_stat_plans_label))
             Spacer(Modifier.weight(7.33f))
             StatColumn(
-                R.drawable.ic_profile_stat_book, "Est. en UTADEO", "Sem. 6",
+                R.drawable.ic_profile_stat_book, stringResource(R.string.profile_stat_university_value), stringResource(R.string.profile_stat_semester_label),
                 weight = 91.56f, valueSize = 11.sp, valueLineHeight = 13.75.sp, divider = false
             )
         }
@@ -288,7 +288,7 @@ fun ProfileScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Recomendaciones",
+                text = stringResource(R.string.profile_recommendations_title),
                 style = jakartaText(17.sp, 25.5.sp, app_colors.profileNavy, FontWeight.Bold)
             )
         }
@@ -350,14 +350,14 @@ private fun EditableBio(bio: String, onSave: (String) -> Unit, modifier: Modifie
                 .onFocusChanged { if (it.isFocused) hadFocus = true else if (hadFocus) finish() },
             decorationBox = { inner ->
                 Box {
-                    if (draft.isEmpty()) Text("Escribe una frase corta sobre ti", style = style.copy(color = app_colors.profileMuted))
+                    if (draft.isEmpty()) Text(stringResource(R.string.profile_bio_placeholder), style = style.copy(color = app_colors.profileMuted))
                     inner()
                 }
             }
         )
     } else {
         Text(
-            text = bio.ifBlank { "Toca aquí para agregar una descripción ✏️" },
+            text = bio.ifBlank { stringResource(R.string.profile_bio_empty_prompt) },
             style = if (bio.isBlank()) style.copy(color = app_colors.profileMuted) else style,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -376,7 +376,7 @@ private fun ProfileAvatar(photo: ImageBitmap?, onChangePhoto: () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .dropShadow(CircleShape, Shadow(radius = 1.dp, color = Color(0x0D000000), offset = DpOffset(0.dp, 1.dp)))
+                .dropShadow(CircleShape, Shadow(radius = 1.dp, color = app_colors.shadowSoft05, offset = DpOffset(0.dp, 1.dp)))
                 .background(
                     Brush.linearGradient(
                         colors = listOf(app_colors.profileTeal, app_colors.profileTealLight),
@@ -389,7 +389,7 @@ private fun ProfileAvatar(photo: ImageBitmap?, onChangePhoto: () -> Unit) {
         ) {
             Image(
                 painter = profilePhotoPainter(photo),
-                contentDescription = "Foto de perfil",
+                contentDescription = stringResource(R.string.profile_photo_cd),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
@@ -401,8 +401,8 @@ private fun ProfileAvatar(photo: ImageBitmap?, onChangePhoto: () -> Unit) {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .size(24.dp)
-                .dropShadow(CircleShape, Shadow(radius = 3.dp, color = Color(0x1A000000), offset = DpOffset(0.dp, 1.dp)))
-                .dropShadow(CircleShape, Shadow(radius = 2.dp, spread = (-1).dp, color = Color(0x1A000000), offset = DpOffset(0.dp, 1.dp)))
+                .dropShadow(CircleShape, Shadow(radius = 3.dp, color = app_colors.shadowSoft10, offset = DpOffset(0.dp, 1.dp)))
+                .dropShadow(CircleShape, Shadow(radius = 2.dp, spread = (-1).dp, color = app_colors.shadowSoft10, offset = DpOffset(0.dp, 1.dp)))
                 .clip(CircleShape)
                 .background(app_colors.profileNavy)
                 .border(2.dp, app_colors.white, CircleShape)
@@ -411,7 +411,7 @@ private fun ProfileAvatar(photo: ImageBitmap?, onChangePhoto: () -> Unit) {
         ) {
             Image(
                 painter = painterResource(R.drawable.ic_profile_camera),
-                contentDescription = "Cambiar foto de perfil",
+                contentDescription = stringResource(R.string.profile_change_photo_cd),
                 modifier = Modifier.size(14.dp)
             )
         }
@@ -479,7 +479,7 @@ private fun ProfileMenuCard(spec: ProfileMenuSpec) {
         modifier = Modifier
             .fillMaxWidth()
             .height(70.dp)
-            .dropShadow(shape, Shadow(radius = 4.dp, color = Color(0x08000000), offset = DpOffset(0.dp, 2.dp)))
+            .dropShadow(shape, Shadow(radius = 4.dp, color = app_colors.shadowSoft08, offset = DpOffset(0.dp, 2.dp)))
             .clip(shape)
             .background(app_colors.white)
             .border(1.dp, app_colors.profileCardBorder, shape)
@@ -529,14 +529,16 @@ private fun ProfileMenuCard(spec: ProfileMenuSpec) {
 @Composable
 private fun RecommendationCard(place: Place, isFavorite: Boolean, onClick: () -> Unit, onFavorite: () -> Unit) {
     val shape = RoundedCornerShape(16.dp)
+    val removeFavCd = stringResource(R.string.home_favorite_remove_cd)
+    val addFavCd = stringResource(R.string.home_favorite_add_cd)
     Column(
         modifier = Modifier
             .size(124.dp, 157.25.dp)
-            .dropShadow(shape, Shadow(radius = 2.dp, color = Color(0x0D000000), offset = DpOffset(0.dp, 1.dp)))
+            .dropShadow(shape, Shadow(radius = 2.dp, color = app_colors.shadowSoft05, offset = DpOffset(0.dp, 1.dp)))
             .clip(shape)
             .background(app_colors.white)
             .border(1.dp, app_colors.profileCardBorder, shape)
-            .clickable(onClick = onClick, onClickLabel = "Ver ${place.name}")
+            .clickable(onClick = onClick, onClickLabel = stringResource(R.string.profile_view_place_cd, place.name))
             .padding(1.dp)
     ) {
         // "Thumbnail with Heart Badge" (sin calificación: no hay estrellas reales)
@@ -556,20 +558,20 @@ private fun RecommendationCard(place: Place, isFavorite: Boolean, onClick: () ->
                     .size(24.dp)
                     .clip(CircleShape)
                     .background(app_colors.profileSavedBadge)
-                    .clickable(onClick = onFavorite, onClickLabel = if (isFavorite) "Quitar de favoritos" else "Guardar en favoritos"),
+                    .clickable(onClick = onFavorite, onClickLabel = if (isFavorite) removeFavCd else addFavCd),
                 contentAlignment = Alignment.Center
             ) {
                 if (isFavorite) {
                     Image(
                         painter = painterResource(R.drawable.ic_profile_heart_filled),
-                        contentDescription = "Guardado en favoritos",
+                        contentDescription = stringResource(R.string.home_favorite_saved_cd),
                         modifier = Modifier.size(12.dp)
                     )
                 } else {
                     Icon(
                         Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Guardar en favoritos",
-                        tint = Color.White,
+                        contentDescription = addFavCd,
+                        tint = app_colors.white,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -591,7 +593,7 @@ private fun RecommendationCard(place: Place, isFavorite: Boolean, onClick: () ->
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = if (place.category == HomeCategory.TEATROS && Regex("\\bcine").containsMatchIn(place.name.lowercase())) "Cine" else place.category.singular,
+                    text = if (place.category == HomeCategory.TEATROS && Regex("\\bcine").containsMatchIn(place.name.lowercase())) stringResource(R.string.cat_singular_cinema) else stringResource(place.category.singularRes),
                     style = jakartaText(10.sp, 15.sp, app_colors.profileMuted, FontWeight.Medium),
                     maxLines = 1
                 )

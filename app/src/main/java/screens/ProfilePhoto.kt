@@ -1,22 +1,25 @@
 package screens
 
+import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -28,54 +31,37 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.u_spot.R
-import android.Manifest
-import android.content.ActivityNotFoundException
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.core.content.ContextCompat
-import android.net.Uri
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
-import decorations.profilePhotoPainter
-import java.io.File
+import com.example.u_spot.R
 import decorations.BackButton
-import decorations.BoxedText
 import decorations.ProfileCanvas
 import decorations.ProfileCorner
-import decorations.ProfileDialogButton
-import decorations.ProfileDialogCard
 import decorations.ProfileFooter
 import decorations.ProfileLeaveDialog
 import decorations.ProfileLogo
-import decorations.ProfileOverlay
 import decorations.app_colors
 import decorations.app_fonts
 import decorations.figmaPosition
 import decorations.figmaText
 import decorations.jakartaText
+import decorations.profilePhotoPainter
+import java.io.File
 
 /**
  * Figma: "Foto de Perfil" (337:93 con foto, 401:1106 sin foto) y la ventana
@@ -107,7 +93,7 @@ fun ProfilePhotoScreen(
         try {
             takePicture.launch(uri)
         } catch (_: ActivityNotFoundException) {
-            Toast.makeText(context, "No se encontró una app de cámara", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.profile_photo_no_camera_app), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -122,7 +108,7 @@ fun ProfilePhotoScreen(
     val requestPhotos = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         // En Android 14+ el usuario puede dar acceso solo a algunas fotos: también cuenta como permitido
         if (result.values.any { it }) openGallery()
-        else Toast.makeText(context, "Para elegir una foto, permite que U-Spot acceda a tus fotos", Toast.LENGTH_LONG).show()
+        else Toast.makeText(context, context.getString(R.string.profile_photo_permission_toast), Toast.LENGTH_LONG).show()
     }
     val chooseFromGallery = {
         val permissions = galleryPermissions()
@@ -142,7 +128,7 @@ fun ProfilePhotoScreen(
             ProfileLogo(Modifier.figmaPosition(left = 43.dp, top = 56.dp))
 
             Text(
-                text = "Foto de Perfil",
+                text = stringResource(R.string.profile_photo_title),
                 style = figmaText(app_fonts.poppins, 30.sp, 36.sp, app_colors.photoTitle, FontWeight.Bold, letterSpacing = (-0.75).sp),
                 modifier = Modifier.figmaPosition(left = 34.dp, top = 169.5.dp)
             )
@@ -151,7 +137,7 @@ fun ProfilePhotoScreen(
             if (photoDeleted) {
                 Image(
                     painter = painterResource(R.drawable.photo_avatar_empty),
-                    contentDescription = "Sin foto de perfil",
+                    contentDescription = stringResource(R.string.profile_photo_empty_cd),
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier
                         .figmaPosition(left = 81.dp, top = 225.dp, width = 250.dp, height = 260.dp)
@@ -162,7 +148,7 @@ fun ProfilePhotoScreen(
                 Box(
                     modifier = Modifier
                         .figmaPosition(left = 87.dp, top = 225.dp, width = 250.dp, height = 260.dp)
-                        .dropShadow(CircleShape, Shadow(radius = 2.dp, color = Color(0x0D000000), offset = DpOffset(0.dp, 1.dp)))
+                        .dropShadow(CircleShape, Shadow(radius = 2.dp, color = app_colors.shadowSoft05, offset = DpOffset(0.dp, 1.dp)))
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(app_colors.profileTeal, app_colors.profileTealLight),
@@ -175,7 +161,7 @@ fun ProfilePhotoScreen(
                 ) {
                     Image(
                         painter = profilePhotoPainter(photo),
-                        contentDescription = "Foto de perfil",
+                        contentDescription = stringResource(R.string.profile_photo_cd),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
@@ -192,11 +178,11 @@ fun ProfilePhotoScreen(
             }
 
             PhotoOption(
-                top = 485.5.dp, icon = R.drawable.ic_photo_camera, title = "Tomar foto con\nla cámara",
+                top = 485.5.dp, icon = R.drawable.ic_photo_camera, title = stringResource(R.string.profile_photo_take_camera),
                 titleTop = 22.5.dp, onClick = { if (!saving) openCamera() }
             )
             PhotoOption(
-                top = 591.5.dp, icon = R.drawable.ic_photo_gallery, title = "Elegir de la galería",
+                top = 591.5.dp, icon = R.drawable.ic_photo_gallery, title = stringResource(R.string.profile_photo_choose_gallery),
                 titleTop = 33.5.dp, onClick = { if (!saving) chooseFromGallery() }
             )
 
@@ -214,7 +200,7 @@ fun ProfilePhotoScreen(
                         .size(32.dp)
                 )
                 Text(
-                    text = "Eliminar foto actual",
+                    text = stringResource(R.string.profile_photo_delete_current),
                     style = jakartaText(16.sp, 24.sp, app_colors.photoTitle, FontWeight.Bold),
                     modifier = Modifier.offset(52.dp, 12.dp)
                 )
@@ -244,7 +230,7 @@ private fun BoxScope.PhotoOption(top: Dp, @DrawableRes icon: Int, title: String,
     Box(
         modifier = Modifier
             .figmaPosition(left = 34.dp, right = 22.dp, top = top, height = 90.dp)
-            .dropShadow(shape, Shadow(radius = 20.dp, color = Color(0x0F000000), offset = DpOffset(0.dp, 6.dp)))
+            .dropShadow(shape, Shadow(radius = 20.dp, color = app_colors.shadowSoft06, offset = DpOffset(0.dp, 6.dp)))
             .clip(shape)
             .background(app_colors.white)
             .border(1.dp, app_colors.profileCardBorder, shape)
@@ -277,9 +263,9 @@ private fun BoxScope.PhotoOption(top: Dp, @DrawableRes icon: Int, title: String,
 @Composable
 private fun DeletePhotoDialog(onBack: () -> Unit, onDelete: () -> Unit) {
     ProfileLeaveDialog(
-        question = "¿Estás seguro que deseas borrar tu imagen de perfil actual?\n",
-        warning = "Perderás todos tus cambios",
-        action = "Borrar imagen de perfil",
+        question = stringResource(R.string.profile_photo_delete_question),
+        warning = stringResource(R.string.profile_photo_delete_warning),
+        action = stringResource(R.string.profile_photo_delete_action),
         actionX = 79.dp,
         actionWidth = 208.dp,
         onBack = onBack,

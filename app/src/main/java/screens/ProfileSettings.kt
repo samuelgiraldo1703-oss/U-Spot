@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -36,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -63,14 +62,6 @@ import decorations.jakartaText
 
 private enum class SettingsDialog { None, Language, DeleteAccount, LoggedOut }
 
-private val settingsLanguages = listOf(
-    R.drawable.ic_lang_flag_1 to "Español (Mexico)",
-    R.drawable.ic_lang_flag_2 to "Inglés (EE.UU)",
-    R.drawable.ic_lang_flag_3 to "Alemán",
-    R.drawable.ic_lang_flag_4 to "Ruso",
-    R.drawable.ic_lang_flag_5 to "Francés"
-)
-
 /**
  * Figma: "Configuracion Cuenta" (255:14 contraseña oculta, 210:495 contraseña visible,
  * 227:1689 perfil privado, 264:183 cambio de idioma) y las ventanas "Cierre Sesion" (237:1847)
@@ -83,9 +74,10 @@ fun AccountSettingsScreen(
     onAccountDeleted: () -> Unit = {},
     onLogin: () -> Unit = {}
 ) {
+    val defaultLang = stringResource(R.string.settings_lang_es_co)
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var privateProfile by rememberSaveable { mutableStateOf(false) }
-    var language by rememberSaveable { mutableStateOf("Español (Colombia)") }
+    var language by rememberSaveable { mutableStateOf(defaultLang) }
     var dialog by rememberSaveable { mutableStateOf(SettingsDialog.None) }
 
     // Con la contraseña visible la fila crece 19 dp y la sección siguiente baja 14 (frame 210:495).
@@ -101,22 +93,26 @@ fun AccountSettingsScreen(
                 res = R.drawable.ic_cfg_back
             )
             Text(
-                text = "Configuraciones de cuenta",
+                text = stringResource(R.string.settings_title),
                 style = jakartaText(25.sp, 37.5.sp, app_colors.cfgTitle, FontWeight.ExtraBold, letterSpacing = (-0.62).sp),
                 modifier = Modifier.figmaPosition(left = 31.dp, top = 28.dp, width = 206.dp)
             )
 
-            SectionHeading("Información Personal", left = 11.dp, top = 132.dp)
+            SectionHeading(stringResource(R.string.settings_personal_info_heading), left = 11.dp, top = 132.dp)
             SettingsCard(top = 168.dp, height = 80.dp) {
                 RowIcon(R.drawable.ic_cfg_mail)
-                RowTexts("Correo electrónico", user.email, top = 13.dp, subtitleWidth = 280.dp)
+                RowTexts(stringResource(R.string.settings_email_row_title), user.email, top = 13.dp, subtitleWidth = 280.dp)
             }
             SettingsCard(top = 258.dp, height = passwordRowHeight) {
                 RowIcon(R.drawable.ic_cfg_lock)
                 // Firebase guarda la contraseña cifrada (hash): no se puede leer, solo se muestra oculta.
-                val updated = if (user.hasPassword) "Actualizada ${timeAgo(user.passwordUpdatedAt)}" else "Inicias sesión con Google"
+                val updated = if (user.hasPassword) {
+                    stringResource(R.string.settings_password_updated_format, timeAgo(user.passwordUpdatedAt))
+                } else {
+                    stringResource(R.string.settings_password_google_login)
+                }
                 RowTexts(
-                    title = "Contraseña",
+                    title = stringResource(R.string.settings_password_row_title),
                     subtitle = if (passwordVisible) "••••••••\n$updated" else updated,
                     top = 13.dp,
                     subtitleWidth = 82.3.dp
@@ -124,7 +120,7 @@ fun AccountSettingsScreen(
                 // "image 5" / "image 6": ojo tachado u ojo abierto
                 Image(
                     painter = painterResource(if (passwordVisible) R.drawable.cfg_eye_on else R.drawable.cfg_eye_off),
-                    contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                    contentDescription = if (passwordVisible) stringResource(R.string.common_hide_password) else stringResource(R.string.common_show_password),
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -136,10 +132,10 @@ fun AccountSettingsScreen(
                 )
             }
 
-            SectionHeading("Preferencias de la App", left = 11.dp, top = 361.dp + shift)
+            SectionHeading(stringResource(R.string.settings_app_preferences_heading), left = 11.dp, top = 361.dp + shift)
             SettingsCard(top = 397.dp + shift, height = 85.dp, onClick = { dialog = SettingsDialog.Language }) {
                 RowIcon(R.drawable.ic_cfg_globe)
-                RowTexts("Idioma de la App", language, top = 13.dp, subtitleWidth = 110.dp)
+                RowTexts(stringResource(R.string.settings_language_row_title), language, top = 13.dp, subtitleWidth = 110.dp)
                 Image(
                     painter = painterResource(R.drawable.ic_cfg_chevron_down),
                     contentDescription = null,
@@ -152,7 +148,7 @@ fun AccountSettingsScreen(
             SettingsCard(top = 492.dp + shift, height = 70.dp) {
                 RowIcon(R.drawable.ic_cfg_theme)
                 Text(
-                    text = "Tema Visual",
+                    text = stringResource(R.string.settings_theme_row_title),
                     style = jakartaText(14.5.sp, 21.75.sp, app_colors.cfgHeading, FontWeight.Bold),
                     modifier = Modifier
                         .align(Alignment.CenterStart)
@@ -166,7 +162,7 @@ fun AccountSettingsScreen(
             }
             SettingsCard(top = 572.dp + shift, height = 70.dp) {
                 RowIcon(R.drawable.ic_cfg_shield)
-                RowTexts("Privacidad", " Pública/Privada", top = 15.dp, subtitleWidth = 100.dp)
+                RowTexts(stringResource(R.string.settings_privacy_row_title), stringResource(R.string.settings_privacy_row_subtitle), top = 15.dp, subtitleWidth = 100.dp)
                 PrivacyToggle(
                     private = privateProfile,
                     onToggle = { privateProfile = !privateProfile },
@@ -176,10 +172,10 @@ fun AccountSettingsScreen(
                 )
             }
 
-            SectionHeading("Cuenta", left = 9.dp, top = 670.dp)
+            SectionHeading(stringResource(R.string.settings_account_heading), left = 9.dp, top = 670.dp)
             SettingsCard(top = 709.dp, height = 70.dp, left = 7.dp, right = 11.dp, onClick = { dialog = SettingsDialog.DeleteAccount }) {
                 RowIcon(R.drawable.ic_cfg_danger)
-                RowTexts("Eliminar Cuenta", "Acción peligrosa", top = 15.dp, subtitleWidth = 109.66.dp, titleColor = app_colors.cfgDanger)
+                RowTexts(stringResource(R.string.settings_delete_account_title), stringResource(R.string.settings_delete_account_subtitle), top = 15.dp, subtitleWidth = 109.66.dp, titleColor = app_colors.cfgDanger)
             }
 
             LogoutButton(
@@ -227,7 +223,7 @@ private fun BoxScope.SettingsCard(
     Box(
         modifier = Modifier
             .figmaPosition(left = left, right = right, top = top, height = height)
-            .dropShadow(shape, Shadow(radius = 18.dp, color = Color(0x0A0F254B), offset = DpOffset(0.dp, 4.dp)))
+            .dropShadow(shape, Shadow(radius = 18.dp, color = app_colors.shadowCardNavy04, offset = DpOffset(0.dp, 4.dp)))
             .clip(shape)
             .background(app_colors.white)
             .border(1.dp, app_colors.cfgCardBorder, shape)
@@ -286,16 +282,16 @@ private fun ThemeSegmentedControl(modifier: Modifier) {
             .background(app_colors.cfgSegmentBg, CircleShape)
     ) {
         BoxedText(
-            text = "Claro",
+            text = stringResource(R.string.settings_theme_light),
             style = jakartaText(12.sp, 16.sp, app_colors.cfgHeading, FontWeight.Bold),
             modifier = Modifier
                 .offset(3.dp, 3.dp)
                 .size(63.59.dp, 28.dp)
-                .dropShadow(CircleShape, Shadow(radius = 6.dp, color = Color(0x1F0F254B), offset = DpOffset(0.dp, 2.dp)))
+                .dropShadow(CircleShape, Shadow(radius = 6.dp, color = app_colors.shadowCardNavy12, offset = DpOffset(0.dp, 2.dp)))
                 .background(app_colors.white, CircleShape)
         )
         BoxedText(
-            text = "Oscuro",
+            text = stringResource(R.string.settings_theme_dark),
             style = jakartaText(12.sp, 16.sp, app_colors.cfgSubtitle, FontWeight.Medium),
             modifier = Modifier
                 .offset(66.6.dp, 3.dp)
@@ -317,14 +313,14 @@ private fun PrivacyToggle(private: Boolean, onToggle: () -> Unit, modifier: Modi
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = if (private) "Privada" else "Pública",
+            text = if (private) stringResource(R.string.settings_privacy_private) else stringResource(R.string.settings_privacy_public),
             style = jakartaText(12.sp, 18.sp, app_colors.cfgHeading, FontWeight.Bold),
             modifier = Modifier.width(if (private) 44.dp else 43.23.dp)
         )
         Spacer(Modifier.width(8.dp))
         Image(
             painter = painterResource(if (private) R.drawable.ic_cfg_switch_off else R.drawable.ic_cfg_switch_on),
-            contentDescription = if (private) "Perfil privado" else "Perfil público",
+            contentDescription = if (private) stringResource(R.string.settings_privacy_private_cd) else stringResource(R.string.settings_privacy_public_cd),
             modifier = Modifier.size(44.dp, 24.dp)
         )
     }
@@ -334,7 +330,7 @@ private fun PrivacyToggle(private: Boolean, onToggle: () -> Unit, modifier: Modi
 private fun LogoutButton(onClick: () -> Unit, modifier: Modifier) {
     Row(
         modifier = modifier
-            .dropShadow(CircleShape, Shadow(radius = 18.dp, color = Color(0x590085FF), offset = DpOffset(0.dp, 6.dp)))
+            .dropShadow(CircleShape, Shadow(radius = 18.dp, color = app_colors.shadowLogoutBlue, offset = DpOffset(0.dp, 6.dp)))
             .clip(CircleShape)
             .background(app_colors.cfgLogoutBlue)
             .clickable(onClick = onClick),
@@ -348,7 +344,7 @@ private fun LogoutButton(onClick: () -> Unit, modifier: Modifier) {
         )
         Spacer(Modifier.width(10.dp))
         Text(
-            text = "Cerrar sesión",
+            text = stringResource(R.string.settings_logout_button),
             style = jakartaText(16.sp, 24.sp, app_colors.white, FontWeight.Bold)
         )
     }
@@ -357,7 +353,14 @@ private fun LogoutButton(onClick: () -> Unit, modifier: Modifier) {
 /** Figma: "Configuracion Cuenta - Cambio Idioma" (264:183). */
 @Composable
 private fun LanguageDialog(selected: String, onSelect: (String) -> Unit, onClose: () -> Unit) {
-    ProfileOverlay(scrim = Color(0x80000000)) {
+    val settingsLanguages = listOf(
+        R.drawable.ic_lang_flag_1 to stringResource(R.string.settings_lang_es_mx),
+        R.drawable.ic_lang_flag_2 to stringResource(R.string.settings_lang_en_us),
+        R.drawable.ic_lang_flag_3 to stringResource(R.string.settings_lang_de),
+        R.drawable.ic_lang_flag_4 to stringResource(R.string.settings_lang_ru),
+        R.drawable.ic_lang_flag_5 to stringResource(R.string.settings_lang_fr)
+    )
+    ProfileOverlay(scrim = app_colors.scrimDark50) {
         ProfileDialogCard(top = 159.dp, background = app_colors.dialogCard) {
             ProfileCardImage(R.drawable.shape_lang_blue, (-80.85).dp, (-81.86).dp, 185.05.dp, 187.71.dp)
             ProfileCardImage(R.drawable.shape_lang_teal, 222.87.dp, 451.38.dp, 238.47.dp, 200.49.dp)
@@ -367,7 +370,7 @@ private fun LanguageDialog(selected: String, onSelect: (String) -> Unit, onClose
                 res = R.drawable.ic_lang_back
             )
             BoxedText(
-                text = "Selección de Idioma",
+                text = stringResource(R.string.settings_language_dialog_title),
                 style = figmaText(app_fonts.poppins, 24.sp, 30.sp, app_colors.black, FontWeight.SemiBold),
                 modifier = Modifier
                     .offset(77.dp, 42.dp)
@@ -377,7 +380,7 @@ private fun LanguageDialog(selected: String, onSelect: (String) -> Unit, onClose
                 LanguageRow(flag, name, onClick = { onSelect(name) }, modifier = Modifier.offset(7.dp, 139.dp + 60.dp * index))
             }
             BoxedText(
-                text = "Idioma seleccionado:",
+                text = stringResource(R.string.settings_language_selected_label),
                 style = figmaText(app_fonts.poppins, 16.sp, 30.sp, app_colors.black, FontWeight.SemiBold),
                 modifier = Modifier
                     .offset(13.dp, 457.dp)
@@ -400,7 +403,7 @@ private fun LanguageRow(@DrawableRes flag: Int, name: String, onClick: () -> Uni
     Box(
         modifier = modifier
             .size(345.dp, 57.dp)
-            .dropShadow(shape, Shadow(radius = 18.dp, color = Color(0x0A0F254B), offset = DpOffset(0.dp, 4.dp)))
+            .dropShadow(shape, Shadow(radius = 18.dp, color = app_colors.shadowCardNavy04, offset = DpOffset(0.dp, 4.dp)))
             .clip(shape)
             .background(app_colors.white)
             .border(1.dp, app_colors.cfgCardBorder, shape)
@@ -425,7 +428,7 @@ private fun LanguageRow(@DrawableRes flag: Int, name: String, onClick: () -> Uni
 @Composable
 private fun DeleteAccountDialog(onYes: () -> Unit, onNo: () -> Unit) {
     val text = figmaText(app_fonts.poppins, 18.sp, 20.sp, app_colors.black)
-    ProfileOverlay(scrim = Color(0x99000000)) {
+    ProfileOverlay(scrim = app_colors.scrimDark60) {
         ProfileDialogCard(top = 258.dp, background = app_colors.dialogCard) {
             ProfileCardImage(R.drawable.shape_delete_blue, (-96.85).dp, 417.14.dp, 210.03.dp, 211.75.dp)
             ProfileCardImage(R.drawable.shape_dialog_yellow, 236.35.dp, (-93.78).dp, 194.73.dp, 223.33.dp)
@@ -437,7 +440,7 @@ private fun DeleteAccountDialog(onYes: () -> Unit, onNo: () -> Unit) {
                     .size(115.dp)
             )
             BoxedText(
-                text = "¿Estás seguro que deseas eliminar tu cuenta de \nU-Spot?",
+                text = stringResource(R.string.settings_delete_dialog_question),
                 style = text,
                 modifier = Modifier
                     .offset(55.dp, 255.dp)
@@ -450,8 +453,8 @@ private fun DeleteAccountDialog(onYes: () -> Unit, onNo: () -> Unit) {
                     .offset(30.dp, 270.dp)
                     .size(38.dp, 32.dp)
             )
-            DialogChoice("SI", app_colors.dialogNeutralButton, onYes, Modifier.offset(98.dp, 336.dp))
-            DialogChoice("NO", app_colors.profileYellow, onNo, Modifier.offset(188.dp, 336.dp))
+            DialogChoice(stringResource(R.string.common_yes), app_colors.dialogNeutralButton, onYes, Modifier.offset(98.dp, 336.dp))
+            DialogChoice(stringResource(R.string.common_no), app_colors.profileYellow, onNo, Modifier.offset(188.dp, 336.dp))
         }
     }
 }
@@ -474,7 +477,9 @@ private fun DialogChoice(label: String, color: Color, onClick: () -> Unit, modif
 /** Figma: "Cierre de Sesion - Confirmacion" (237:1887). */
 @Composable
 private fun LoggedOutDialog(onLogin: () -> Unit) {
-    ProfileOverlay(scrim = Color(0x99000000)) {
+    val loggedOutPrefix = stringResource(R.string.settings_logged_out_prompt_prefix)
+    val signInAction = stringResource(R.string.settings_logged_out_sign_in_action)
+    ProfileOverlay(scrim = app_colors.scrimDark60) {
         ProfileDialogCard(top = 258.dp, background = app_colors.white) {
             ProfileCardImage(R.drawable.shape_logout_teal, (-93.01).dp, 430.14.dp, 198.14.dp, 198.75.dp)
             ProfileCardImage(R.drawable.shape_dialog_yellow, 236.35.dp, (-93.78).dp, 194.73.dp, 223.33.dp)
@@ -497,7 +502,7 @@ private fun LoggedOutDialog(onLogin: () -> Unit) {
                 ProfileCardImage(R.drawable.dialog_logout_hand, 9.37.dp, 0.22.dp, 50.87.dp, 54.78.dp)
             }
             BoxedText(
-                text = "Has cerrado tu sesión ",
+                text = stringResource(R.string.settings_logged_out_title),
                 style = figmaText(app_fonts.poppins, 18.sp, 20.sp, app_colors.black),
                 modifier = Modifier
                     .offset(100.dp, 278.dp)
@@ -512,8 +517,8 @@ private fun LoggedOutDialog(onLogin: () -> Unit) {
             )
             BoxedText(
                 text = buildAnnotatedString {
-                    append("¿Deseas volver a descubrir lugares?\n ")
-                    withStyle(SpanStyle(color = app_colors.loginBlue, fontWeight = FontWeight.SemiBold)) { append("Inicia Sesión") }
+                    append(loggedOutPrefix)
+                    withStyle(SpanStyle(color = app_colors.loginBlue, fontWeight = FontWeight.SemiBold)) { append(signInAction) }
                 },
                 style = figmaText(app_fonts.poppins, 14.sp, 20.sp, app_colors.black),
                 modifier = Modifier

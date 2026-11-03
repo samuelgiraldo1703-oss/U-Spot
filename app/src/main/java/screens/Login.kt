@@ -32,7 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -56,13 +58,6 @@ import decorations.app_fonts
 import decorations.figmaPosition
 import decorations.figmaText
 
-/** Mensajes de las variantes "Bienvenida App (Inicio Sesion Fallido - …)". */
-private object LoginErrors {
-    const val NO_DATA = "Ningun dato registrado en el inicio de sesión"
-    const val ACCOUNT_NOT_FOUND = "Correo electrónico no coincide con ninguna cuenta"
-    const val WRONG_PASSWORD = "Contraseña Incorrecta, digitela nuevamente"
-}
-
 /** Figma: "Bienvenida App" (24:9) y sus 3 variantes de error. */
 @Composable
 fun LoginScreen(
@@ -71,6 +66,7 @@ fun LoginScreen(
     onForgotPassword: () -> Unit = {},
     onGoogleLogin: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
@@ -80,22 +76,22 @@ fun LoginScreen(
     fun submit() {
         if (isLoading) return
         if (email.isBlank() && password.isEmpty()) {
-            error = LoginErrors.NO_DATA
+            error = context.getString(R.string.login_error_no_data)
             return
         }
         scope.launch {
             isLoading = true
             try {
                 when (AuthProvider.repository.login(email, password)) {
-                    LoginResult.AccountNotFound -> error = LoginErrors.ACCOUNT_NOT_FOUND
-                    LoginResult.WrongPassword -> error = LoginErrors.WRONG_PASSWORD
+                    LoginResult.AccountNotFound -> error = context.getString(R.string.login_error_account_not_found)
+                    LoginResult.WrongPassword -> error = context.getString(R.string.login_error_wrong_password)
                     LoginResult.Success -> {
                         error = null
                         onLoginSuccess(email.trim())
                     }
                 }
             } catch (_: Exception) {
-                error = LoginErrors.ACCOUNT_NOT_FOUND
+                error = context.getString(R.string.login_error_account_not_found)
             } finally {
                 isLoading = false
             }
@@ -116,12 +112,12 @@ fun LoginScreen(
         // Textos de bienvenida
         Column(Modifier.figmaPosition(left = 30.dp, top = 256.dp)) {
             Text(
-                text = "¡Bienvenido!",
+                text = stringResource(R.string.login_title),
                 style = figmaText(app_fonts.poppins, 30.sp, 36.sp, app_colors.loginTitle, FontWeight.Bold)
             )
             Spacer(Modifier.height(7.375.dp))
             Text(
-                text = "Inicia sesión para descubrir nuevos\nlugares y experiencias.",
+                text = stringResource(R.string.login_subtitle),
                 style = figmaText(app_fonts.poppins, 14.sp, 22.75.sp, app_colors.black)
             )
         }
@@ -131,7 +127,7 @@ fun LoginScreen(
             LoginInput(
                 value = email,
                 onValueChange = { email = it; error = null },
-                placeholder = "Correo electrónico",
+                placeholder = stringResource(R.string.login_email_placeholder),
                 keyboardType = KeyboardType.Email,
                 icon = R.drawable.ic_mail, iconWidth = 16.667.dp, iconHeight = 13.333.dp,
                 iconX = 17.dp, iconY = 15.69.dp
@@ -140,7 +136,7 @@ fun LoginScreen(
             LoginInput(
                 value = password,
                 onValueChange = { password = it; error = null },
-                placeholder = "Contraseña",
+                placeholder = stringResource(R.string.login_password_placeholder),
                 isPassword = true,
                 icon = R.drawable.ic_lock_login, iconWidth = 13.333.dp, iconHeight = 17.5.dp,
                 iconX = 18.dp, iconY = 12.69.dp
@@ -157,7 +153,7 @@ fun LoginScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (isLoading) "Iniciando sesión..." else "Iniciar sesión",
+                    text = if (isLoading) stringResource(R.string.login_submitting) else stringResource(R.string.login_submit),
                     style = figmaText(app_fonts.poppins, 16.sp, 24.sp, app_colors.white, FontWeight.Medium)
                 )
                 Spacer(Modifier.width(8.01.dp))
@@ -172,7 +168,7 @@ fun LoginScreen(
         )
 
         Text(
-            text = "Olvide Mi Contraseña",
+            text = stringResource(R.string.login_forgot_password),
             style = figmaText(app_fonts.poppins, 14.sp, 20.sp, app_colors.black, textAlign = TextAlign.Center),
             modifier = Modifier
                 .figmaPosition(left = 0.dp, right = 10.dp, top = 561.dp)
@@ -209,17 +205,19 @@ fun LoginScreen(
             Image(painterResource(R.drawable.ic_google), null, Modifier.size(18.dp))
             Spacer(Modifier.width(12.dp))
             Text(
-                text = "Continuar con Google",
+                text = stringResource(R.string.common_continue_with_google),
                 style = figmaText(app_fonts.poppins, 14.sp, 20.sp, app_colors.loginTitle, FontWeight.Medium)
             )
         }
 
         // ¿No tienes una cuenta? Regístrate
+        val noAccountPrefix = stringResource(R.string.login_no_account_prefix)
+        val registerLink = stringResource(R.string.login_register_link)
         Text(
             text = buildAnnotatedString {
-                append("¿No tienes una cuenta? ")
+                append(noAccountPrefix)
                 withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = app_colors.loginBlue)) {
-                    append("Regístrate")
+                    append(registerLink)
                 }
             },
             style = figmaText(app_fonts.poppins, 14.sp, 20.sp, app_colors.black, textAlign = TextAlign.Center),
@@ -302,7 +300,7 @@ private fun LoginInput(
         if (isPassword) {
             Image(
                 painter = painterResource(R.drawable.ic_eye_off_login),
-                contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                contentDescription = if (passwordVisible) stringResource(R.string.common_hide_password) else stringResource(R.string.common_show_password),
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .offset(x = (-16).dp, y = 10.75.dp)

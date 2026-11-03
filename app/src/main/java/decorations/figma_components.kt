@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -47,6 +48,7 @@ import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -60,7 +62,6 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.draw.dropShadow
 import com.example.u_spot.R
 
 /** Estilo de texto con interlineado igual al CSS de Figma (texto centrado en la línea). */
@@ -195,7 +196,7 @@ fun ErrorMessage(text: String?, color: Color, modifier: Modifier) {
 fun BackButton(onClick: () -> Unit, modifier: Modifier, @DrawableRes res: Int = R.drawable.ic_back, size: Dp = 40.dp) {
     Image(
         painter = painterResource(res),
-        contentDescription = "Volver",
+        contentDescription = stringResource(R.string.common_back),
         modifier = modifier
             .size(size)
             .clip(CircleShape)
@@ -263,7 +264,7 @@ fun FormInput(
         if (isPassword) {
             Image(
                 painter = painterResource(R.drawable.ic_eye_off),
-                contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                contentDescription = stringResource(if (passwordVisible) R.string.common_hide_password else R.string.common_show_password),
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(end = 16.dp)
@@ -295,7 +296,7 @@ fun StepProgress(modifier: Modifier) {
                 .background(app_colors.formBlue)
         )
         Text(
-            text = "Paso 2 de 2",
+            text = stringResource(R.string.common_step_2_of_2),
             style = figmaText(app_fonts.inter, 12.sp, 16.sp, app_colors.formSubtitle, FontWeight.Medium),
             modifier = Modifier
                 .background(app_colors.white)
@@ -313,8 +314,8 @@ fun PrimaryActionButton(text: String, onClick: () -> Unit, modifier: Modifier) {
             Modifier
                 .fillMaxSize()
                 .offset(y = 14.dp)
-                .dropShadow(shape, Shadow(radius = 6.dp, spread = (-1).dp, color = Color(0x1A000000), offset = DpOffset(0.dp, 4.dp)))
-                .dropShadow(shape, Shadow(radius = 4.dp, spread = (-2).dp, color = Color(0x1A000000), offset = DpOffset(0.dp, 2.dp)))
+                .dropShadow(shape, Shadow(radius = 6.dp, spread = (-1).dp, color = app_colors.shadowSoft10, offset = DpOffset(0.dp, 4.dp)))
+                .dropShadow(shape, Shadow(radius = 4.dp, spread = (-2).dp, color = app_colors.shadowSoft10, offset = DpOffset(0.dp, 2.dp)))
                 .background(app_colors.white, shape)
         )
         Box(
@@ -361,7 +362,7 @@ fun GoogleFormButton(onClick: () -> Unit, modifier: Modifier) {
         )
         Spacer(Modifier.width(8.dp))
         Text(
-            text = "Continuar con Google",
+            text = stringResource(R.string.common_continue_with_google),
             style = figmaText(app_fonts.inter, 16.sp, 24.sp, app_colors.formTitle, FontWeight.Medium)
         )
     }
@@ -372,7 +373,7 @@ fun GoogleFormButton(onClick: () -> Unit, modifier: Modifier) {
 fun HeaderLogo(modifier: Modifier) {
     Image(
         painter = painterResource(R.drawable.logo_header),
-        contentDescription = "U-Spot",
+        contentDescription = stringResource(R.string.app_name),
         contentScale = ContentScale.FillBounds,
         modifier = modifier
     )

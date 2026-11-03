@@ -11,6 +11,7 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -38,7 +39,7 @@ fun SplashScreen(onFinished: () -> Unit = {}) {
         // "App fondo azul 1"
         Image(
             painter = painterResource(R.drawable.logo_splash),
-            contentDescription = "U-Spot. Descubre. Disfruta. Conecta.",
+            contentDescription = stringResource(R.string.splash_logo_cd),
             contentScale = ContentScale.FillBounds,
             modifier = Modifier.figmaPosition(left = (-5.01).dp, top = 216.98.dp, width = 426.03.dp, height = 445.dp)
         )
@@ -49,7 +50,7 @@ fun SplashScreen(onFinished: () -> Unit = {}) {
         )
 
         Text(
-            text = "¡¡EXPLORA TU CAMPUS!!",
+            text = stringResource(R.string.splash_tagline),
             style = figmaText(
                 app_fonts.poppins, 14.sp, 20.sp, app_colors.splashText,
                 weight = FontWeight.SemiBold, letterSpacing = 1.4.sp

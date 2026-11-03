@@ -38,19 +38,20 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.TextUnit
@@ -179,7 +180,7 @@ fun ProfileLogo(modifier: Modifier, imageTop: Dp = (-71).dp) {
     ) {
         Image(
             painter = painterResource(R.drawable.logo_login),
-            contentDescription = "U-Spot",
+            contentDescription = stringResource(R.string.app_name),
             contentScale = ContentScale.FillBounds,
             modifier = Modifier
                 .wrapContentSize(Alignment.TopStart, unbounded = true)
@@ -209,8 +210,8 @@ fun BoxScope.ProfileFooter(cornerColor: Color) {
                 drawRect(
                     brush = Brush.verticalGradient(
                         0f to Color.Transparent,
-                        0.4f to Color.Black.copy(alpha = 0.4f),
-                        1f to Color.Black.copy(alpha = 0.85f)
+                        0.4f to app_colors.black.copy(alpha = 0.4f),
+                        1f to app_colors.black.copy(alpha = 0.85f)
                     ),
                     blendMode = BlendMode.DstIn
                 )
@@ -278,8 +279,8 @@ fun ProfileDialogButton(
             Modifier
                 .fillMaxSize()
                 .offset(y = 14.dp)
-                .dropShadow(shape, Shadow(radius = 6.dp, spread = (-1).dp, color = Color(0x1A000000), offset = DpOffset(0.dp, 4.dp)))
-                .dropShadow(shape, Shadow(radius = 4.dp, spread = (-2).dp, color = Color(0x1A000000), offset = DpOffset(0.dp, 2.dp)))
+                .dropShadow(shape, Shadow(radius = 6.dp, spread = (-1).dp, color = app_colors.shadowSoft10, offset = DpOffset(0.dp, 4.dp)))
+                .dropShadow(shape, Shadow(radius = 4.dp, spread = (-2).dp, color = app_colors.shadowSoft10, offset = DpOffset(0.dp, 2.dp)))
         )
         BoxedText(
             text = text,
@@ -299,7 +300,7 @@ fun ProfileRowCard(modifier: Modifier, onClick: (() -> Unit)? = null, content: @
     val shape = RoundedCornerShape(20.dp)
     Box(
         modifier = modifier
-            .dropShadow(shape, Shadow(radius = 18.dp, color = Color(0x0A0F254B), offset = DpOffset(0.dp, 4.dp)))
+            .dropShadow(shape, Shadow(radius = 18.dp, color = app_colors.shadowCardNavy04, offset = DpOffset(0.dp, 4.dp)))
             .clip(shape)
             .background(app_colors.white)
             .border(1.dp, app_colors.cfgCardBorder, shape)
@@ -336,7 +337,7 @@ fun ProfileLeaveDialog(
     onAction: () -> Unit
 ) {
     val body = figmaText(app_fonts.poppins, 18.sp, 20.sp, app_colors.black)
-    ProfileOverlay(scrim = Color(0xB3000000)) {
+    ProfileOverlay(scrim = app_colors.scrimDark70) {
         ProfileDialogCard(top = 180.dp, background = app_colors.dialogCard) {
             BoxedText(
                 text = buildAnnotatedString {
@@ -356,7 +357,7 @@ fun ProfileLeaveDialog(
                     .size(151.dp)
             )
             ProfileDialogButton(
-                text = "Volver",
+                text = stringResource(R.string.common_back),
                 color = app_colors.dialogAmber,
                 textColor = app_colors.black,
                 onClick = onBack,

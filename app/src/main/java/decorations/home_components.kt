@@ -2,55 +2,57 @@ package decorations
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.FavoriteBorder
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.u_spot.R
 
 /**
  * Pantalla del módulo Home dibujada desde una escena de Figma ([sceneKey], ver [FigmaScene]).
@@ -181,7 +183,7 @@ fun FigmaCardHeartButton(
             Icon(
                 imageVector = Icons.Rounded.Favorite,
                 contentDescription = null,
-                tint = Color(0x55000000),
+                tint = app_colors.scrimDark33,
                 modifier = Modifier
                     .size(size + 3.dp)
                     .offset(y = 1.dp)
@@ -190,14 +192,14 @@ fun FigmaCardHeartButton(
             Icon(
                 imageVector = Icons.Rounded.Favorite,
                 contentDescription = null,
-                tint = Color.White,
+                tint = app_colors.white,
                 modifier = Modifier.size(size + 2.4.dp)
             )
             // Relleno rojo centrado exactamente
             Icon(
                 imageVector = Icons.Rounded.Favorite,
-                contentDescription = "Quitar de favoritos",
-                tint = Color(0xFFE11D48),
+                contentDescription = stringResource(R.string.home_favorite_remove_cd),
+                tint = app_colors.placeHeartActive,
                 modifier = Modifier.size(size)
             )
         } else {
@@ -205,15 +207,15 @@ fun FigmaCardHeartButton(
             Icon(
                 imageVector = Icons.Rounded.FavoriteBorder,
                 contentDescription = null,
-                tint = Color(0x66000000),
+                tint = app_colors.scrimDark40,
                 modifier = Modifier
                     .size(size + 1.dp)
                     .offset(y = 1.dp)
             )
             Icon(
                 imageVector = Icons.Rounded.FavoriteBorder,
-                contentDescription = "Guardar en favoritos",
-                tint = Color.White,
+                contentDescription = stringResource(R.string.home_favorite_add_cd),
+                tint = app_colors.white,
                 modifier = Modifier.size(size)
             )
         }
@@ -256,10 +258,10 @@ fun HomeBottomBar(
                 .padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            NavItem("Inicio", Icons.Rounded.Home, selected = !spottyActive, onClick = onHome, modifier = Modifier.weight(1f))
+            NavItem(stringResource(R.string.nav_tab_home), Icons.Rounded.Home, selected = !spottyActive, onClick = onHome, modifier = Modifier.weight(1f))
             // Hueco para el botón central de Spotty, que se dibuja encima
             Spacer(Modifier.width(SPOTTY_SIZE + 24.dp))
-            NavItem("Perfil", Icons.Outlined.Person, selected = false, onClick = onProfile, modifier = Modifier.weight(1f))
+            NavItem(stringResource(R.string.nav_tab_profile), Icons.Outlined.Person, selected = false, onClick = onProfile, modifier = Modifier.weight(1f))
         }
         SpottyButton(onSpotty, spottyActive, Modifier.padding(bottom = 8.dp))
     }
@@ -299,6 +301,7 @@ private fun NavItem(label: String, icon: ImageVector, selected: Boolean, onClick
 /** Botón central de Spotty: círculo con el degradado de la marca, borde blanco y su nombre debajo. */
 @Composable
 private fun SpottyButton(onClick: () -> Unit, active: Boolean, modifier: Modifier = Modifier) {
+    val cd = stringResource(R.string.nav_spotty_cd)
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier
@@ -310,12 +313,16 @@ private fun SpottyButton(onClick: () -> Unit, active: Boolean, modifier: Modifie
                 .padding(4.dp)
                 .clip(CircleShape)
                 .background(Brush.linearGradient(listOf(app_colors.spottyGradStart, app_colors.spottyGradEnd)))
-                .clickable(onClick = onClick, role = Role.Button, onClickLabel = "Abrir Spotty, asistente de IA"),
+                .clickable(onClick = onClick, role = Role.Button, onClickLabel = cd),
             contentAlignment = Alignment.Center
         ) {
             SceneImage(SPOTTY_SPARKLES, Modifier.size(32.dp))
         }
         Spacer(Modifier.height(2.dp))
-        Text("Spotty", style = figmaText(app_fonts.inter, 12.sp, 16.sp, if (active) app_colors.navActive else app_colors.navLabel, FontWeight.ExtraBold), maxLines = 1)
+        Text(
+            stringResource(R.string.nav_tab_spotty),
+            style = figmaText(app_fonts.inter, 12.sp, 16.sp, if (active) app_colors.navActive else app_colors.navLabel, FontWeight.ExtraBold),
+            maxLines = 1
+        )
     }
 }

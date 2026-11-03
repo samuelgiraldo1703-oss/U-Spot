@@ -32,10 +32,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -70,9 +70,9 @@ private fun openGmailApp(context: Context) {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         try {
-            context.startActivity(Intent.createChooser(fallback, "Abrir correo"))
+            context.startActivity(Intent.createChooser(fallback, context.getString(R.string.email_verification_open_mail_chooser)))
         } catch (_: Exception) {
-            Toast.makeText(context, "No se encontró aplicación de correo", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.email_verification_no_mail_app), Toast.LENGTH_SHORT).show()
         }
     }
 }
@@ -94,9 +94,9 @@ private fun openOutlookApp(context: Context) {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         try {
-            context.startActivity(Intent.createChooser(fallback, "Abrir correo"))
+            context.startActivity(Intent.createChooser(fallback, context.getString(R.string.email_verification_open_mail_chooser)))
         } catch (_: Exception) {
-            Toast.makeText(context, "No se encontró aplicación de correo", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.email_verification_no_mail_app), Toast.LENGTH_SHORT).show()
         }
     }
 }
@@ -120,9 +120,9 @@ fun EmailVerificationScreen(
             isResending = true
             val ok = AuthProvider.repository.sendPasswordReset(email)
             if (ok) {
-                Toast.makeText(context, "Correo reenviado a $email", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.email_verification_resent_toast, email), Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(context, "Error reenviando el correo", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.email_verification_resend_error_toast), Toast.LENGTH_SHORT).show()
             }
             isResending = false
         }
@@ -151,18 +151,18 @@ fun EmailVerificationScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0x55000000))
+                .background(app_colors.scrimDark33)
         )
 
         // Tarjeta central de verificación (Figma nodo 211-1149)
         val cardShape = RoundedCornerShape(36.dp)
-        val cardBorderColor = Color(0xFF084B42)
+        val cardBorderColor = app_colors.offlineCardBorder
 
         Box(
             modifier = Modifier
                 .figmaPosition(left = 24.dp, right = 24.dp, top = 245.dp, height = 375.dp)
                 .clip(cardShape)
-                .background(Color.White, cardShape)
+                .background(app_colors.white, cardShape)
                 .border(BorderStroke(2.dp, cardBorderColor), cardShape)
         ) {
             // Forma orgánica amarilla en la esquina superior derecha
@@ -211,22 +211,22 @@ fun EmailVerificationScreen(
                     Spacer(Modifier.width(10.dp))
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "¡Te enviamos una verificación",
+                            text = stringResource(R.string.email_verification_title_line_1),
                             style = figmaText(
                                 family = app_fonts.poppins,
                                 size = 16.sp,
                                 lineHeight = 22.sp,
-                                color = Color(0xFF111827),
+                                color = app_colors.verificationTitle,
                                 weight = FontWeight.SemiBold
                             )
                         )
                         Text(
-                            text = "a tu correo!",
+                            text = stringResource(R.string.email_verification_title_line_2),
                             style = figmaText(
                                 family = app_fonts.poppins,
                                 size = 16.sp,
                                 lineHeight = 22.sp,
-                                color = Color(0xFF111827),
+                                color = app_colors.verificationTitle,
                                 weight = FontWeight.SemiBold
                             )
                         )
@@ -251,7 +251,7 @@ fun EmailVerificationScreen(
                     ) {
                         Image(
                             painter = painterResource(R.drawable.ic_gmail),
-                            contentDescription = "Abrir Gmail",
+                            contentDescription = stringResource(R.string.email_verification_open_gmail_cd),
                             modifier = Modifier.size(46.dp, 38.dp)
                         )
                     }
@@ -263,7 +263,7 @@ fun EmailVerificationScreen(
                         modifier = Modifier
                             .width(1.5.dp)
                             .height(52.dp)
-                            .background(Color(0xFFE5E7EB))
+                            .background(app_colors.verificationDivider)
                     )
 
                     Spacer(Modifier.width(12.dp))
@@ -278,7 +278,7 @@ fun EmailVerificationScreen(
                     ) {
                         Image(
                             painter = painterResource(R.drawable.ic_outlook),
-                            contentDescription = "Abrir Outlook",
+                            contentDescription = stringResource(R.string.email_verification_open_outlook_cd),
                             modifier = Modifier.size(46.dp, 38.dp)
                         )
                     }
@@ -287,7 +287,7 @@ fun EmailVerificationScreen(
                 if (email.isNotBlank()) {
                     Spacer(Modifier.height(20.dp))
                     Text(
-                        text = if (isResending) "Reenviando..." else "¿No te llegó? Reenviar correo",
+                        text = if (isResending) stringResource(R.string.email_verification_resending) else stringResource(R.string.email_verification_resend_prompt),
                         style = figmaText(
                             family = app_fonts.inter,
                             size = 12.sp,

@@ -1,6 +1,5 @@
 package com.example.u_spot.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -12,32 +11,33 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = USpotPrimaryDark,
+    secondary = USpotSecondaryDark,
+    tertiary = USpotTertiaryDark,
+    background = USpotBackgroundDark,
+    surface = USpotSurfaceDark,
+    onPrimary = USpotOnPrimaryDark,
+    onBackground = USpotOnBackgroundDark,
+    onSurface = USpotOnSurfaceDark,
+    error = USpotErrorDark,
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = USpotPrimaryLight,
+    secondary = USpotSecondaryLight,
+    tertiary = USpotTertiaryLight,
+    background = USpotBackgroundLight,
+    surface = USpotSurfaceLight,
+    onPrimary = USpotOnPrimaryLight,
+    onBackground = USpotOnBackgroundLight,
+    onSurface = USpotOnSurfaceLight,
+    error = USpotErrorLight,
 )
 
 @Composable
 fun USpotTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

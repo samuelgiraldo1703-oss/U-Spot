@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.u_spot.R
 import data.GoogleAuthHelper
 import data.GoogleSignInResult
 import data.isOnline
@@ -63,7 +64,7 @@ fun AppNavigation() {
                 try {
                     when (val result = googleAuthHelper.signInWithGoogle()) {
                         is GoogleSignInResult.Success -> {
-                            toast("Bienvenido, ${result.name}")
+                            toast(context.getString(R.string.nav_welcome_user, result.name))
                             // Limpia toda la pila (Login/Registro/...) para que "atrás" no vuelva al login
                             navController.navigate(Routes.HOME) {
                                 popUpTo(navController.graph.id) { inclusive = true }
@@ -190,7 +191,7 @@ fun AppNavigation() {
                     // Tarjetas de "Recomendaciones": abren el detalle del lugar
                     onOpenPlace = { navController.navigate("home/place/$it") },
                     onSaveBio = { text ->
-                        scope.launch { if (!data.saveBio(text)) toast("No se pudo guardar la descripción") }
+                        scope.launch { if (!data.saveBio(text)) toast(context.getString(R.string.nav_error_save_bio)) }
                     }
                 )
             }
@@ -204,12 +205,12 @@ fun AppNavigation() {
                     onPhotoTaken = { uri ->
                         scope.launch {
                             savingPhoto = true
-                            if (!data.saveProfilePhoto(context, uri)) toast("No se pudo guardar la foto")
+                            if (!data.saveProfilePhoto(context, uri)) toast(context.getString(R.string.nav_error_save_photo))
                             savingPhoto = false
                         }
                     },
                     onDeletePhoto = {
-                        scope.launch { if (!data.deleteProfilePhoto()) toast("No se pudo borrar la foto") }
+                        scope.launch { if (!data.deleteProfilePhoto()) toast(context.getString(R.string.nav_error_delete_photo)) }
                     }
                 )
             }
@@ -269,7 +270,7 @@ fun AppNavigation() {
                 screens.RegisterScreen(
                     onBack = { navController.popBackStack() },
                     onRegistered = {
-                        toast("Cuenta creada con éxito")
+                        toast(context.getString(R.string.nav_account_created_success))
                         navController.popBackStack()
                     },
                     onGoogleLogin = onGoogleLoginAction

@@ -10,7 +10,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,14 +37,6 @@ import decorations.figmaText
 import decorations.lockIcon
 import decorations.mailIcon
 
-/** Mensajes de las variantes "Actualizacion Contraseña App (Validacion … Fallida)". */
-private object ChangePasswordErrors {
-    const val EMAIL_NOT_LINKED = "Correo no vinculado a una cuenta existente"
-    const val NO_PASSWORD = "Ingrese una contraseña"
-    const val WEAK_PASSWORD = "La contraseña debe tener al menos 6 caracteres"
-    const val PASSWORD_MISMATCH = "La contraseña no coincide, digitela nuevamente"
-}
-
 /** Figma: "Actualizacion Contraseña App" (631:654, 631:734, 631:814). */
 @Composable
 fun ChangePasswordScreen(
@@ -50,6 +44,7 @@ fun ChangePasswordScreen(
     onPasswordChanged: (String) -> Unit = {},
     onGoogleLogin: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     var email by rememberSaveable { mutableStateOf("") }
     var newPassword by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }
@@ -62,16 +57,16 @@ fun ChangePasswordScreen(
         val repository = AuthProvider.repository
         when {
             email.isBlank() -> {
-                error = ChangePasswordErrors.EMAIL_NOT_LINKED
+                error = context.getString(R.string.change_password_error_email_not_linked)
             }
             newPassword.isEmpty() -> {
-                error = ChangePasswordErrors.NO_PASSWORD
+                error = context.getString(R.string.change_password_error_no_password)
             }
             newPassword.length < 6 -> {
-                error = ChangePasswordErrors.WEAK_PASSWORD
+                error = context.getString(R.string.change_password_error_weak_password)
             }
             newPassword != confirmPassword -> {
-                error = ChangePasswordErrors.PASSWORD_MISMATCH
+                error = context.getString(R.string.change_password_error_password_mismatch)
             }
             else -> {
                 scope.launch {
@@ -84,17 +79,17 @@ fun ChangePasswordScreen(
                                 onPasswordChanged(target)
                             }
                             is data.ChangePasswordResult.AccountNotFound -> {
-                                error = ChangePasswordErrors.EMAIL_NOT_LINKED
+                                error = context.getString(R.string.change_password_error_email_not_linked)
                             }
                             is data.ChangePasswordResult.WeakPassword -> {
-                                error = ChangePasswordErrors.WEAK_PASSWORD
+                                error = context.getString(R.string.change_password_error_weak_password)
                             }
                             is data.ChangePasswordResult.Error -> {
                                 error = result.message
                             }
                         }
                     } catch (e: Exception) {
-                        error = e.localizedMessage ?: "Error al procesar la solicitud"
+                        error = e.localizedMessage ?: context.getString(R.string.change_password_error_generic)
                     } finally {
                         isLoading = false
                     }
@@ -124,24 +119,24 @@ fun ChangePasswordScreen(
         HeaderLogo(Modifier.figmaPosition(left = 56.dp, top = 97.dp, width = 287.dp, height = 100.dp))
 
         Text(
-            text = "Cambia tu contraseña",
+            text = stringResource(R.string.change_password_title),
             style = figmaText(app_fonts.inter, 24.sp, 32.sp, app_colors.formTitle, FontWeight.Bold),
             modifier = Modifier.figmaPosition(left = 41.dp, right = 0.dp, top = 204.dp)
         )
 
         FormInput(
             value = email, onValueChange = { email = it; error = null },
-            placeholder = "Ingresa tú Correo electrónico", icon = mailIcon, keyboardType = KeyboardType.Email,
+            placeholder = stringResource(R.string.change_password_email_placeholder), icon = mailIcon, keyboardType = KeyboardType.Email,
             modifier = Modifier.figmaPosition(left = 40.dp, right = 45.dp, top = 263.dp)
         )
         FormInput(
             value = newPassword, onValueChange = { newPassword = it; error = null },
-            placeholder = "Crear nueva contraseña", icon = lockIcon, isPassword = true,
+            placeholder = stringResource(R.string.change_password_new_placeholder), icon = lockIcon, isPassword = true,
             modifier = Modifier.figmaPosition(left = 42.dp, right = 45.dp, top = 330.dp)
         )
         FormInput(
             value = confirmPassword, onValueChange = { confirmPassword = it; error = null },
-            placeholder = "Confirmar nueva contraseña", icon = lockIcon, isPassword = true,
+            placeholder = stringResource(R.string.change_password_confirm_placeholder), icon = lockIcon, isPassword = true,
             modifier = Modifier.figmaPosition(left = 40.dp, right = 44.dp, top = 399.dp)
         )
 
@@ -153,7 +148,7 @@ fun ChangePasswordScreen(
 
         StepProgress(Modifier.figmaPosition(left = 20.dp, right = 21.dp, top = 480.dp))
         PrimaryActionButton(
-            text = if (isLoading) "Actualizando..." else "Actualizar Contraseña",
+            text = if (isLoading) stringResource(R.string.change_password_submitting) else stringResource(R.string.change_password_submit),
             onClick = ::submit,
             modifier = Modifier.figmaPosition(left = 20.dp, right = 21.dp, top = 509.dp)
         )

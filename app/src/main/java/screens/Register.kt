@@ -18,12 +18,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,16 +51,6 @@ import decorations.lockIcon
 import decorations.mailIcon
 import decorations.personIcon
 
-/** Mensajes de las variantes "Registro App (… Fallido)". */
-private object RegisterErrors {
-    const val NO_DATA = "Ningun dato ingresado en los campos de registro"
-    const val USERNAME = "El usuario o correo ya se encuentra registrado"
-    const val INVALID_EMAIL = "Ingrese un correo electrónico valido"
-    const val NO_PASSWORD = "Ingrese una contraseña"
-    const val WEAK_PASSWORD = "La contraseña debe tener al menos 6 caracteres"
-    const val PASSWORD_MISMATCH = "La contraseña no coincide, digitela nuevamente"
-}
-
 /** Figma: "Registro App (Completa tu perfil)" y sus 5 variantes de error (631:894 y hermanas). */
 @Composable
 fun RegisterScreen(
@@ -67,6 +58,7 @@ fun RegisterScreen(
     onRegistered: () -> Unit = {},
     onGoogleLogin: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     var username by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
@@ -79,22 +71,22 @@ fun RegisterScreen(
         if (isLoading) return
         when {
             username.isBlank() && email.isBlank() && password.isEmpty() && confirmPassword.isEmpty() -> {
-                error = RegisterErrors.NO_DATA
+                error = context.getString(R.string.register_error_no_data)
             }
             username.isBlank() -> {
-                error = RegisterErrors.USERNAME
+                error = context.getString(R.string.register_error_username_exists)
             }
             !Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches() -> {
-                error = RegisterErrors.INVALID_EMAIL
+                error = context.getString(R.string.register_error_invalid_email)
             }
             password.isEmpty() -> {
-                error = RegisterErrors.NO_PASSWORD
+                error = context.getString(R.string.register_error_no_password)
             }
             password.length < 6 -> {
-                error = RegisterErrors.WEAK_PASSWORD
+                error = context.getString(R.string.register_error_weak_password)
             }
             password != confirmPassword -> {
-                error = RegisterErrors.PASSWORD_MISMATCH
+                error = context.getString(R.string.register_error_password_mismatch)
             }
             else -> {
                 scope.launch {
@@ -106,11 +98,11 @@ fun RegisterScreen(
                                 onRegistered()
                             }
                             RegisterResult.AlreadyExists -> {
-                                error = RegisterErrors.USERNAME
+                                error = context.getString(R.string.register_error_username_exists)
                             }
                         }
                     } catch (_: Exception) {
-                        error = RegisterErrors.USERNAME
+                        error = context.getString(R.string.register_error_username_exists)
                     } finally {
                         isLoading = false
                     }
@@ -135,34 +127,34 @@ fun RegisterScreen(
 
         Column(Modifier.figmaPosition(left = 37.5.dp, right = 10.5.dp, top = 145.48.dp)) {
             Text(
-                text = "¡Completa tu perfil!",
+                text = stringResource(R.string.register_title),
                 style = figmaText(app_fonts.inter, 24.sp, 32.sp, app_colors.formTitle, FontWeight.Bold)
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Cuéntanos sobre ti para personalizar tu\nexperiencia.",
+                text = stringResource(R.string.register_subtitle),
                 style = figmaText(app_fonts.inter, 14.sp, 20.sp, app_colors.formSubtitle)
             )
         }
 
         FormInput(
             value = username, onValueChange = { username = it; error = null },
-            placeholder = "Nombre De Usuario", icon = personIcon,
+            placeholder = stringResource(R.string.register_username_placeholder), icon = personIcon,
             modifier = Modifier.figmaPosition(left = 28.dp, right = 24.dp, top = 234.dp)
         )
         FormInput(
             value = email, onValueChange = { email = it; error = null },
-            placeholder = "Ingresa un Correo electrónico", icon = mailIcon, keyboardType = KeyboardType.Email,
+            placeholder = stringResource(R.string.register_email_placeholder), icon = mailIcon, keyboardType = KeyboardType.Email,
             modifier = Modifier.figmaPosition(left = 28.5.dp, right = 21.5.dp, top = 293.48.dp)
         )
         FormInput(
             value = password, onValueChange = { password = it; error = null },
-            placeholder = "Crear Contraseña", icon = lockIcon, isPassword = true,
+            placeholder = stringResource(R.string.register_password_placeholder), icon = lockIcon, isPassword = true,
             modifier = Modifier.figmaPosition(left = 28.5.dp, right = 21.5.dp, top = 355.48.dp)
         )
         FormInput(
             value = confirmPassword, onValueChange = { confirmPassword = it; error = null },
-            placeholder = "Confirmar nueva contraseña", icon = lockIcon, isPassword = true,
+            placeholder = stringResource(R.string.register_confirm_password_placeholder), icon = lockIcon, isPassword = true,
             modifier = Modifier.figmaPosition(left = 26.dp, right = 19.dp, top = 420.dp)
         )
 
@@ -174,7 +166,7 @@ fun RegisterScreen(
 
         StepProgress(Modifier.figmaPosition(left = 24.dp, right = 24.dp, top = 499.dp))
         PrimaryActionButton(
-            text = if (isLoading) "Creando cuenta..." else "Crear cuenta y descubrir",
+            text = if (isLoading) stringResource(R.string.register_submitting) else stringResource(R.string.register_submit),
             onClick = ::submit,
             modifier = Modifier.figmaPosition(left = 24.dp, right = 24.dp, top = 528.dp)
         )
@@ -191,7 +183,7 @@ private fun PhotoCaption(modifier: Modifier) {
     val density = LocalDensity.current
     val style = figmaText(app_fonts.inter, 18.sp, 22.5.sp, app_colors.white, FontWeight.Bold).copy(
         shadow = with(density) {
-            Shadow(color = Color(0x12000000), offset = Offset(0f, 4.dp.toPx()), blurRadius = 1.5.dp.toPx())
+            Shadow(color = app_colors.shadowSoft07, offset = Offset(0f, 4.dp.toPx()), blurRadius = 1.5.dp.toPx())
         }
     )
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -200,9 +192,9 @@ private fun PhotoCaption(modifier: Modifier) {
                 .requiredSize(116.28.dp, 75.79.dp)
                 .graphicsLayer { rotationZ = -4.3f }
         ) {
-            Text("Tu entorno", style = style, modifier = Modifier.offset(y = (-0.75).dp))
-            Text("también es", style = style, modifier = Modifier.offset(x = (-0.02).dp, y = 22.dp))
-            Text("parte de la U", style = style, modifier = Modifier.offset(x = (-0.1).dp, y = 45.68.dp))
+            Text(stringResource(R.string.register_caption_line_1), style = style, modifier = Modifier.offset(y = (-0.75).dp))
+            Text(stringResource(R.string.register_caption_line_2), style = style, modifier = Modifier.offset(x = (-0.02).dp, y = 22.dp))
+            Text(stringResource(R.string.register_caption_line_3), style = style, modifier = Modifier.offset(x = (-0.1).dp, y = 45.68.dp))
         }
     }
 }
