@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
+import android.util.Patterns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -30,7 +31,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -434,7 +437,8 @@ private fun ReportInput(
     required: Boolean,
     isError: Boolean = false,
     radius: Dp = 9999.dp,
-    singleLine: Boolean = true
+    singleLine: Boolean = true,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
     var internalValue by rememberSaveable { mutableStateOf("") }
     val textValue = value ?: internalValue
@@ -452,6 +456,7 @@ private fun ReportInput(
             value = textValue,
             onValueChange = handleValueChange,
             singleLine = singleLine,
+            keyboardOptions = keyboardOptions,
             textStyle = text.copy(color = app_colors.loginTitle),
             cursorBrush = SolidColor(app_colors.formBlue),
             modifier = Modifier
@@ -474,6 +479,17 @@ private fun ReportInput(
     }
 }
 
+internal fun isValidReportEmail(email: String): Boolean {
+    val trimmed = email.trim()
+    if (trimmed.isEmpty()) return false
+    return runCatching {
+        Patterns.EMAIL_ADDRESS.matcher(trimmed).matches()
+    }.getOrElse {
+        val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
+        emailRegex.matches(trimmed)
+    }
+}
+
 @Composable
 private fun BoxScope.IdentifyStep(
     email: String,
@@ -482,7 +498,7 @@ private fun BoxScope.IdentifyStep(
     onUsernameChange: (String) -> Unit,
     onNext: () -> Unit
 ) {
-    var emailError by rememberSaveable { mutableStateOf(false) }
+    var emailErrorRes by rememberSaveable { mutableStateOf<Int?>(null) }
     var userError by rememberSaveable { mutableStateOf(false) }
 
     fun validateAndProceed() {
@@ -490,11 +506,18 @@ private fun BoxScope.IdentifyStep(
         val userTrimmed = username.trim()
         val isEmailBlank = emailTrimmed.isEmpty()
         val isUserBlank = userTrimmed.isEmpty()
+        val isEmailValid = isValidReportEmail(emailTrimmed)
 
-        emailError = isEmailBlank
+        emailErrorRes = when {
+            isEmailBlank -> R.string.report_identify_email_error
+            !isEmailValid -> R.string.report_identify_email_invalid
+            else -> null
+        }
         userError = isUserBlank
 
-        if (!isEmailBlank && !isUserBlank) {
+        if (isEmailValid && !isUserBlank) {
+            onEmailChange(emailTrimmed)
+            onUsernameChange(userTrimmed)
             onNext()
         }
     }
@@ -522,10 +545,17 @@ private fun BoxScope.IdentifyStep(
             value = email,
             onValueChange = {
                 onEmailChange(it)
-                if (emailError && it.isNotBlank()) emailError = false
+                if (emailErrorRes != null) {
+                    emailErrorRes = when {
+                        it.isBlank() -> R.string.report_identify_email_error
+                        !isValidReportEmail(it) -> R.string.report_identify_email_invalid
+                        else -> null
+                    }
+                }
             },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             required = true,
-            isError = emailError,
+            isError = emailErrorRes != null,
             icon = {
                 Image(
                     painter = painterResource(R.drawable.ic_report_mail),
@@ -534,15 +564,15 @@ private fun BoxScope.IdentifyStep(
                 )
             }
         )
-        if (emailError) {
+        emailErrorRes?.let { errorRes ->
             Text(
-                text = stringResource(R.string.report_identify_email_error),
+                text = stringResource(errorRes),
                 style = jakartaText(12.sp, 16.sp, app_colors.formError, FontWeight.SemiBold),
                 modifier = Modifier.offset(25.dp, 180.dp)
             )
         }
         ReportInput(
-            modifier = Modifier.offset(23.dp, if (emailError) 205.dp else 195.dp).size(348.dp, 45.dp),
+            modifier = Modifier.offset(23.dp, if (emailErrorRes != null) 205.dp else 195.dp).size(348.dp, 45.dp),
             placeholder = stringResource(R.string.report_identify_user_placeholder),
             value = username,
             onValueChange = {
@@ -563,7 +593,7 @@ private fun BoxScope.IdentifyStep(
             Text(
                 text = stringResource(R.string.report_identify_user_error),
                 style = jakartaText(12.sp, 16.sp, app_colors.formError, FontWeight.SemiBold),
-                modifier = Modifier.offset(25.dp, if (emailError) 253.dp else 243.dp)
+                modifier = Modifier.offset(25.dp, if (emailErrorRes != null) 253.dp else 243.dp)
             )
         }
     }

@@ -412,6 +412,7 @@
     <string name="report_identify_password_notice">Reecuerda que U-Spot nunca te pedira contraseñas </string>
     <string name="report_identify_email_placeholder">Correo electrónico</string>
     <string name="report_identify_email_error">Ningún correo ingresado, verifique nuevamente</string>
+    <string name="report_identify_email_invalid">Ingrese un correo electrónico válido</string>
     <string name="report_identify_user_placeholder">Usuario</string>
     <string name="report_identify_user_error">Ningún usuario ingresado, verifique nuevamente</string>
     <string name="report_classify_error">Ningún campo seleccionado, marque uno</string>
