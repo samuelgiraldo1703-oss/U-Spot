@@ -1,6 +1,8 @@
 package screens
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -33,6 +35,8 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -247,40 +251,93 @@ fun HelpCenterScreen(onBack: () -> Unit = {}) {
 
         Column(Modifier.figmaPosition(left = 9.dp, right = 9.dp, top = 177.dp)) {
             faqs.forEachIndexed { index, faq ->
-                ProfileRowCard(
+                val isExpanded = expanded == index
+                val chevronRotation by animateFloatAsState(
+                    targetValue = if (isExpanded) 180f else 0f,
+                    label = "faqChevronRotation"
+                )
+                val cardShape = RoundedCornerShape(20.dp)
+
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(70.dp),
-                    onClick = { expanded = if (expanded == index) -1 else index }
+                        .dropShadow(
+                            shape = cardShape,
+                            shadow = Shadow(
+                                radius = 18.dp,
+                                color = app_colors.shadowCardNavy04,
+                                offset = DpOffset(0.dp, 4.dp)
+                            )
+                        )
+                        .clip(cardShape)
+                        .background(app_colors.white)
+                        .border(1.dp, app_colors.cfgCardBorder, cardShape)
+                        .animateContentSize()
                 ) {
-                    ProfileRowIcon(faq.icon)
-                    Text(
-                        text = faq.question,
-                        style = jakartaText(14.5.sp, 18.13.sp, if (faq.danger) app_colors.cfgDanger else app_colors.cfgHeading, FontWeight.Bold),
-                        modifier = Modifier
-                            .align(Alignment.CenterStart)
-                            .offset(x = 71.dp)
-                    )
-                    Image(
-                        painter = painterResource(R.drawable.ic_cfg_chevron_down),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .offset(x = (-13).dp)
-                            .size(20.dp)
-                    )
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        // Fila de encabezado interactiva
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(70.dp)
+                                .clickable { expanded = if (isExpanded) -1 else index }
+                        ) {
+                            ProfileRowIcon(faq.icon)
+                            Text(
+                                text = faq.question,
+                                style = jakartaText(
+                                    size = 14.5.sp,
+                                    lineHeight = 18.13.sp,
+                                    color = if (faq.danger) app_colors.cfgDanger else app_colors.cfgHeading,
+                                    weight = FontWeight.Bold
+                                ),
+                                modifier = Modifier
+                                    .align(Alignment.CenterStart)
+                                    .offset(x = 71.dp)
+                                    .padding(end = 48.dp)
+                            )
+                            Image(
+                                painter = painterResource(R.drawable.ic_cfg_chevron_down),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .offset(x = (-16).dp)
+                                    .size(20.dp)
+                                    .graphicsLayer { rotationZ = chevronRotation }
+                            )
+                        }
+
+                        // Caja contenedora de la respuesta desplegada
+                        if (isExpanded) {
+                            val boxShape = RoundedCornerShape(14.dp)
+                            val boxBg = if (faq.danger) Color(0xFFFFF5F5) else app_colors.profileStatsBg
+                            val boxBorder = if (faq.danger) Color(0xFFFFD4D4) else app_colors.cfgCardBorder
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 14.dp, end = 14.dp, bottom = 14.dp, top = 2.dp)
+                                    .clip(boxShape)
+                                    .background(boxBg)
+                                    .border(1.dp, boxBorder, boxShape)
+                                    .padding(horizontal = 16.dp, vertical = 14.dp)
+                            ) {
+                                Text(
+                                    text = faq.answer,
+                                    style = jakartaText(
+                                        size = 14.sp,
+                                        lineHeight = 21.sp,
+                                        color = if (faq.danger) Color(0xFF991B1B) else app_colors.cfgHeading,
+                                        weight = FontWeight.Medium
+                                    )
+                                )
+                            }
+                        }
+                    }
                 }
-                if (expanded == index) {
-                    // La respuesta ocupa el hueco entre filas, 3 dp pegada a la fila de arriba
-                    Text(
-                        text = faq.answer,
-                        style = jakartaText(17.sp, 25.5.sp, app_colors.cfgHeading, FontWeight.Bold),
-                        modifier = Modifier
-                            .offset(y = (-3).dp)
-                            .padding(start = 28.dp, end = 30.dp)
-                    )
-                } else if (index < faqs.lastIndex) {
-                    Spacer(Modifier.height(10.dp))
+
+                if (index < faqs.lastIndex) {
+                    Spacer(Modifier.height(12.dp))
                 }
             }
         }
