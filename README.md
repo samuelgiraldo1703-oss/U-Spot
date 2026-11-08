@@ -215,4 +215,140 @@ Luego entra en GitHub y abre un **Pull Request** para que tus compañeros puedan
 
 ---
 
+## 📲 8. Instalación y Despliegue en Dispositivos Físicos y Emuladores
+
+> [!IMPORTANT]
+> **Rama Actual con la Versión Funcional:** La rama oficial del repositorio que contiene la última versión consolidada y 100% funcional de la aplicación es **`main`**. Asegúrate de clonar o posicionarte sobre esta rama (`git checkout main`) antes de compilar o desplegar.
+
+A continuación se detalla el procedimiento completo para compilar, generar el paquete instalable y desplegar **U-Spot** en dispositivos reales y emuladores:
+
+### 8.1 Requisitos Previos del Sistema
+- **Android Studio** Ladybug (2024.3+) o superior.
+- **Android SDK Platform 37** (API 37) y herramientas de compilación instaladas.
+- **Java JDK 21 o 25 (JBR / Embedded JDK)** asignado como Gradle JDK.
+- **Dispositivo físico o AVD (Android Virtual Device)** con Android 9.0 (API 28) o superior.
+- **Clave API de Gemini** (gratuita, sin facturación) para habilitar el asistente inteligente Spotty.
+
+### 8.2 Configuración de Credenciales y Servicios
+1. **Archivo `local.properties`:**
+   - Asegúrate de que en la raíz del proyecto exista el archivo `local.properties`.
+   - Agrega tu clave de Gemini al final del archivo siguiendo la plantilla de `local.properties.example`:
+     ```properties
+     GEMINI_API_KEY=tu_clave_de_gemini_aqui
+     ```
+   - *(Para generar tu clave sin costo en Google AI Studio, consulta el paso a paso en [`docs/spotty/TUTORIAL_API_KEY.md`](docs/spotty/TUTORIAL_API_KEY.md)).*
+2. **Servicios de Firebase y Autenticación de Google:**
+   - El archivo de configuración `app/google-services.json` y el keystore de depuración compartido `app/debug.keystore` ya se encuentran integrados en el repositorio.
+   - La huella digital SHA-1 del keystore compartido está pre-registrada en la consola de Firebase, permitiendo que el inicio de sesión con correo/contraseña y el botón **"Continuar con Google"** funcionen inmediatamente sin requerir configuración adicional de claves SHA en tu máquina local.
+
+### 8.3 Generación del APK desde Línea de Comandos
+Si deseas compilar el paquete instalable sin necesidad de abrir el entorno gráfico de Android Studio, ejecuta:
+```bash
+# En Windows (PowerShell / CMD)
+.\gradlew assembleDebug
+
+# En macOS / Linux
+./gradlew assembleDebug
+```
+Una vez finalizada la tarea (`BUILD SUCCESSFUL`), el instalador APK estará disponible en:
+```
+app/build/outputs/apk/debug/app-debug.apk
+```
+
+### 8.4 Instalación Directa mediante ADB o Gradle
+- **Opción A (Mediante ADB):** Con el dispositivo conectado por USB (modo de depuración habilitado) o el emulador encendido:
+  ```bash
+  adb install -r app/build/outputs/apk/debug/app-debug.apk
+  ```
+- **Opción B (Compilación e Instalación Automática con Gradle):**
+  ```bash
+  .\gradlew installDebug
+  ```
+
+---
+
+## ⚡ 9. Últimos Avances y Funcionalidades Incorporadas
+
+A través de las iteraciones más recientes del proyecto (incorporadas en los Pull Requests #5, #6 y #7), la aplicación evolucionó significativamente en estabilidad, diseño y cobertura funcional:
+
+### 1. Centro de Ayuda con Tarjetas Encajonadas y Animadas (PR #6)
+- **Tarjetas de diseño unificado:** Las opciones de ayuda y soporte en `ProfileHelp.kt` se consolidaron en componentes de tarjeta completos (`RoundedCornerShape(20.dp)` con borde `#E9EEF5` y sombra suave).
+- **Cajas delimitadas para respuestas:** Cada texto de solución desplegado ya no flota en el fondo de la pantalla, sino que queda elegantemente encajonado en un contenedor interior con fondo suave (`app_colors.profileStatsBg` / `#F0F6FD`), padding simétrico y tipografía legible Plus Jakarta Sans.
+- **Microinteracciones y animaciones:** Rotación dinámica de 180° en el icono de chevron (`animateFloatAsState`) y transición de tamaño fluida con `Modifier.animateContentSize()`.
+
+### 2. Flujo Completo de Reporte de Problemas con Validaciones Estrictas (PR #7)
+- **Asistente por pasos:** Proceso guiado en 4 etapas: Hub de incidentes, Identificación del problema, Clasificación por áreas del campus y Captura detallada (`ProfileReport.kt`).
+- **Validación rigurosa de correo:** Se implementó una verificación obligatoria de sintaxis de correo electrónico (presencia indispensable de `@` y dominio válido) antes de habilitar el envío del reporte.
+- **Carga y previsualización de evidencias multimedia:** Integración directa con cámara y galería para adjuntar capturas de imagen o video, con pantalla de validación previa y opción de descarte antes de persistir en Cloud Firestore.
+
+### 3. Asistente Conversacional Inteligente: Spotty AI
+- **Chatbot tadeísta en tiempo real:** Integración de Google Gemini Flash-Lite con llamadas a funciones (*function calling*) sobre un catálogo local enriquecido de 171 lugares de Bogotá (`Spotty.kt`).
+- **Estilo visual Glassmorphism:** Interfaz inmersiva con fondo translúcido, zonas seguras adaptadas a las barras de estado y navegación del sistema (*Edge-to-Edge*), y burbujas de diálogo con recomendaciones dinámicas.
+- **Algoritmo de cálculo de afinidad:** Medición de porcentaje de coincidencia (`% Match`) según los gustos del estudiante, cálculo de gasto por persona para salidas en grupo y visualización directa de tarjetas de lugares con enlace a detalles.
+
+### 4. Sistema Interactivo de Comentarios en Spots
+- **Participación social comunitaria:** Panel interactivo en tiempo real (`comments.kt`) que permite a los usuarios compartir experiencias sobre cada spot, responder a comentarios en hilo (*replies*), reaccionar con "me gusta" y seleccionar emojis con el selector oficial de Android (`androidx.emoji2`).
+- **Persistencia en la nube:** Toda la actividad se sincroniza en vivo con Cloud Firestore.
+
+### 5. Refactorización Integral de UI y Preparación i18n (PR #5)
+- **Centralización total de textos:** Extracción de más de 400 cadenas hardcodeadas hacia `res/values/strings.xml`, preparando la aplicación para soporte multi-idioma.
+- **Tokens de diseño consistentes:** Centralización de colores en `decorations/app_colors.kt` y tipografías en `decorations/figma_components.kt`, alineados al sistema de diseño oficial de Figma.
+
+---
+
+## 🛠️ 10. Stack Tecnológico y Arquitectura Implementada
+
+**U-Spot** adopta una arquitectura modular limpia orientada a componentes desacoplados, cumpliendo con los estándares modernos de desarrollo en Android:
+
+| Capa / Módulo | Tecnología / Librería | Versión | Propósito en la Aplicación |
+| :--- | :--- | :--- | :--- |
+| **Lenguaje Base** | **Kotlin** | `2.2.10` | Tipado estricto, extensiones idiomáticas, Coroutines y StateFlow reactivo. |
+| **Framework de UI** | **Jetpack Compose** | BOM `2026.02.01` | Interfaz 100% declarativa, animaciones fluidas y soporte responsivo. |
+| **Diseño y Tema** | **Material 3** | `1.4.0` | Tematización moderna, accesibilidad, tipografía Plus Jakarta Sans y tokens de Figma. |
+| **Navegación** | **Navigation Compose** | `2.10.2` | Enrutamiento desacoplado entre módulos (Splash, Auth, Home, Spotty, Perfil, Reporte). |
+| **Autenticación** | **Firebase Auth** | BOM `33.9.0` | Inicio de sesión, registro institucional, verificación en 2 pasos y cambio de clave. |
+| **Credenciales** | **Credential Manager** | `1.5.0` | Soporte nativo para Google Sign-In con la API moderna de Android Credentials. |
+| **Base de Datos NoSQL** | **Cloud Firestore** | BOM `33.9.0` | Sincronización en tiempo real de perfiles, catálogo de spots, comentarios y reportes. |
+| **Inteligencia Artificial** | **Google Gemini API** | 1.5 / 2.0 Flash-Lite | Motor conversacional de Spotty AI con function calling y prompts contextualizados. |
+| **Cliente HTTP / Red** | **OkHttp** | `5.0.0-alpha.14` | Conexión directa y eficiente con los endpoints REST de Google AI Studio. |
+| **Geolocalización** | **Play Services Location** | `21.3.0` | Obtención de coordenadas del usuario y cálculo de distancias reales a los lugares. |
+| **Selector de Emojis** | **Emoji2 Picker** | `1.6.0` | Selector nativo de emojis para enriquecer los comentarios de la comunidad. |
+| **Carga de Imágenes** | **Android Graphics / Painters** | Nativo | Gestión de avatares, fotos de lugares, evidencias de reporte y fondos vectoriales. |
+
+---
+
+## 🤖 11. Implementación de Agentes de IA y Flujo de Trabajo Asistido
+
+Durante el ciclo de desarrollo del proyecto se integraron agentes especializados e infraestructura de Inteligencia Artificial para acelerar la entrega y elevar la calidad del código:
+
+1. **Agente Antigravity (Google DeepMind):**
+   - Utilizado como asistente agentico de programación en pareja (*pair programming*) para la orquestación y ejecución de tareas complejas.
+   - Ejecución autónoma de refactorizaciones de código masivas (centralización de recursos XML, desacoplamiento de componentes y normalización de temas).
+   - Diagnóstico proactivo y resolución de errores de compilación, dependencias de Gradle y configuración de SDK/JDK.
+   - Gestión de ramas Git, sincronización con repositorios remotos y resolución limpia de conflictos.
+
+2. **Servidor MCP de Figma (`Figma MCP Server`):**
+   - Integrado mediante el protocolo abierto **Model Context Protocol (MCP)** configurado en `.agents/mcp_config.json`.
+   - Permitió al agente conectarse directamente con el archivo de diseño oficial de Figma de U-Spot para inspeccionar dimensiones exactas, jerarquías de capas, estilos tipográficos, curvas de radio (`RoundedCornerShape`) y códigos hexadecimales de color, garantizando una fidelidad visual 1:1.
+
+3. **Spotty AI (Agente Inteligente Conversacional dentro de la App):**
+   - Agente autónomo embebido en la aplicación que actúa como guía para la comunidad tadeísta.
+   - Implementa *Function Calling* estructurado para interactuar con la base de datos de 171 spots, evaluando distancias, rangos de precios y valoraciones para ofrecer recomendaciones hiper-personalizadas en lenguaje natural.
+
+---
+
+## 🏆 12. Producto Final: Estado y Alcance Alcanzado
+
+El resultado de este proceso de desarrollo es **U-Spot en su versión 1.0 funcional**, una aplicación móvil nativa integral que cubre el ciclo de vida del estudiante universitario dentro de su entorno:
+
+- **Autenticación e Identidad Confiable:** Sistema completo con validación de correos institucionales `@utadeo.edu.co`, recuperación de credenciales, autenticación en 1 toque con Google y verificación en dos pasos.
+- **Explorador Urbano Tadeísta:** Catálogo geocodificado de 171 lugares emblemáticos alrededor del campus (cafeterías de estudio, restaurantes universitarios, teatros, bares y espacios de ocio) con filtros avanzados por categoría y ubicación.
+- **Comunidad y Retroalimentación:** Módulo interactivo de opiniones y comentarios con likes, hilos de respuesta y avatares personalizados.
+- **Asistencia Inteligente Embebida:** Spotty AI listo para responder preguntas y encontrar el lugar ideal para estudiar, comer o socializar en segundos.
+- **Gestión de Perfil, Soporte y Seguridad:** Menú completo de configuración de cuenta, personalización de preferencias, centro de ayuda interactivo y módulo formal de reporte de problemas con soporte multimedia.
+- **Experiencia de Usuario Moderna:** Navegación *Edge-to-Edge* respetando las zonas seguras del sistema, tiempos de respuesta optimizados y modo offline reactivo para garantizar operatividad continua.
+
+> [!NOTE]
+> Todo este desarrollo se encuentra totalmente integrado, verificado y disponible en la rama **`main`** del repositorio.
+
 *Desarrollado con dedicación para el curso de Aplicaciones Móviles — UTADEO 2026.*
