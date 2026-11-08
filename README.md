@@ -11,6 +11,28 @@
 
 ---
 
+## 🎥 Video Tutorial de Instalación (Paso a Paso)
+
+> [!IMPORTANT]
+> **Guía Principal de Instalación para Revisión Docente:**  
+> Hemos preparado un video tutorial detallado donde se explica **paso a paso cómo clonar, configurar el entorno y ejecutar la aplicación U-Spot** desde cero en Android Studio.
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=9nteSlbFm80" target="_blank">
+    <img src="https://img.youtube.com/vi/9nteSlbFm80/hqdefault.jpg" alt="Video Tutorial de Instalación U-Spot" width="520" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=9nteSlbFm80" target="_blank">
+    <img src="https://img.shields.io/badge/YouTube-Ver_Video_Tutorial_Paso_a_Paso-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Ver Video Tutorial en YouTube" />
+  </a>
+</p>
+
+- 🔗 **Enlace directo al video tutorial:** [https://www.youtube.com/watch?v=9nteSlbFm80](https://www.youtube.com/watch?v=9nteSlbFm80)
+
+---
+
 ## 📖 1. Concepto y Visión del Proyecto
 
 **U-Spot** es una aplicación móvil nativa desarrollada para el ecosistema Android con **Jetpack Compose**. Su objetivo principal es conectar a la comunidad universitaria con su campus y su entorno urbano en Bogotá, facilitando el descubrimiento, consulta, valoración y recomendación de lugares clave ("spots") para la vida universitaria.
@@ -100,6 +122,9 @@ app/src/main/java/
 ---
 
 ## 🚀 4. Guía de Instalación y Puesta en Marcha (Paso a Paso)
+
+> [!TIP]
+> **¿Prefieres seguir el proceso en video?** Consulta el **[🎥 Video Tutorial de Instalación en YouTube](https://www.youtube.com/watch?v=9nteSlbFm80)** donde realizamos todos estos pasos en tiempo real.
 
 Sigue estos pasos con atención la primera vez que descargues el proyecto:
 
